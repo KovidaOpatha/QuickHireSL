@@ -1,0 +1,1 @@
+//Handles checking if a user is logged in with JWT

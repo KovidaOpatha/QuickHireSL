@@ -1,0 +1,1 @@
+//Defines how user data is stored

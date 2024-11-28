@@ -1,0 +1,1 @@
+//Handles routes like /apply-job or /accept-job
