@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
@@ -10,6 +11,52 @@ class SignUpScreen extends StatefulWidget {
 class _SignUpScreenState extends State<SignUpScreen> {
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
+  bool _isLoading = false;
+
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  final _authService = AuthService();
+
+  Future<void> _register() async {
+    if (_passwordController.text != _confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passwords do not match')),
+      );
+      return;
+    }
+
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all fields')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final success = await _authService.register(
+        _emailController.text,
+        _passwordController.text,
+        'student', // Default role
+      );
+
+      if (success) {
+        Navigator.pushReplacementNamed(context, '/login');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registration failed')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +71,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: const BoxDecoration(
-                  // Changed from color to decoration
                   color: Color(0xFF98C9C5),
                   borderRadius: BorderRadius.only(
                     bottomLeft: Radius.circular(20),
@@ -73,6 +119,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     _buildTextField(
                       hint: 'Username or Email',
                       icon: Icons.person_outline,
+                      controller: _emailController,
                     ),
                     const SizedBox(height: 20),
                     _buildTextField(
@@ -84,6 +131,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         setState(
                             () => _isPasswordVisible = !_isPasswordVisible);
                       },
+                      controller: _passwordController,
                     ),
                     const SizedBox(height: 20),
                     _buildTextField(
@@ -95,26 +143,36 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         setState(() => _isConfirmPasswordVisible =
                             !_isConfirmPasswordVisible);
                       },
+                      controller: _confirmPasswordController,
                     ),
                     const SizedBox(height: 40),
                     SizedBox(
                       width: double.infinity,
                       height: 55,
                       child: ElevatedButton(
-                        onPressed: () {},
+                        onPressed: _isLoading ? null : _register,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.black,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),
                         ),
-                        child: const Text(
-                          'Register',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.white,
-                          ),
-                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
+                                ),
+                              )
+                            : const Text(
+                                'Register',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                ),
+                              ),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -150,6 +208,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     bool isPassword = false,
     bool? isPasswordVisible,
     VoidCallback? onVisibilityToggle,
+    TextEditingController? controller,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -165,6 +224,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ],
       ),
       child: TextField(
+        controller: controller,
         obscureText: isPassword && !(isPasswordVisible ?? false),
         decoration: InputDecoration(
           hintText: hint,
@@ -185,5 +245,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
   }
 }
