@@ -16,6 +16,9 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
   final TextEditingController mobileController = TextEditingController();
   final TextEditingController nicController = TextEditingController();
 
+  // Create a global key for the form
+  final _formKey = GlobalKey<FormState>();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -62,45 +65,51 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
               // Registration Form
               Padding(
                 padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    _buildTextField(controller: fullNameController, hint: 'Full Name'),
-                    const SizedBox(height: 15),
-                    _buildTextField(controller: addressController, hint: 'Leaving Address'),
-                    const SizedBox(height: 15),
-                    _buildTextField(controller: dobController, hint: 'Date of Birth'),
-                    const SizedBox(height: 15),
-                    _buildTextField(controller: mobileController, hint: 'Mobile Number'),
-                    const SizedBox(height: 15),
-                    _buildTextField(controller: nicController, hint: 'NIC Number'),
-                    const SizedBox(height: 30),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      _buildTextField(controller: fullNameController, hint: 'Full Name'),
+                      const SizedBox(height: 15),
+                      _buildTextField(controller: addressController, hint: 'Leaving Address'),
+                      const SizedBox(height: 15),
+                      _buildTextField(controller: dobController, hint: 'Date of Birth'),
+                      const SizedBox(height: 15),
+                      _buildTextField(controller: mobileController, hint: 'Mobile Number'),
+                      const SizedBox(height: 15),
+                      _buildTextField(controller: nicController, hint: 'NIC Number'),
+                      const SizedBox(height: 30),
 
-                    // Next Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 55,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) =>
-                                const JobCategoriesScreen()), // Navigate to Job Categories Screen
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
+                      // Next Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 55,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            // Validate the form before navigation
+                            if (_formKey.currentState!.validate()) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const JobCategoriesScreen(), // Navigate to Job Categories Screen
+                                ),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                          ),
+                          child: const Text(
+                            'Next',
+                            style: TextStyle(fontSize: 16, color: Colors.white),
                           ),
                         ),
-                        child: const Text(
-                          'Next',
-                          style: TextStyle(fontSize: 16, color: Colors.white),
-                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -112,7 +121,7 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
 
   // Function to Build Text Fields
   Widget _buildTextField({required TextEditingController controller, required String hint}) {
-    return TextField(
+    return TextFormField(
       controller: controller,
       decoration: InputDecoration(
         hintText: hint,
@@ -124,6 +133,13 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
       ),
+      // Validation for empty fields
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return '$hint is required';  // Display the error message
+        }
+        return null;
+      },
     );
   }
 }

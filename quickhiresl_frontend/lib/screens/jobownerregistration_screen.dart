@@ -1,8 +1,21 @@
 import 'package:flutter/material.dart';
 import 'personalinformation_screen.dart';
 
-class JobOwnerRegistrationScreen extends StatelessWidget {
+class JobOwnerRegistrationScreen extends StatefulWidget {
   const JobOwnerRegistrationScreen({Key? key}) : super(key: key);
+
+  @override
+  _JobOwnerRegistrationScreenState createState() =>
+      _JobOwnerRegistrationScreenState();
+}
+
+class _JobOwnerRegistrationScreenState extends State<JobOwnerRegistrationScreen> {
+  final _formKey = GlobalKey<FormState>(); // Key for the form validation
+
+  // Controllers for the text fields
+  final TextEditingController shopNameController = TextEditingController();
+  final TextEditingController shopLocationController = TextEditingController();
+  final TextEditingController shopRegNoController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -30,8 +43,8 @@ class JobOwnerRegistrationScreen extends StatelessWidget {
                     margin: const EdgeInsets.only(bottom: 30),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.black12),
-                      color: Colors.white,
+                      border: Border.all(color: const Color.fromARGB(0, 0, 0, 0)),
+                      color: const Color.fromARGB(0, 255, 255, 255),
                     ),
                     child: IconButton(
                       icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -53,40 +66,46 @@ class JobOwnerRegistrationScreen extends StatelessWidget {
             // Input Fields Section
             Padding(
               padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  _buildTextField("Shop Name"),
-                  const SizedBox(height: 15),
-                  _buildTextField("Shop Location"),
-                  const SizedBox(height: 15),
-                  _buildTextField("Shop Register No"),
-                  const SizedBox(height: 30),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    _buildTextField(shopNameController, "Shop Name"),
+                    const SizedBox(height: 15),
+                    _buildTextField(shopLocationController, "Shop Location"),
+                    const SizedBox(height: 15),
+                    _buildTextField(shopRegNoController, "Shop Register No"),
+                    const SizedBox(height: 30),
 
-                  // Next Button to go to Personal Information
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const PersonalInformationScreen()),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
+                    // Next Button to go to Personal Information
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (_formKey.currentState!.validate()) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      const PersonalInformationScreen()),
+                            );
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                        ),
+                        child: const Text(
+                          "Next",
+                          style: TextStyle(fontSize: 16, color: Colors.white),
                         ),
                       ),
-                      child: const Text(
-                        "Next",
-                        style: TextStyle(fontSize: 16, color: Colors.white),
-                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
@@ -95,9 +114,11 @@ class JobOwnerRegistrationScreen extends StatelessWidget {
     );
   }
 
-  // Reusable Text Field Widget
-  Widget _buildTextField(String hintText) {
-    return TextField(
+  // Reusable Text Field Widget with validation
+  Widget _buildTextField(
+      TextEditingController controller, String hintText) {
+    return TextFormField(
+      controller: controller,
       decoration: InputDecoration(
         hintText: hintText,
         filled: true,
@@ -108,6 +129,36 @@ class JobOwnerRegistrationScreen extends StatelessWidget {
           borderSide: BorderSide.none,
         ),
       ),
+      // Validator to ensure the field is not empty
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return '$hintText is required';
+        }
+        return null;
+      },
     );
   }
 }
+
+Widget _buildTextField(TextEditingController controller, String hintText) {
+  return TextFormField(
+    controller: controller,
+    decoration: InputDecoration(
+      hintText: hintText,
+      filled: true,
+      fillColor: Colors.grey[200], // Match the light gray color
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(30), // Match rounded corners
+        borderSide: BorderSide.none, // No border
+      ),
+    ),
+    validator: (value) {
+      if (value == null || value.isEmpty) {
+        return '$hintText is required';
+      }
+      return null;
+    },
+  );
+}
+
