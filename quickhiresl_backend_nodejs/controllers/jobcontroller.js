@@ -1,1 +1,0 @@
-//Handles the logic for jobs like posting, accepting, or rejecting

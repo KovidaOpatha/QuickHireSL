@@ -1,1 +1,0 @@
-//Defines how job data is stored
