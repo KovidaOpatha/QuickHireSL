@@ -14,14 +14,18 @@ class HomeScreen extends StatelessWidget {
           icon: const Icon(Icons.menu, color: Colors.black),
           onPressed: () {},
         ),
-        title: Image.asset(
-          'assets/quickhire_logo.png', // Logo instead of text
-          height: 40,
+        title: const Text(
+          'QuickHire',
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         actions: [
-          CircleAvatar(
-            backgroundImage: AssetImage('assets/images/profile.jpg'), // Profile image
+          GestureDetector(
+            onTap: () => Navigator.pushNamed(context, '/profile'),
+            child: const CircleAvatar(
+              backgroundColor: Colors.white,
+              child: Icon(Icons.person, color: Colors.black),
+            ),
           ),
           const SizedBox(width: 10),
         ],
@@ -85,8 +89,9 @@ class HomeScreen extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        CircleAvatar(
-                          backgroundImage: AssetImage('assets/images/person$index.jpg'),
+                        const CircleAvatar(
+                          backgroundColor: Colors.grey,
+                          child: Icon(Icons.person, color: Colors.white),
                         ),
                         const SizedBox(height: 5),
                         const Text("⭐⭐⭐⭐⭐"),
@@ -103,11 +108,10 @@ class HomeScreen extends StatelessWidget {
             ),
             Expanded(
               child: ListView.builder(
-                itemCount: 7, // Show more jobs
+                itemCount: 7,
                 itemBuilder: (context, index) {
                   return GestureDetector(
                     onTap: () {
-                      // Job click effect
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text("Clicked on Job ${index + 1}"),
@@ -124,9 +128,14 @@ class HomeScreen extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          Image.asset(
-                            'assets/images/company_logo.png',
+                          Container(
                             width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[300],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.business, color: Colors.grey),
                           ),
                           const SizedBox(width: 10),
                           Column(

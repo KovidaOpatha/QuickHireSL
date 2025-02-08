@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'jobcategories_screen.dart';
 import '../services/auth_service.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'login_screen.dart';
 
 class StudentRegistrationScreen extends StatefulWidget {
-  const StudentRegistrationScreen({Key? key}) : super(key: key);
+  final String email;
+  final String password;
+
+  const StudentRegistrationScreen({
+    Key? key, 
+    required this.email, 
+    required this.password,
+  }) : super(key: key);
 
   @override
-  _StudentRegistrationScreenState createState() =>
-      _StudentRegistrationScreenState();
+  _StudentRegistrationScreenState createState() => _StudentRegistrationScreenState();
 }
 
 class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
@@ -19,8 +26,24 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
   final TextEditingController nicController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   final AuthService _authService = AuthService();
-  final _storage = const FlutterSecureStorage();
   bool _isLoading = false;
+  DateTime? _selectedDate;
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime(1950),
+      lastDate: DateTime.now(),
+    );
+
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+        dobController.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
 
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
@@ -29,11 +52,21 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
       });
 
       try {
-        // Get the userId from storage
-        final userId = await _storage.read(key: 'user_id');
+        // First, login to get the token
+        final loginResult = await _authService.login(widget.email, widget.password);
+        
+        if (!loginResult['success']) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(loginResult['error'] ?? 'Login failed')),
+          );
+          return;
+        }
+
+        // Get the userId
+        final userId = await _authService.getUserId();
         if (userId == null) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('User ID not found. Please login again.')),
+            const SnackBar(content: Text('User ID not found. Please try again.')),
           );
           return;
         }
@@ -55,6 +88,7 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
         );
 
         if (success) {
+          if (!mounted) return;
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -62,18 +96,22 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
             ),
           );
         } else {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Failed to update role. Please try again.')),
           );
         }
       } catch (e) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e')),
         );
       } finally {
-        setState(() {
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
   }
@@ -100,64 +138,128 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Back Button
                     IconButton(
                       icon: const Icon(Icons.arrow_back, color: Colors.black),
                       onPressed: () => Navigator.pop(context),
                     ),
-                    const SizedBox(height: 10),
-                    // Title
+                    const SizedBox(height: 20),
                     const Text(
-                      'Student\nRegistration',
+                      'Student Registration',
                       style: TextStyle(
-                        fontSize: 32,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Please fill in your details',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black87,
                       ),
                     ),
                   ],
                 ),
               ),
-
-              const SizedBox(height: 20),
-
-              // Registration Form
+              // Form Section
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     children: [
-                      _buildTextField(controller: fullNameController, hint: 'Full Name'),
-                      const SizedBox(height: 15),
-                      _buildTextField(controller: addressController, hint: 'Leaving Address'),
-                      const SizedBox(height: 15),
-                      _buildTextField(controller: dobController, hint: 'Date of Birth'),
-                      const SizedBox(height: 15),
-                      _buildTextField(controller: mobileController, hint: 'Mobile Number'),
-                      const SizedBox(height: 15),
-                      _buildTextField(controller: nicController, hint: 'NIC Number'),
+                      TextFormField(
+                        controller: fullNameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Full Name',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your full name';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: addressController,
+                        decoration: const InputDecoration(
+                          labelText: 'Address',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your address';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: dobController,
+                        readOnly: true,
+                        onTap: () => _selectDate(context),
+                        decoration: const InputDecoration(
+                          labelText: 'Date of Birth',
+                          border: OutlineInputBorder(),
+                          suffixIcon: Icon(Icons.calendar_today),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please select your date of birth';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: mobileController,
+                        decoration: const InputDecoration(
+                          labelText: 'Mobile Number',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your mobile number';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: nicController,
+                        decoration: const InputDecoration(
+                          labelText: 'NIC Number',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your NIC number';
+                          }
+                          return null;
+                        },
+                      ),
                       const SizedBox(height: 30),
-
-                      // Next Button
                       SizedBox(
                         width: double.infinity,
-                        height: 55,
+                        height: 50,
                         child: ElevatedButton(
                           onPressed: _isLoading ? null : _submitForm,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
+                            backgroundColor: const Color(0xFF98C9C5),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                           ),
                           child: _isLoading
-                              ? const CircularProgressIndicator(color: Colors.white)
+                              ? const CircularProgressIndicator()
                               : const Text(
-                                  'Next',
+                                  'Register',
                                   style: TextStyle(
-                                    color: Colors.white,
                                     fontSize: 18,
+                                    color: Colors.black,
                                   ),
                                 ),
                         ),
@@ -170,30 +272,6 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  // Function to Build Text Fields
-  Widget _buildTextField({required TextEditingController controller, required String hint}) {
-    return TextFormField(
-      controller: controller,
-      decoration: InputDecoration(
-        hintText: hint,
-        filled: true,
-        fillColor: Colors.grey[200],
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-      ),
-      // Validation for empty fields
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return '$hint is required';  // Display the error message
-        }
-        return null;
-      },
     );
   }
 }
