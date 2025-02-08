@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'personalinformation_screen.dart';
+import '../services/auth_service.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class JobOwnerRegistrationScreen extends StatefulWidget {
   const JobOwnerRegistrationScreen({Key? key}) : super(key: key);
@@ -16,6 +18,70 @@ class _JobOwnerRegistrationScreenState extends State<JobOwnerRegistrationScreen>
   final TextEditingController shopNameController = TextEditingController();
   final TextEditingController shopLocationController = TextEditingController();
   final TextEditingController shopRegNoController = TextEditingController();
+  final AuthService _authService = AuthService();
+  final _storage = const FlutterSecureStorage();
+  bool _isLoading = false;
+
+  Future<void> _submitForm() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        // First check if we have a token
+        final token = await _authService.getToken();
+        final userId = await _storage.read(key: 'user_id');
+        
+        if (token == null || userId == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Session expired. Please login again.')),
+          );
+          // TODO: Navigate to login screen
+          return;
+        }
+
+        // Prepare job owner details
+        final jobOwnerDetails = {
+          'shopName': shopNameController.text,
+          'shopLocation': shopLocationController.text,
+          'shopRegisterNo': shopRegNoController.text,
+        };
+
+        print('Attempting to update role with userId: $userId');
+        print('Token present: ${token != null}');
+        print('Details: $jobOwnerDetails');
+
+        // Update role and details
+        final success = await _authService.updateRole(
+          userId,
+          'employer',
+          jobOwnerDetails,
+        );
+
+        if (success) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const PersonalInformationScreen()),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to update role. Please try again.')),
+          );
+        }
+      } catch (e) {
+        print('Error in _submitForm: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,26 +148,22 @@ class _JobOwnerRegistrationScreenState extends State<JobOwnerRegistrationScreen>
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      const PersonalInformationScreen()),
-                            );
-                          }
-                        },
+                        onPressed: _isLoading ? null : _submitForm,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.black,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),
                         ),
-                        child: const Text(
-                          "Next",
-                          style: TextStyle(fontSize: 16, color: Colors.white),
-                        ),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text(
+                                'Next',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                ),
+                              ),
                       ),
                     ),
                   ],
@@ -139,26 +201,3 @@ class _JobOwnerRegistrationScreenState extends State<JobOwnerRegistrationScreen>
     );
   }
 }
-
-Widget _buildTextField(TextEditingController controller, String hintText) {
-  return TextFormField(
-    controller: controller,
-    decoration: InputDecoration(
-      hintText: hintText,
-      filled: true,
-      fillColor: Colors.grey[200], // Match the light gray color
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(30), // Match rounded corners
-        borderSide: BorderSide.none, // No border
-      ),
-    ),
-    validator: (value) {
-      if (value == null || value.isEmpty) {
-        return '$hintText is required';
-      }
-      return null;
-    },
-  );
-}
-

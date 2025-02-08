@@ -32,20 +32,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final success = await _authService.register(
+      final response = await _authService.register(
         _emailController.text.trim(),
         _passwordController.text.trim(),
-        'student',
       );
 
-      if (success) {
+      if (response['success']) {
+        // Registration successful, navigate to choose role screen
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const ChooseRoleScreen()),
         );
       } else {
+        // Show error message from the server
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registration failed')),
+          SnackBar(content: Text(response['error'] ?? 'Registration failed')),
         );
       }
     } catch (e) {
