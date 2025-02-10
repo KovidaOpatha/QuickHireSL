@@ -1,25 +1,27 @@
 import 'package:flutter/material.dart';
 import 'personalinformation_screen.dart';
 import '../services/auth_service.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class JobOwnerRegistrationScreen extends StatefulWidget {
-  const JobOwnerRegistrationScreen({Key? key}) : super(key: key);
+  final String email;
+  final String password;
+
+  const JobOwnerRegistrationScreen({
+    Key? key,
+    required this.email,
+    required this.password,
+  }) : super(key: key);
 
   @override
-  _JobOwnerRegistrationScreenState createState() =>
-      _JobOwnerRegistrationScreenState();
+  _JobOwnerRegistrationScreenState createState() => _JobOwnerRegistrationScreenState();
 }
 
 class _JobOwnerRegistrationScreenState extends State<JobOwnerRegistrationScreen> {
-  final _formKey = GlobalKey<FormState>(); // Key for the form validation
-
-  // Controllers for the text fields
+  final _formKey = GlobalKey<FormState>();
   final TextEditingController shopNameController = TextEditingController();
   final TextEditingController shopLocationController = TextEditingController();
   final TextEditingController shopRegNoController = TextEditingController();
   final AuthService _authService = AuthService();
-  final _storage = const FlutterSecureStorage();
   bool _isLoading = false;
 
   Future<void> _submitForm() async {
@@ -29,15 +31,22 @@ class _JobOwnerRegistrationScreenState extends State<JobOwnerRegistrationScreen>
       });
 
       try {
-        // First check if we have a token
-        final token = await _authService.getToken();
-        final userId = await _storage.read(key: 'user_id');
+        // First, login to get the token
+        final loginResult = await _authService.login(widget.email, widget.password);
         
-        if (token == null || userId == null) {
+        if (!loginResult['success']) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Session expired. Please login again.')),
+            SnackBar(content: Text(loginResult['error'] ?? 'Login failed')),
           );
-          // TODO: Navigate to login screen
+          return;
+        }
+
+        // Get the userId
+        final userId = await _authService.getUserId();
+        if (userId == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('User ID not found. Please try again.')),
+          );
           return;
         }
 
@@ -48,10 +57,6 @@ class _JobOwnerRegistrationScreenState extends State<JobOwnerRegistrationScreen>
           'shopRegisterNo': shopRegNoController.text,
         };
 
-        print('Attempting to update role with userId: $userId');
-        print('Token present: ${token != null}');
-        print('Details: $jobOwnerDetails');
-
         // Update role and details
         final success = await _authService.updateRole(
           userId,
@@ -60,18 +65,27 @@ class _JobOwnerRegistrationScreenState extends State<JobOwnerRegistrationScreen>
         );
 
         if (success) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const PersonalInformationScreen()),
-          );
+          // After successful role update, refresh the token by logging in again
+          final refreshResult = await _authService.login(widget.email, widget.password);
+          
+          if (refreshResult['success']) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const PersonalInformationScreen(),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Failed to refresh session. Please log in again.')),
+            );
+          }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Failed to update role. Please try again.')),
           );
         }
       } catch (e) {
-        print('Error in _submitForm: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: $e')),
         );
@@ -91,7 +105,6 @@ class _JobOwnerRegistrationScreenState extends State<JobOwnerRegistrationScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Section
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -128,8 +141,6 @@ class _JobOwnerRegistrationScreenState extends State<JobOwnerRegistrationScreen>
                 ],
               ),
             ),
-
-            // Input Fields Section
             Padding(
               padding: const EdgeInsets.all(20),
               child: Form(
@@ -142,8 +153,6 @@ class _JobOwnerRegistrationScreenState extends State<JobOwnerRegistrationScreen>
                     const SizedBox(height: 15),
                     _buildTextField(shopRegNoController, "Shop Register No"),
                     const SizedBox(height: 30),
-
-                    // Next Button to go to Personal Information
                     SizedBox(
                       width: double.infinity,
                       height: 50,
@@ -176,9 +185,7 @@ class _JobOwnerRegistrationScreenState extends State<JobOwnerRegistrationScreen>
     );
   }
 
-  // Reusable Text Field Widget with validation
-  Widget _buildTextField(
-      TextEditingController controller, String hintText) {
+  Widget _buildTextField(TextEditingController controller, String hintText) {
     return TextFormField(
       controller: controller,
       decoration: InputDecoration(
@@ -191,7 +198,6 @@ class _JobOwnerRegistrationScreenState extends State<JobOwnerRegistrationScreen>
           borderSide: BorderSide.none,
         ),
       ),
-      // Validator to ensure the field is not empty
       validator: (value) {
         if (value == null || value.isEmpty) {
           return '$hintText is required';

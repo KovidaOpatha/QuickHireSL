@@ -1,26 +1,35 @@
 name: quickhiresl_frontend
-description: "A new Flutter project."
-publish_to: 'none' 
+description: QuickHireSL Frontend Application
 
+publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.5.3
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  http: ^1.0.0  # Latest version
+  cupertino_icons: ^1.0.2
+  http: ^1.1.0
   flutter_secure_storage: ^9.0.0
-  cupertino_icons: ^1.0.8
-  font_awesome_flutter: ^10.6.0  # Correct placement
+  table_calendar: ^3.0.9
+  font_awesome_flutter: ^10.6.0
+  image_picker: ^1.0.4
+  http_parser: ^4.0.2
+  shared_preferences: ^2.5.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
+  flutter_lints: ^2.0.0
 
 flutter:
   uses-material-design: true
   assets:
+    - assets/
+    - assets/images/
     - assets/quickhire_logo.png
+    - assets/apple.png
+    - assets/facebook.png
+    - assets/google.png

@@ -3,7 +3,14 @@ import 'studentregistration_screen.dart';
 import 'jobownerregistration_screen.dart';
 
 class ChooseRoleScreen extends StatelessWidget {
-  const ChooseRoleScreen({Key? key}) : super(key: key);
+  final String email;
+  final String password;
+
+  const ChooseRoleScreen({
+    Key? key,
+    required this.email,
+    required this.password,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -22,13 +29,19 @@ class ChooseRoleScreen extends StatelessWidget {
                     _buildRoleButton(
                       context: context,
                       title: 'Student',
-                      screen: const StudentRegistrationScreen(),
+                      screen: StudentRegistrationScreen(
+                        email: email,
+                        password: password,
+                      ),
                     ),
                     const SizedBox(height: 20),
                     _buildRoleButton(
                       context: context,
                       title: 'Job Owner',
-                      screen: const JobOwnerRegistrationScreen(),
+                      screen: JobOwnerRegistrationScreen(
+                        email: email,
+                        password: password,
+                      ),
                     ),
                   ],
                 ),
@@ -40,7 +53,6 @@ class ChooseRoleScreen extends StatelessWidget {
     );
   }
 
-  /// 🔹 Builds the header with a back button and screen title.
   Widget _buildHeader(BuildContext context) {
     return Container(
       width: double.infinity,
@@ -55,15 +67,22 @@ class ChooseRoleScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.black),
-            onPressed: () => Navigator.pop(context),
+          Container(
+            margin: const EdgeInsets.only(bottom: 30),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color.fromARGB(0, 0, 0, 0)),
+              color: const Color.fromARGB(0, 255, 255, 255),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.black),
+              onPressed: () => Navigator.pop(context),
+            ),
           ),
-          const SizedBox(height: 10),
           const Text(
             'Choose your\nRole',
             style: TextStyle(
-              fontSize: 40,
+              fontSize: 32,
               fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
@@ -78,7 +97,6 @@ class ChooseRoleScreen extends StatelessWidget {
     );
   }
 
-  /// 🔹 Creates a button for role selection.
   Widget _buildRoleButton({
     required BuildContext context,
     required String title,
