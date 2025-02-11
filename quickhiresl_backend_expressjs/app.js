@@ -6,6 +6,7 @@ const path = require('path');
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const indexRoutes = require('./routes/api');
+const jobRoutes = require('./routes/job.routes');
 
 dotenv.config();
 
@@ -27,22 +28,30 @@ app.get('/api/health', (req, res) => {
 app.use('/api', indexRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/jobs', jobRoutes);
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(() => console.log('✅ Connected to MongoDB Atlas'))
-    .catch(err => {
-        console.error('❌ MongoDB Connection Error:', err.message);
-        process.exit(1);
-    });
+mongoose.connect(process.env.MONGODB_URI)
+    .then(() => console.log('MongoDB Connected'))
+    .catch(err => console.log('MongoDB Connection Error:', err));
 
 // Global Error Handling for Unhandled Promise Rejections
 process.on('unhandledRejection', (err) => {
-    console.error('🔥 Unhandled Rejection:', err);
+    console.error(' Unhandled Rejection:', err);
     process.exit(1);
 });
 
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-    console.log(`🚀 Server running on port ${port}`);
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ 
+        success: false,
+        message: 'Something went wrong!',
+        error: err.message 
+    });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
