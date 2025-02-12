@@ -101,9 +101,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
               duration: Duration(seconds: 2),
             ),
           );
-          
           await Future.delayed(const Duration(milliseconds: 500));
-          
           Navigator.of(context).pop(true);
         }
       } catch (e) {
@@ -124,11 +122,42 @@ class _PostJobScreenState extends State<PostJobScreen> {
     }
   }
 
+  InputDecoration _getInputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(color: Colors.black87),
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Colors.black, width: 1),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Colors.black, width: 1),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Colors.black, width: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF98C9C5),
       appBar: AppBar(
-        title: const Text('Post a Job'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text(
+          'Post a Job',
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -137,116 +166,157 @@ class _PostJobScreenState extends State<PostJobScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Job Title'),
-                validator: (value) =>
-                    value?.isEmpty ?? true ? 'Please enter a job title' : null,
-                onSaved: (value) => _title = value ?? '',
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Company'),
-                validator: (value) =>
-                    value?.isEmpty ?? true ? 'Please enter a company name' : null,
-                onSaved: (value) => _company = value ?? '',
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Location'),
-                validator: (value) =>
-                    value?.isEmpty ?? true ? 'Please enter a location' : null,
-                onSaved: (value) => _location = value ?? '',
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'Description'),
-                maxLines: 3,
-                validator: (value) =>
-                    value?.isEmpty ?? true ? 'Please enter a description' : null,
-                onSaved: (value) => _description = value ?? '',
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _employmentType,
-                decoration: const InputDecoration(labelText: 'Employment Type'),
-                items: _employmentTypes
-                    .map((type) => DropdownMenuItem(
-                          value: type,
-                          child: Text(type),
-                        ))
-                    .toList(),
-                onChanged: (value) =>
-                    setState(() => _employmentType = value ?? 'Full-time'),
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _experienceLevel,
-                decoration: const InputDecoration(labelText: 'Experience Level'),
-                items: _experienceLevels
-                    .map((level) => DropdownMenuItem(
-                          value: level,
-                          child: Text(level),
-                        ))
-                    .toList(),
-                onChanged: (value) =>
-                    setState(() => _experienceLevel = value ?? 'Entry'),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      decoration: const InputDecoration(labelText: 'Min Salary (LKR)'),
-                      keyboardType: TextInputType.number,
-                      validator: (value) => value?.isEmpty ?? true
-                          ? 'Please enter minimum salary'
-                          : null,
-                      onSaved: (value) =>
-                          _salaryMin = double.tryParse(value ?? '0') ?? 0,
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextFormField(
+                      decoration: _getInputDecoration('Job Title'),
+                      validator: (value) =>
+                          value?.isEmpty ?? true ? 'Please enter a job title' : null,
+                      onSaved: (value) => _title = value ?? '',
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: TextFormField(
-                      decoration: const InputDecoration(labelText: 'Max Salary (LKR)'),
-                      keyboardType: TextInputType.number,
-                      validator: (value) => value?.isEmpty ?? true
-                          ? 'Please enter maximum salary'
-                          : null,
-                      onSaved: (value) =>
-                          _salaryMax = double.tryParse(value ?? '0') ?? 0,
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      decoration: _getInputDecoration('Company'),
+                      validator: (value) =>
+                          value?.isEmpty ?? true ? 'Please enter a company name' : null,
+                      onSaved: (value) => _company = value ?? '',
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      decoration: const InputDecoration(labelText: 'Add Requirement'),
-                      controller: _requirementController,
-                      onChanged: (value) => _newRequirement = value,
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      decoration: _getInputDecoration('Location'),
+                      validator: (value) =>
+                          value?.isEmpty ?? true ? 'Please enter a location' : null,
+                      onSaved: (value) => _location = value ?? '',
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add),
-                    onPressed: _addRequirement,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              ..._requirements.map((req) => Chip(
-                    label: Text(req),
-                    onDeleted: () =>
-                        setState(() => _requirements.remove(req)),
-                  )),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _submitJob,
-                child: _isLoading
-                    ? const CircularProgressIndicator()
-                    : const Text('Post Job'),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      decoration: _getInputDecoration('Description'),
+                      maxLines: 3,
+                      validator: (value) =>
+                          value?.isEmpty ?? true ? 'Please enter a description' : null,
+                      onSaved: (value) => _description = value ?? '',
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: _employmentType,
+                      decoration: _getInputDecoration('Employment Type'),
+                      items: _employmentTypes
+                          .map((type) => DropdownMenuItem(
+                                value: type,
+                                child: Text(type),
+                              ))
+                          .toList(),
+                      onChanged: (value) =>
+                          setState(() => _employmentType = value ?? 'Full-time'),
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: _experienceLevel,
+                      decoration: _getInputDecoration('Experience Level'),
+                      items: _experienceLevels
+                          .map((level) => DropdownMenuItem(
+                                value: level,
+                                child: Text(level),
+                              ))
+                          .toList(),
+                      onChanged: (value) =>
+                          setState(() => _experienceLevel = value ?? 'Entry'),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            decoration: _getInputDecoration('Min Salary (LKR)'),
+                            keyboardType: TextInputType.number,
+                            validator: (value) => value?.isEmpty ?? true
+                                ? 'Please enter minimum salary'
+                                : null,
+                            onSaved: (value) =>
+                                _salaryMin = double.tryParse(value ?? '0') ?? 0,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: TextFormField(
+                            decoration: _getInputDecoration('Max Salary (LKR)'),
+                            keyboardType: TextInputType.number,
+                            validator: (value) => value?.isEmpty ?? true
+                                ? 'Please enter maximum salary'
+                                : null,
+                            onSaved: (value) =>
+                                _salaryMax = double.tryParse(value ?? '0') ?? 0,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            decoration: _getInputDecoration('Add Requirement'),
+                            controller: _requirementController,
+                            onChanged: (value) => _newRequirement = value,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add_circle),
+                          color: const Color(0xFF98C9C5),
+                          onPressed: _addRequirement,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _requirements.map((req) => Chip(
+                        label: Text(req),
+                        backgroundColor: const Color(0xFF98C9C5).withOpacity(0.2),
+                        deleteIcon: const Icon(Icons.cancel, size: 18),
+                        onDeleted: () => setState(() => _requirements.remove(req)),
+                      )).toList(),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _submitJob,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Text(
+                                'Post Job',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
