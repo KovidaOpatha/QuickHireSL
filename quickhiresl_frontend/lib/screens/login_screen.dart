@@ -25,16 +25,23 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final success = await _authService.login(
+      final response = await _authService.login(
         _emailController.text,
         _passwordController.text,
       );
 
-      if (success) {
-        Navigator.pushReplacementNamed(context, '/home'); // Navigate to Home
+      if (response['success']) {
+        final role = response['role'];
+        if (role == null) {
+          // If no role is set, navigate to choose role screen
+          Navigator.pushReplacementNamed(context, '/chooserole');
+        } else {
+          // If role is set, navigate to home
+          Navigator.pushReplacementNamed(context, '/home');
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invalid credentials')),
+          SnackBar(content: Text(response['error'] ?? 'Invalid credentials')),
         );
       }
     } catch (e) {
@@ -101,7 +108,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           onPressed: () {},
                           child: const Text('Forgot Password?', style: TextStyle(color: Colors.black)),
                         ),
-                                               
                       ),
                       const SizedBox(height: 20),
                       SizedBox(
@@ -171,7 +177,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-
   Widget _buildTextField({
     required String hint,
     required IconData icon,
@@ -204,7 +209,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide(color: Colors.blue, width: 2),  // Color when focused
+          borderSide: BorderSide(color: Colors.blue, width: 2), // Color when focused
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
@@ -240,6 +245,3 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 }
-
-
-
