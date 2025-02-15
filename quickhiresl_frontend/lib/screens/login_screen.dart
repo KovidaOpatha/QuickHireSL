@@ -75,11 +75,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         icon: Icons.person_outline,
                         controller: _emailController,
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please fill this field';
-                          }
-                          return null;
-                        },
+                        if (value == null || value.isEmpty) {
+                          return 'Please fill this field';
+                        }
+                        // Email validation
+                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                          return 'Please enter a valid email';
+                        }
+                        return null;
+                      },
+
                       ),
                       const SizedBox(height: 20),
                       _buildTextField(
@@ -105,8 +110,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          onPressed: () {},
-                          child: const Text('Forgot Password?', style: TextStyle(color: Colors.black)),
+                          onPressed: () => Navigator.pushNamed(context, '/forgotpassword'),
+                          child: const Text(
+                            'Forgot Password?',
+                            style: TextStyle(color: Colors.black),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -209,7 +217,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide(color: Colors.blue, width: 2), // Color when focused
+          borderSide: const BorderSide(color: Colors.blue, width: 2), // Color when focused
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
@@ -245,3 +253,4 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 }
+

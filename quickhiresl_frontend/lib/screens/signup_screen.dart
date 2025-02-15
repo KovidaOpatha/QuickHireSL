@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:quickhiresl_frontend/screens/chooserole_screen.dart';
 import '../services/auth_service.dart';
-import 'dart:typed_data';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);

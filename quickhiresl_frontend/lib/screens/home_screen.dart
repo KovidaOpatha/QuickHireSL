@@ -145,15 +145,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Column(
+                    child: const Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const CircleAvatar(
+                        CircleAvatar(
                           backgroundColor: Colors.grey,
                           child: Icon(Icons.person, color: Colors.white),
                         ),
-                        const SizedBox(height: 5),
-                        const Text("⭐⭐⭐⭐⭐"),
+                        SizedBox(height: 5),
+                        Text("⭐⭐⭐⭐⭐"),
                       ],
                     ),
                   );
@@ -263,8 +263,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _navigateToPostJob,
-        child: const Icon(Icons.add),
         backgroundColor: Colors.blue,
+        child: const Icon(Icons.add),
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const [

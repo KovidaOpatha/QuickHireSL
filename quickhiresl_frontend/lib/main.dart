@@ -4,6 +4,7 @@ import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/forgot_password_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -26,6 +27,7 @@ class MyApp extends StatelessWidget {
         '/signup': (context) => const SignUpScreen(),
         '/home': (context) => const HomeScreen(),
         '/profile': (context) => const ProfileScreen(),
+        '/forgotpassword': (context) => const ForgotPasswordScreen(),
       },
       onGenerateRoute: (settings) {
         // Handle any undefined routes here
