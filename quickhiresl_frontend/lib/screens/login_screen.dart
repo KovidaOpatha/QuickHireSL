@@ -9,7 +9,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _formKey = GlobalKey<FormState>(); // Form Key
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _authService = AuthService();
@@ -18,25 +18,21 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
 
   Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
       final response = await _authService.login(
-        _emailController.text,
-        _passwordController.text,
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
       );
 
       if (response['success']) {
         final role = response['role'];
         if (role == null) {
-          // If no role is set, navigate to choose role screen
           Navigator.pushReplacementNamed(context, '/chooserole');
         } else {
-          // If role is set, navigate to home
           Navigator.pushReplacementNamed(context, '/home');
         }
       } else {
@@ -51,6 +47,59 @@ class _LoginScreenState extends State<LoginScreen> {
     } finally {
       setState(() => _isLoading = false);
     }
+  }
+
+  Widget _buildTextField({
+    required String label,
+    required IconData icon,
+    bool isPassword = false,
+    required TextEditingController controller,
+  }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: isPassword ? !_isPasswordVisible : false,
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please fill this field';
+        }
+        if (!isPassword && !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+          return 'Please enter a valid email';
+        }
+        if (isPassword && value.length < 6) {
+          return 'Password must be at least 6 characters';
+        }
+        return null;
+      },
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: Colors.grey[600]),
+        suffixIcon: isPassword
+            ? IconButton(
+                icon: Icon(
+                  _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                  color: Colors.grey[600],
+                ),
+                onPressed: () {
+                  setState(() {
+                    _isPasswordVisible = !_isPasswordVisible;
+                  });
+                },
+              )
+            : null,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(30)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide(color: Colors.grey.shade400),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
+        ),
+        floatingLabelBehavior: FloatingLabelBehavior.auto,
+        contentPadding: const EdgeInsets.all(20),
+      ),
+    );
   }
 
   @override
@@ -69,52 +118,25 @@ class _LoginScreenState extends State<LoginScreen> {
                   key: _formKey,
                   child: Column(
                     children: [
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 40),
                       _buildTextField(
-                        hint: 'Username or Email',
+                        label: 'Username or Email',
                         icon: Icons.person_outline,
                         controller: _emailController,
-                        validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please fill this field';
-                        }
-                        // Email validation
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                          return 'Please enter a valid email';
-                        }
-                        return null;
-                      },
-
                       ),
                       const SizedBox(height: 20),
                       _buildTextField(
-                        hint: 'Password',
+                        label: 'Password',
                         icon: Icons.lock_outline,
                         isPassword: true,
-                        isPasswordVisible: _isPasswordVisible,
-                        onVisibilityToggle: () {
-                          setState(() => _isPasswordVisible = !_isPasswordVisible);
-                        },
                         controller: _passwordController,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please fill this field';
-                          }
-                          if (value.length < 6) {
-                            return 'Password must be at least 6 characters';
-                          }
-                          return null;
-                        },
                       ),
                       const SizedBox(height: 10),
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
                           onPressed: () => Navigator.pushNamed(context, '/forgotpassword'),
-                          child: const Text(
-                            'Forgot Password?',
-                            style: TextStyle(color: Colors.black),
-                          ),
+                          child: const Text('Forgot Password?', style: TextStyle(color: Colors.black)),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -130,13 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           child: _isLoading
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  ),
-                                )
+                              ? const CircularProgressIndicator(color: Colors.white)
                               : const Text(
                                   'Login',
                                   style: TextStyle(fontSize: 16, color: Colors.white),
@@ -181,51 +197,6 @@ class _LoginScreenState extends State<LoginScreen> {
             style: TextStyle(fontSize: 16, color: Colors.black54),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required String hint,
-    required IconData icon,
-    bool isPassword = false,
-    bool? isPasswordVisible,
-    VoidCallback? onVisibilityToggle,
-    required TextEditingController controller,
-    required String? Function(String?) validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      obscureText: isPassword && !(isPasswordVisible ?? false),
-      validator: validator,
-      autovalidateMode: AutovalidateMode.onUserInteraction,
-      decoration: InputDecoration(
-        hintText: hint,
-        prefixIcon: Icon(icon, color: Colors.grey[600]),
-        suffixIcon: isPassword
-            ? IconButton(
-                icon: Icon(
-                  isPasswordVisible ?? false ? Icons.visibility : Icons.visibility_off,
-                  color: Colors.grey[600],
-                ),
-                onPressed: onVisibilityToggle,
-              )
-            : null,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: const BorderSide(color: Colors.transparent),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: const BorderSide(color: Colors.blue, width: 2), // Color when focused
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide(color: Colors.grey[400]!, width: 1.5), // Color when not focused
-        ),
-        filled: true,
-        fillColor: Colors.grey[100], // Background color
-        contentPadding: const EdgeInsets.all(15),
       ),
     );
   }

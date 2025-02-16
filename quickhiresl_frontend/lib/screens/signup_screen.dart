@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:quickhiresl_frontend/screens/chooserole_screen.dart';
 import '../services/auth_service.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -19,6 +18,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final AuthService _authService = AuthService();
   String? _profileImage;
   bool _isLoading = false;
+  bool _isPasswordVisible = false;
+  bool _isPasswordFocused = false;
 
   Future<void> _pickImage() async {
     try {
@@ -65,21 +66,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       try {
         final result = await _authService.register(
-          _emailController.text,
-          _passwordController.text,
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
           base64Image: _profileImage,
         );
 
         if (result['success']) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ChooseRoleScreen(
-                email: _emailController.text,
-                password: _passwordController.text,
-              ),
-            ),
-          );
+          Navigator.pushReplacementNamed(context, '/chooserole');
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(result['error'] ?? 'Registration failed')),
@@ -95,6 +88,59 @@ class _SignUpScreenState extends State<SignUpScreen> {
         });
       }
     }
+  }
+
+  Widget _buildPasswordField({
+    required String label,
+    required TextEditingController controller,
+  }) {
+    return Focus(
+      onFocusChange: (hasFocus) {
+        setState(() {
+          _isPasswordFocused = hasFocus;
+        });
+      },
+      child: TextFormField(
+        controller: controller,
+        obscureText: !_isPasswordVisible,
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(30)),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30),
+            borderSide: BorderSide(color: Colors.grey.shade400),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30),
+            borderSide: BorderSide(
+              color: _isPasswordFocused ? Colors.deepPurple : Colors.grey,
+              width: 2,
+            ),
+          ),
+          prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[600]),
+          suffixIcon: IconButton(
+            icon: Icon(
+              _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+              color: Colors.grey[600],
+            ),
+            onPressed: () {
+              setState(() {
+                _isPasswordVisible = !_isPasswordVisible;
+              });
+            },
+          ),
+        ),
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Password is required';
+          }
+          if (value.length < 6) {
+            return 'Password must be at least 6 characters';
+          }
+          return null;
+        },
+      ),
+    );
   }
 
   @override
@@ -123,8 +169,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       margin: const EdgeInsets.only(bottom: 30),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: const Color.fromARGB(0, 0, 0, 0)),
-                        color: const Color.fromARGB(0, 255, 255, 255),
+                        color: Colors.transparent,
                       ),
                       child: IconButton(
                         icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -156,27 +201,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       Center(
                         child: Stack(
                           children: [
-                            Container(
-                              width: 120,
-                              height: 120,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[200],
-                                shape: BoxShape.circle,
-                                image: _profileImage != null
-                                    ? DecorationImage(
-                                        image: MemoryImage(
-                                          base64Decode(_profileImage!),
-                                        ),
-                                        fit: BoxFit.cover,
-                                      )
-                                    : null,
-                              ),
+                            CircleAvatar(
+                              radius: 60,
+                              backgroundColor: Colors.grey[200],
+                              backgroundImage: _profileImage != null
+                                  ? MemoryImage(base64Decode(_profileImage!))
+                                  : null,
                               child: _profileImage == null
-                                  ? const Icon(
-                                      Icons.person,
-                                      size: 60,
-                                      color: Colors.grey,
-                                    )
+                                  ? const Icon(Icons.person, size: 60, color: Colors.grey)
                                   : null,
                             ),
                             Positioned(
@@ -190,11 +222,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 ),
                                 child: InkWell(
                                   onTap: _pickImage,
-                                  child: const Icon(
-                                    Icons.camera_alt,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
+                                  child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
                                 ),
                               ),
                             ),
@@ -205,14 +233,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       TextFormField(
                         controller: _emailController,
                         decoration: InputDecoration(
-                          hintText: 'Email',
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(30),
-                            borderSide: BorderSide.none,
-                          ),
+                          labelText: 'Email',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(30)),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -225,53 +247,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         },
                       ),
                       const SizedBox(height: 15),
-                      TextFormField(
-                        controller: _passwordController,
-                        obscureText: true,
-                        decoration: InputDecoration(
-                          hintText: 'Password',
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(30),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Password is required';
-                          }
-                          if (value.length < 6) {
-                            return 'Password must be at least 6 characters';
-                          }
-                          return null;
-                        },
-                      ),
+                      _buildPasswordField(label: 'Password', controller: _passwordController),
                       const SizedBox(height: 15),
-                      TextFormField(
-                        controller: _confirmPasswordController,
-                        obscureText: true,
-                        decoration: InputDecoration(
-                          hintText: 'Confirm Password',
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(30),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please confirm your password';
-                          }
-                          if (value != _passwordController.text) {
-                            return 'Passwords do not match';
-                          }
-                          return null;
-                        },
-                      ),
+                      _buildPasswordField(label: 'Confirm Password', controller: _confirmPasswordController),
                       const SizedBox(height: 30),
                       SizedBox(
                         width: double.infinity,
@@ -280,19 +258,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           onPressed: _isLoading ? null : _handleSignUp,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.black,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                           ),
                           child: _isLoading
                               ? const CircularProgressIndicator(color: Colors.white)
-                              : const Text(
-                                  'Sign Up',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                  ),
-                                ),
+                              : const Text('Sign Up', style: TextStyle(color: Colors.white, fontSize: 18)),
                         ),
                       ),
                     ],

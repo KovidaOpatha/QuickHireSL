@@ -19,7 +19,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       );
       return;
     }
-    
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -70,32 +70,26 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 40),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
-                          spreadRadius: 1,
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: TextField(
-                      controller: _emailController,
-                      decoration: InputDecoration(
-                        hintText: 'Enter your email address',
-                        prefixIcon: Icon(
-                          Icons.email_outlined,
-                          color: Colors.grey[600],
-                        ),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.all(20),
+
+                  // Updated TextField
+                  TextField(
+                    controller: _emailController,
+                    decoration: InputDecoration(
+                      labelText: 'Username or Email',
+                      prefixIcon: const Icon(Icons.person_outline),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: const BorderSide(color: Colors.purple),
                       ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: const BorderSide(color: Colors.purple, width: 2),
+                      ),
+                      contentPadding:
+                          const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
                     ),
                   ),
+
                   const SizedBox(height: 15),
                   Text(
                     '* We will send you a message to reset your password',
@@ -142,6 +136,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     );
   }
 }
+
 
 
 
