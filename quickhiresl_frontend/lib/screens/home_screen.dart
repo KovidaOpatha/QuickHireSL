@@ -3,6 +3,7 @@ import '../models/job.dart';
 import '../services/job_service.dart';
 import '../services/auth_service.dart';
 import 'post_job_screen.dart';
+import 'job_details_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -145,15 +146,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Column(
+                    child: const Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const CircleAvatar(
+                        CircleAvatar(
                           backgroundColor: Colors.grey,
                           child: Icon(Icons.person, color: Colors.white),
                         ),
-                        const SizedBox(height: 5),
-                        const Text("⭐⭐⭐⭐⭐"),
+                        SizedBox(height: 5),
+                        Text("⭐⭐⭐⭐⭐"),
                       ],
                     ),
                   );
@@ -177,94 +178,95 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             Expanded(
-              child: ListView.builder(
-                itemCount: _isLoading ? 3 : _jobs.isEmpty ? 1 : _jobs.length,
-                itemBuilder: (context, index) {
-                  if (_isLoading) {
-                    return _buildJobShimmer();
-                  }
-                  
-                  if (_jobs.isEmpty) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: Text(
-                          'No jobs available at the moment',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      ),
-                    );
-                  }
-
-                  final job = _jobs[index];
-                  return GestureDetector(
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("Viewing ${job.title}"),
-                          duration: const Duration(milliseconds: 500),
-                        ),
-                      );
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(vertical: 8),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 50,
-                            height: 50,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(Icons.business, color: Colors.grey),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  job.title,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  '${job.company} • ${job.location}',
-                                  style: const TextStyle(color: Colors.grey),
-                                ),
-                                Text(
-                                  'LKR ${job.salary['min']} - ${job.salary['max']}',
-                                  style: const TextStyle(
-                                    color: Colors.green,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
+              child: _isLoading
+                  ? ListView.builder(
+                      itemCount: 3,
+                      itemBuilder: (context, index) {
+                        return _buildJobShimmer();
+                      },
+                    )
+                  : _jobs.isEmpty
+                      ? const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Text(
+                              'No jobs available at the moment',
+                              style: TextStyle(color: Colors.grey),
                             ),
                           ),
-                          const Icon(Icons.favorite_border),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
+                        )
+                      : ListView.builder(
+                          itemCount: _jobs.length,
+                          itemBuilder: (context, index) {
+                            final job = _jobs[index];
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => JobDetailsScreen(job: job),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.symmetric(vertical: 8),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 50,
+                                      height: 50,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[300],
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Icon(Icons.business, color: Colors.grey),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            job.title,
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          Text(
+                                            '${job.company} • ${job.location}',
+                                            style: const TextStyle(color: Colors.grey),
+                                          ),
+                                          Text(
+                                            'LKR ${job.salary['min']} - ${job.salary['max']}',
+                                            style: const TextStyle(
+                                              color: Colors.green,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Icon(Icons.favorite_border),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
             ),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _navigateToPostJob,
-        child: const Icon(Icons.add),
         backgroundColor: Colors.blue,
+        child: const Icon(Icons.add),
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const [

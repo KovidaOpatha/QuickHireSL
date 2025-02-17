@@ -4,7 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class AuthService {
   final String baseUrl = 'http://localhost:3000/api';
-  final storage = FlutterSecureStorage();
+  final storage = const FlutterSecureStorage();
 
   // Register user with optional profile image
   Future<Map<String, dynamic>> register(String email, String password, {String? base64Image}) async {

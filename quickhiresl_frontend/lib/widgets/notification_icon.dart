@@ -15,7 +15,7 @@ class NotificationIcon extends StatelessWidget {
     return Stack(
       children: [
         IconButton(
-          icon: Icon(Icons.notifications),
+          icon: const Icon(Icons.notifications),
           onPressed: onTap,
         ),
         if (notificationCount > 0)
@@ -23,14 +23,14 @@ class NotificationIcon extends StatelessWidget {
             right: 8,
             top: 8,
             child: Container(
-              padding: EdgeInsets.all(5),
-              decoration: BoxDecoration(
+              padding: const EdgeInsets.all(5),
+              decoration: const BoxDecoration(
                 color: Colors.red,
                 shape: BoxShape.circle,
               ),
               child: Text(
                 '$notificationCount',
-                style: TextStyle(color: Colors.white, fontSize: 12),
+                style: const TextStyle(color: Colors.white, fontSize: 12),
               ),
             ),
           ),

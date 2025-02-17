@@ -1,7 +1,32 @@
 import 'package:flutter/material.dart';
+import 'reset_password_screen.dart';
 
-class ForgotPasswordScreen extends StatelessWidget {
+class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({Key? key}) : super(key: key);
+
+  @override
+  _ForgotPasswordScreenState createState() => _ForgotPasswordScreenState();
+}
+
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+  final TextEditingController _emailController = TextEditingController();
+
+  void navigateToResetPassword() {
+    String email = _emailController.text.trim();
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter your email")),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ResetPasswordScreen(email: email),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,17 +49,9 @@ class ForgotPasswordScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 30),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.black12),
-                      color: Colors.white,
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.black),
-                      onPressed: () => Navigator.pop(context),
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.black),
+                    onPressed: () => Navigator.pop(context),
                   ),
                   const Text(
                     'Forgot\npassword?',
@@ -53,34 +70,29 @@ class ForgotPasswordScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 40),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.1),
-                          spreadRadius: 1,
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Enter your email address',
-                        prefixIcon: Icon(
-                          Icons.email_outlined,
-                          color: Colors.grey[600],
-                        ),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.all(20),
+
+                  // Updated TextField
+                  TextField(
+                    controller: _emailController,
+                    decoration: InputDecoration(
+                      labelText: 'Username or Email',
+                      prefixIcon: const Icon(Icons.person_outline),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: const BorderSide(color: Colors.purple),
                       ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(30),
+                        borderSide: const BorderSide(color: Colors.purple, width: 2),
+                      ),
+                      contentPadding:
+                          const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
                     ),
                   ),
+
                   const SizedBox(height: 15),
                   Text(
-                    '* We will send you a message to set or reset\nyour new password',
+                    '* We will send you a message to reset your password',
                     style: TextStyle(
                       color: Colors.grey[600],
                       fontSize: 12,
@@ -98,7 +110,7 @@ class ForgotPasswordScreen extends StatelessWidget {
                     width: double.infinity,
                     height: 55,
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: navigateToResetPassword,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.black,
                         shape: RoundedRectangleBorder(
@@ -106,7 +118,7 @@ class ForgotPasswordScreen extends StatelessWidget {
                         ),
                       ),
                       child: const Text(
-                        'send',
+                        'Send',
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.white,
@@ -124,3 +136,7 @@ class ForgotPasswordScreen extends StatelessWidget {
     );
   }
 }
+
+
+
+

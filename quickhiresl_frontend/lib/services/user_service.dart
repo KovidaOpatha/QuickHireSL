@@ -4,7 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class UserService {
   final String baseUrl = 'http://localhost:3000/api';
-  final storage = FlutterSecureStorage();
+  final storage = const FlutterSecureStorage();
 
   String getFullImageUrl(String? imagePath) {
     if (imagePath == null || imagePath.isEmpty) return '';

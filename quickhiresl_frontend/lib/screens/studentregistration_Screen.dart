@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'jobcategories_screen.dart';
 import '../services/auth_service.dart';
-import 'login_screen.dart';
 
 class StudentRegistrationScreen extends StatefulWidget {
   final String email;

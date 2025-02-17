@@ -10,14 +10,14 @@ class NotificationPopup {
         child: Material(
           color: Colors.transparent,
           child: Container(
-            padding: EdgeInsets.all(10),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: Colors.black87,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
               message,
-              style: TextStyle(color: Colors.white),
+              style: const TextStyle(color: Colors.white),
             ),
           ),
         ),
@@ -25,6 +25,6 @@ class NotificationPopup {
     );
 
     overlay.insert(overlayEntry);
-    Future.delayed(Duration(seconds: 3), () => overlayEntry.remove());
+    Future.delayed(const Duration(seconds: 3), () => overlayEntry.remove());
   }
 }
