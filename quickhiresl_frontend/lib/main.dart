@@ -5,6 +5,10 @@ import 'screens/signup_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/forgot_password_screen.dart';
+import 'screens/applications_screen.dart';
+import 'screens/chooserole_screen.dart';
+import 'screens/studentregistration_screen.dart';
+import 'screens/jobownerregistration_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -25,9 +29,21 @@ class MyApp extends StatelessWidget {
         '/': (context) => const SplashScreen(),
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignUpScreen(),
+        '/chooserole': (context) => const ChooseRoleScreen(
+              email: '', // These will be passed via arguments
+              password: '',
+            ),
+        '/studentregistration': (context) => const StudentRegistrationScreen(
+              email: '', // These will be passed via arguments
+              password: '',
+            ),
+        '/jobownerregistration': (context) => const JobOwnerRegistrationScreen(
+              email: '', // These will be passed via arguments
+              password: '',
+            ),
         '/home': (context) => const HomeScreen(),
+        '/applications': (context) => const ApplicationsScreen(),
         '/profile': (context) => const ProfileScreen(),
-        '/forgotpassword': (context) => const ForgotPasswordScreen(),
       },
       onGenerateRoute: (settings) {
         // Handle any undefined routes here

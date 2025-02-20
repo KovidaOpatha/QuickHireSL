@@ -31,34 +31,44 @@ class Job {
 
   factory Job.fromJson(Map<String, dynamic> json) {
     try {
+      if (json.isEmpty) {
+        return Job(
+          id: '',
+          title: '',
+          company: '',
+          location: '',
+          description: '',
+          requirements: [],
+          salary: {'min': 0, 'max': 0, 'currency': 'LKR'},
+          employmentType: '',
+          experienceLevel: '',
+          postedBy: '',
+          status: 'active',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+      }
+
       return Job(
-        // Handle both '_id' and 'id' cases
-        id: json['_id']?.toString() ?? json['id']?.toString(),
-        title: json['title'] as String,
-        company: json['company'] as String,
-        location: json['location'] as String,
-        description: json['description'] as String,
-        requirements: (json['requirements'] as List<dynamic>?)
-                ?.map((e) => e.toString())
-                .toList() ??
-            [],
+        id: json['_id'] ?? json['id'] ?? '',
+        title: json['title'] ?? '',
+        company: json['company'] ?? '',
+        location: json['location'] ?? '',
+        description: json['description'] ?? '',
+        requirements: List<String>.from(json['requirements'] ?? []),
         salary: Map<String, dynamic>.from(json['salary'] ?? {
           'min': 0,
           'max': 0,
           'currency': 'LKR'
         }),
-        employmentType: json['employmentType'] as String,
-        experienceLevel: json['experienceLevel'] as String,
+        employmentType: json['employmentType'] ?? '',
+        experienceLevel: json['experienceLevel'] ?? '',
         postedBy: json['postedBy'] is Map
             ? json['postedBy']['_id']?.toString()
-            : json['postedBy']?.toString(),
-        status: json['status'] as String? ?? 'active',
-        createdAt: json['createdAt'] != null
-            ? DateTime.parse(json['createdAt'].toString())
-            : null,
-        updatedAt: json['updatedAt'] != null
-            ? DateTime.parse(json['updatedAt'].toString())
-            : null,
+            : json['postedBy']?.toString() ?? '',
+        status: json['status'] ?? 'active',
+        createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
+        updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : DateTime.now(),
       );
     } catch (e) {
       print('Error parsing Job from JSON: $e');

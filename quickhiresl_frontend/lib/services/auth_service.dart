@@ -40,28 +40,41 @@ class AuthService {
   }
 
   Map<String, dynamic> _handleRegisterResponse(http.Response response) {
-    if (response.statusCode == 201) {
+    try {
       final responseData = jsonDecode(response.body);
-      final userId = responseData['userId'];
-      final profileImage = responseData['profileImage'];
+      print('[Register] Response data: $responseData');
 
-      _saveToStorage('user_id', userId);
-      if (profileImage != null) {
-        _saveToStorage('profile_image', profileImage);
+      if (response.statusCode == 201) {
+        final userId = responseData['userId'];
+        final profileImage = responseData['profileImage'];
+
+        // Store temporary registration data
+        _saveToStorage('temp_user_id', userId);
+        if (profileImage != null) {
+          _saveToStorage('temp_profile_image', profileImage);
+        }
+
+        return {
+          'success': true,
+          'userId': userId,
+          'profileImage': profileImage,
+          'message': responseData['message'] ?? 'Registration successful',
+        };
       }
 
+      final error = responseData['message'] ?? responseData['error'] ?? 'Registration failed';
+      print('[Register] Error: $error');
       return {
-        'success': true,
-        'userId': userId,
-        'profileImage': profileImage,
+        'success': false,
+        'error': error,
+      };
+    } catch (e) {
+      print('[Register] Error parsing response: $e');
+      return {
+        'success': false,
+        'error': 'Failed to process registration response',
       };
     }
-
-    final error = jsonDecode(response.body)['message'] ?? 'Registration failed';
-    return {
-      'success': false,
-      'error': error,
-    };
   }
 
   // Login user
@@ -92,6 +105,8 @@ class AuthService {
 
         await _saveToStorage('jwt_token', token);
         await _saveToStorage('user_id', userId);
+        await _saveToStorage('email', email);
+        await _saveToStorage('password', password); // Store password
         if (role != null) {
           await _saveToStorage('user_role', role);
         }
@@ -161,41 +176,40 @@ class AuthService {
     return await _getFromStorage('profile_image');
   }
 
+  // Get stored email
+  Future<String?> getEmail() async {
+    return await _getFromStorage('email');
+  }
+
+  // Get stored password
+  Future<String?> getPassword() async {
+    return await _getFromStorage('password');
+  }
+
   // Logout user by deleting all stored data
   Future<void> logout() async {
     await storage.delete(key: 'jwt_token');
     await storage.delete(key: 'user_id');
     await storage.delete(key: 'user_role');
     await storage.delete(key: 'profile_image');
+    await storage.delete(key: 'email');
+    await storage.delete(key: 'password'); // Delete password
     print('[Auth] Logged out and cleared all stored data');
   }
 
   // Update user role and details
-  Future<bool> updateRole(String userId, String role, Map<String, dynamic> details) async {
+  Future<Map<String, dynamic>> updateRole(String userId, String role, {Map<String, dynamic>? details}) async {
     try {
       print('[UpdateRole] Attempting to update role for user: $userId');
       print('[UpdateRole] Role to set: $role');
       print('[UpdateRole] Details: $details');
 
-      final token = await getToken();
-      print('[UpdateRole] Token retrieved from storage: ${token != null}');
-
-      if (token == null) {
-        print('[ERROR] No authentication token found');
-        return false;
-      }
-
-      final response = await http.put(
-        Uri.parse('$baseUrl/auth/updateRole'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
+      final response = await http.patch(
+        Uri.parse('$baseUrl/auth/role/$userId'),
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'userId': userId,
           'role': role,
-          'studentDetails': role == 'student' ? details : null,
-          'jobOwnerDetails': role == 'employer' ? details : null,
+          if (details != null) ...details,
         }),
       );
 
@@ -204,21 +218,24 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        await _saveToStorage('user_role', role);
-
-        if (responseData['token'] != null) {
-          await _saveToStorage('jwt_token', responseData['token']);
-        }
-
-        print('[UpdateRole] Role update successful');
-        return true;
+        return {
+          'success': true,
+          'role': responseData['role'],
+          'message': responseData['message'] ?? 'Role updated successfully',
+        };
       }
 
-      print('[ERROR] Role update failed');
-      return false;
+      final responseData = jsonDecode(response.body);
+      return {
+        'success': false,
+        'error': responseData['message'] ?? 'Failed to update role',
+      };
     } catch (e) {
-      print('[ERROR] Role update error: $e');
-      return false;
+      print('[ERROR] Update role error: $e');
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
     }
   }
 }

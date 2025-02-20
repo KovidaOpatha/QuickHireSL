@@ -65,6 +65,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
       setState(() => _isLoading = true);
 
       try {
+        // Get the current token
         final token = await _authService.getToken();
         
         if (token == null) {
@@ -81,37 +82,27 @@ class _PostJobScreenState extends State<PostJobScreen> {
           'company': _company,
           'location': _location,
           'description': _description,
-          'requirements': _requirements,
+          'employmentType': _employmentType,
+          'experienceLevel': _experienceLevel,
           'salary': {
             'min': _salaryMin,
             'max': _salaryMax,
-            'currency': 'LKR'
           },
-          'employmentType': _employmentType,
-          'experienceLevel': _experienceLevel,
+          'requirements': _requirements,
         };
 
-        await _jobService.createJob(jobData, token);
-        
+        final job = await _jobService.createJob(jobData, token);
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Job posted successfully!'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
+            const SnackBar(content: Text('Job posted successfully!')),
           );
-          await Future.delayed(const Duration(milliseconds: 500));
-          Navigator.of(context).pop(true);
+          Navigator.pop(context, true); // Return true to indicate success
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error posting job: $e'),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 3),
-            ),
+            SnackBar(content: Text('Error posting job: ${e.toString()}')),
           );
         }
       } finally {

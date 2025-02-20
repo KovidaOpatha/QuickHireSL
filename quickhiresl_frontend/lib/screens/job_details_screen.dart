@@ -1,10 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/job.dart';
+import '../services/job_service.dart';
+import 'job_application_screen.dart';
 
-class JobDetailsScreen extends StatelessWidget {
+class JobDetailsScreen extends StatefulWidget {
   final Job job;
 
   const JobDetailsScreen({Key? key, required this.job}) : super(key: key);
+
+  @override
+  State<JobDetailsScreen> createState() => _JobDetailsScreenState();
+}
+
+class _JobDetailsScreenState extends State<JobDetailsScreen> {
+  final JobService _jobService = JobService();
+  final _storage = const FlutterSecureStorage();
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +66,7 @@ class JobDetailsScreen extends StatelessWidget {
                 _buildJobHeader(),
                 const SizedBox(height: 30),
                 _buildSectionTitle('Description'),
-                Text(job.description, style: const TextStyle(fontSize: 16)),
+                Text(widget.job.description, style: const TextStyle(fontSize: 16)),
                 const SizedBox(height: 20),
                 _buildSectionTitle('Requirements'),
                 _buildRequirementsList(),
@@ -80,7 +91,7 @@ class JobDetailsScreen extends StatelessWidget {
             width: double.infinity, height: 150, fit: BoxFit.cover),
         const SizedBox(height: 8),
         Text(
-          job.title,
+          widget.job.title,
           style: const TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -89,7 +100,7 @@ class JobDetailsScreen extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          job.company,
+          widget.job.company,
           style: const TextStyle(fontSize: 18, color: Colors.black87),
         ),
         const SizedBox(height: 8),
@@ -98,7 +109,7 @@ class JobDetailsScreen extends StatelessWidget {
             const Icon(Icons.location_on, size: 16, color: Colors.black),
             const SizedBox(width: 4),
             Text(
-              job.location,
+              widget.job.location,
               style: const TextStyle(fontSize: 16, color: Colors.black87),
             ),
           ],
@@ -120,7 +131,7 @@ class JobDetailsScreen extends StatelessWidget {
 
   Widget _buildRequirementsList() {
     return Column(
-      children: job.requirements
+      children: widget.job.requirements
           .map(
             (req) => Padding(
               padding: const EdgeInsets.symmetric(vertical: 4),
@@ -142,11 +153,11 @@ class JobDetailsScreen extends StatelessWidget {
   Widget _buildJobDetails() {
     return Column(
       children: [
-        _buildDetailRow(Icons.work, 'Employment Type', job.employmentType),
+        _buildDetailRow(Icons.work, 'Employment Type', widget.job.employmentType),
         _buildDetailRow(
-            Icons.trending_up, 'Experience Level', job.experienceLevel),
+            Icons.trending_up, 'Experience Level', widget.job.experienceLevel),
         _buildDetailRow(Icons.attach_money, 'Salary Range',
-            '${job.salary['currency']} ${job.salary['min']} - ${job.salary['max']}'),
+            '${widget.job.salary['currency']} ${widget.job.salary['min']} - ${widget.job.salary['max']}'),
       ],
     );
   }
@@ -185,21 +196,62 @@ class JobDetailsScreen extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Application feature coming soon!')),
-          );
+        onPressed: () async {
+          try {
+            final token = await _storage.read(key: 'jwt_token');
+            final email = await _storage.read(key: 'email');
+            
+            if (token == null || email == null) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please login to apply')),
+                );
+              }
+              return;
+            }
+
+            if (context.mounted) {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => JobApplicationScreen(
+                    jobTitle: widget.job.title,
+                    salary: '${widget.job.salary['currency']} ${widget.job.salary['min']} - ${widget.job.salary['max']}',
+                    email: email,
+                  ),
+                ),
+              );
+
+              if (result != null) {
+                await _jobService.applyForJob(widget.job.id!, result, token); 
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Application submitted successfully!')),
+                  );
+                  Navigator.pop(context); // Go back to jobs list
+                }
+              }
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Failed to apply: $e')),
+              );
+            }
+          }
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.black,
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         child: const Text(
           'Apply Now',
           style: TextStyle(
-              fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
       ),
     );

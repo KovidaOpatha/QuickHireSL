@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/config.dart';
 import '../models/job.dart';
+import '../models/application.dart';
 
 class JobService {
   final String baseUrl = '${Config.apiUrl}/jobs';
@@ -23,19 +24,19 @@ class JobService {
       print('Response status: ${response.statusCode}');
       print('Response body: ${response.body}');
 
-      if (response.statusCode == 201) {
-        final responseData = json.decode(response.body);
-        if (responseData['success'] == true && responseData['data'] != null) {
-          return Job.fromJson(responseData['data']);
-        } else {
-          throw Exception('Invalid response format');
-        }
+      final responseData = json.decode(response.body);
+
+      if (response.statusCode == 201 && responseData['success'] == true) {
+        return Job.fromJson(responseData['data']);
       } else {
-        throw Exception('Failed to create job: ${response.body}');
+        final message = responseData['message'] ?? 'Failed to create job';
+        throw Exception(message);
       }
     } catch (e) {
-      print('Error in createJob: $e');
-      rethrow;
+      if (e is Exception) {
+        rethrow;
+      }
+      throw Exception('Failed to create job: $e');
     }
   }
 
@@ -138,6 +139,91 @@ class JobService {
       }
     } catch (e) {
       print('Error in deleteJob: $e');
+      rethrow;
+    }
+  }
+
+  // Application related methods
+  Future<void> applyForJob(String jobId, String coverLetter, String token) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${Config.apiUrl}/applications'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({
+          'jobId': jobId,
+          'coverLetter': coverLetter,
+        }),
+      );
+
+      print('Apply response: ${response.statusCode} - ${response.body}');
+
+      if (response.statusCode != 201) {
+        throw Exception('Failed to apply for job: ${response.body}');
+      }
+    } catch (e) {
+      print('Error applying for job: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<Application>> getJobOwnerApplications(String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/applications/owner'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((json) => Application.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load applications');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> updateApplicationStatus(String applicationId, String status, String token) async {
+    try {
+      final response = await http.patch(
+        Uri.parse('$baseUrl/api/applications/$applicationId/status'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({'status': status}),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to update application status');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<Application>> getMyApplications(String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${Config.apiUrl}/applications/my-applications'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.map((json) => Application.fromJson(json)).toList();
+      } else {
+        throw Exception('Failed to load my applications');
+      }
+    } catch (e) {
       rethrow;
     }
   }

@@ -149,8 +149,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         _buildStatColumn('Rating', _userData?['rating']?.toString() ?? '0'),
-                        _buildStatColumn('Completed Jobs', _userData?['completedJobs']?.toString() ?? '0'),
+                        _buildStatColumn('Jobs', _userData?['jobsCount']?.toString() ?? '0'),
+                        _buildStatColumn('Experience', _userData?['experience']?.toString() ?? '0'),
                       ],
+                    ),
+                  ),
+                  
+                  // Applications Button
+                  const SizedBox(height: 24),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/applications');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF98C9C5),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.work, color: Colors.black),
+                          SizedBox(width: 8),
+                          Text(
+                            'View My Applications',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   

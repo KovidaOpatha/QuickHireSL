@@ -54,11 +54,7 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
 
   void _submitApplication() {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text("Application Sent!\nName: ${fullNameController.text}")),
-      );
+      Navigator.pop(context, messageController.text);
     }
   }
 

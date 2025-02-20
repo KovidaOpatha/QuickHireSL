@@ -52,19 +52,21 @@ class _JobOwnerRegistrationScreenState extends State<JobOwnerRegistrationScreen>
 
         // Prepare job owner details
         final jobOwnerDetails = {
-          'shopName': shopNameController.text,
-          'shopLocation': shopLocationController.text,
-          'shopRegisterNo': shopRegNoController.text,
+          'jobOwnerDetails': {
+            'shopName': shopNameController.text,
+            'shopLocation': shopLocationController.text,
+            'shopRegisterNo': shopRegNoController.text,
+          }
         };
 
         // Update role and details
-        final success = await _authService.updateRole(
+        final response = await _authService.updateRole(
           userId,
-          'employer',
-          jobOwnerDetails,
+          'jobowner',
+          details: jobOwnerDetails,
         );
 
-        if (success) {
+        if (response['success']) {
           // After successful role update, refresh the token by logging in again
           final refreshResult = await _authService.login(widget.email, widget.password);
           

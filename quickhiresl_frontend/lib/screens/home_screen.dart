@@ -4,6 +4,7 @@ import '../services/job_service.dart';
 import '../services/auth_service.dart';
 import 'post_job_screen.dart';
 import 'job_details_screen.dart';
+import 'profile_screen.dart'; // Add this line
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -26,6 +27,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadJobs() async {
     try {
+      setState(() {
+        _isLoading = true;
+      });
+      
       final jobs = await _jobService.getJobs();
       if (mounted) {
         setState(() {
@@ -34,10 +39,14 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       }
     } catch (e) {
+      print('Error loading jobs: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading jobs: $e')),
+        );
       }
     }
   }
@@ -59,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     if (result == true) {
-      _loadJobs();
+      await _loadJobs(); // Reload jobs after successful posting
     }
   }
 
@@ -81,7 +90,12 @@ class _HomeScreenState extends State<HomeScreen> {
         centerTitle: true,
         actions: [
           GestureDetector(
-            onTap: () => Navigator.pushNamed(context, '/profile'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfileScreen()),
+              );
+            },
             child: const CircleAvatar(
               backgroundColor: Colors.white,
               child: Icon(Icons.person, color: Colors.black),
