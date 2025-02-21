@@ -3,6 +3,7 @@ import 'package:table_calendar/table_calendar.dart';
 import '../services/user_service.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
+import 'job_owner_dashboard.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -188,6 +189,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                   ),
+
+                  // Job Owner Dashboard Button (only show for job owners)
+                  if (_userData?['role'] == 'jobowner') ...[
+                    const SizedBox(height: 24),
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const JobOwnerDashboard(),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF98C9C5),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.dashboard, color: Colors.black),
+                            SizedBox(width: 8),
+                            Text(
+                              'Job Owner Dashboard',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                   
                   // Calendar
                   const SizedBox(height: 24),

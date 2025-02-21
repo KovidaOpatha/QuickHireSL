@@ -19,6 +19,7 @@ dependencies:
   http_parser: ^4.0.2
   shared_preferences: ^2.5.1
   geolocator: ^9.0.2
+  provider: ^6.1.1
 
 dev_dependencies:
   flutter_test:

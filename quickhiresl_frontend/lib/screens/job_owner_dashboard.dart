@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as provider;
 import '../services/job_service.dart';
 import '../models/application.dart';
+import 'applicant_details_screen.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class JobOwnerDashboard extends StatefulWidget {
   const JobOwnerDashboard({Key? key}) : super(key: key);
@@ -13,6 +15,7 @@ class JobOwnerDashboard extends StatefulWidget {
 class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
   List<Application> _applications = [];
   bool _isLoading = true;
+  final _storage = const FlutterSecureStorage();
 
   @override
   void initState() {
@@ -22,29 +25,54 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
 
   Future<void> _loadApplications() async {
     try {
-      final jobService = Provider.of<JobService>(context, listen: false);
-      final applications = await jobService.getJobOwnerApplications();
+      final token = await _storage.read(key: 'token');
+      if (token == null) {
+        setState(() => _isLoading = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please login again')),
+          );
+          return;
+        }
+      }
+
+      final jobService = provider.Provider.of<JobService>(context, listen: false);
+      final applications = await jobService.getJobOwnerApplications(token!);
       setState(() {
         _applications = applications;
         _isLoading = false;
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to load applications: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load applications: $e')),
+        );
+      }
     }
   }
 
   Future<void> _updateApplicationStatus(String applicationId, String status) async {
     try {
-      final jobService = Provider.of<JobService>(context, listen: false);
-      await jobService.updateApplicationStatus(applicationId, status);
+      final token = await _storage.read(key: 'token');
+      if (token == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please login again')),
+          );
+          return;
+        }
+      }
+
+      final jobService = provider.Provider.of<JobService>(context, listen: false);
+      await jobService.updateApplicationStatus(applicationId, status, token!);
       await _loadApplications(); // Reload the list
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update status: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update status: $e')),
+        );
+      }
     }
   }
 
@@ -70,71 +98,54 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
                     final application = _applications[index];
                     return Card(
                       margin: const EdgeInsets.all(8.0),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.all(16.0),
+                        title: Text(
+                          'Job: ${application.job.title}',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Job: ${application.job.title}',
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
                             const SizedBox(height: 8),
                             Text(
                               'Applicant: ${application.applicant.name}',
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 4),
                             Text(
                               'Applied on: ${application.appliedAt.toString().split(' ')[0]}',
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 4),
                             Text(
-                              'Cover Letter:',
-                              style: Theme.of(context).textTheme.titleSmall,
-                            ),
-                            Text(application.coverLetter),
-                            const SizedBox(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                ElevatedButton(
-                                  onPressed: application.status == 'pending'
-                                      ? () => _updateApplicationStatus(
-                                          application.id, 'accepted')
-                                      : null,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green,
-                                  ),
-                                  child: const Text('Accept'),
-                                ),
-                                ElevatedButton(
-                                  onPressed: application.status == 'pending'
-                                      ? () => _updateApplicationStatus(
-                                          application.id, 'rejected')
-                                      : null,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.red,
-                                  ),
-                                  child: const Text('Reject'),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Center(
-                              child: Text(
-                                'Status: ${application.status.toUpperCase()}',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: application.status == 'accepted'
-                                      ? Colors.green
-                                      : application.status == 'rejected'
-                                          ? Colors.red
-                                          : Colors.orange,
-                                ),
+                              'Status: ${application.status.toUpperCase()}',
+                              style: TextStyle(
+                                color: application.status == 'accepted'
+                                    ? Colors.green
+                                    : application.status == 'declined'
+                                        ? Colors.red
+                                        : Colors.orange,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ],
+                        ),
+                        trailing: ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ApplicantDetailsScreen(
+                                  application: application,
+                                ),
+                              ),
+                            ).then((result) {
+                              if (result == true) {
+                                _loadApplications();
+                              }
+                            });
+                          },
+                          child: const Text('View Details'),
                         ),
                       ),
                     );

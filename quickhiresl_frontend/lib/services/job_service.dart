@@ -1,10 +1,11 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/config.dart';
 import '../models/job.dart';
 import '../models/application.dart';
 
-class JobService {
+class JobService extends ChangeNotifier {
   final String baseUrl = '${Config.apiUrl}/jobs';
 
   Future<Job> createJob(Map<String, dynamic> jobData, String token) async {
