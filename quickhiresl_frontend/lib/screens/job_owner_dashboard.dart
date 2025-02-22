@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart' as provider;
 import '../services/job_service.dart';
+import '../services/auth_service.dart';
 import '../models/application.dart';
 import 'applicant_details_screen.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class JobOwnerDashboard extends StatefulWidget {
   const JobOwnerDashboard({Key? key}) : super(key: key);
@@ -15,7 +15,7 @@ class JobOwnerDashboard extends StatefulWidget {
 class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
   List<Application> _applications = [];
   bool _isLoading = true;
-  final _storage = const FlutterSecureStorage();
+  final _authService = AuthService();
 
   @override
   void initState() {
@@ -25,12 +25,15 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
 
   Future<void> _loadApplications() async {
     try {
-      final token = await _storage.read(key: 'token');
+      final token = await _authService.getToken();
+      print('[DEBUG] Retrieved token: $token');
       if (token == null) {
         setState(() => _isLoading = false);
         if (mounted) {
+          // Navigate to login screen when token is not found
+          Navigator.of(context).pushReplacementNamed('/login');
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please login again')),
+            const SnackBar(content: Text('Please login to continue')),
           );
           return;
         }
@@ -54,11 +57,12 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
 
   Future<void> _updateApplicationStatus(String applicationId, String status) async {
     try {
-      final token = await _storage.read(key: 'token');
+      final token = await _authService.getToken();
       if (token == null) {
         if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/login');
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please login again')),
+            const SnackBar(content: Text('Please login to continue')),
           );
           return;
         }

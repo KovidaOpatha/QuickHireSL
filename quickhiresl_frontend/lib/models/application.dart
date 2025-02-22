@@ -22,25 +22,54 @@ class Application {
 
   factory Application.fromJson(Map<String, dynamic> json) {
     try {
+      print('Parsing application JSON: ${json['_id']}');
+      
+      // Handle job data
+      Job jobData;
+      if (json['job'] != null) {
+        if (json['job'] is Map<String, dynamic>) {
+          jobData = Job.fromJson(json['job']);
+        } else {
+          print('Warning: job data is not a map: ${json['job']}');
+          jobData = Job.fromJson({});
+        }
+      } else {
+        jobData = Job.fromJson({});
+      }
+
+      // Handle applicant data
+      User applicantData;
+      if (json['applicant'] != null) {
+        if (json['applicant'] is Map<String, dynamic>) {
+          applicantData = User.fromJson(json['applicant']);
+        } else {
+          print('Warning: applicant data is not a map: ${json['applicant']}');
+          applicantData = User.fromJson({});
+        }
+      } else {
+        applicantData = User.fromJson({});
+      }
+
+      // Handle job owner data
+      User jobOwnerData;
+      if (json['jobOwner'] != null) {
+        if (json['jobOwner'] is Map<String, dynamic>) {
+          jobOwnerData = User.fromJson(json['jobOwner']);
+        } else {
+          print('Warning: jobOwner data is not a map: ${json['jobOwner']}');
+          jobOwnerData = User.fromJson({});
+        }
+      } else {
+        jobOwnerData = User.fromJson({});
+      }
+
       return Application(
-        id: json['_id'] ?? '',
-        job: json['job'] != null 
-          ? (json['job'] is Map<String, dynamic> 
-              ? Job.fromJson(json['job']) 
-              : Job.fromJson(json['job'].toJson()))
-          : Job.fromJson({}),
-        applicant: json['applicant'] != null 
-          ? (json['applicant'] is Map<String, dynamic> 
-              ? User.fromJson(json['applicant']) 
-              : User.fromJson(json['applicant'].toJson()))
-          : User.fromJson({}),
-        jobOwner: json['jobOwner'] != null 
-          ? (json['jobOwner'] is Map<String, dynamic> 
-              ? User.fromJson(json['jobOwner']) 
-              : User.fromJson(json['jobOwner'].toJson()))
-          : User.fromJson({}),
-        status: json['status'] ?? 'pending',
-        coverLetter: json['coverLetter'] ?? '',
+        id: json['_id']?.toString() ?? '',
+        job: jobData,
+        applicant: applicantData,
+        jobOwner: jobOwnerData,
+        status: json['status']?.toString() ?? 'pending',
+        coverLetter: json['coverLetter']?.toString() ?? '',
         appliedAt: json['appliedAt'] != null 
           ? DateTime.parse(json['appliedAt']) 
           : (json['createdAt'] != null 

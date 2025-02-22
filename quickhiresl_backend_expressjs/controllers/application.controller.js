@@ -42,12 +42,46 @@ const applicationController = {
     getJobOwnerApplications: async (req, res) => {
         try {
             const applications = await Application.find({ jobOwner: req.user._id })
-                .populate('job')
-                .populate('applicant', '-password')
+                .populate({
+                    path: 'job',
+                    populate: {
+                        path: 'postedBy',
+                        select: '-password'
+                    }
+                })
+                .populate({
+                    path: 'applicant',
+                    select: '-password'
+                })
+                .populate({
+                    path: 'jobOwner',
+                    select: '-password'
+                })
                 .sort({ createdAt: -1 });
-            res.json(applications);
+
+            // Transform the data to match the expected format
+            const transformedApplications = applications.map(app => ({
+                _id: app._id,
+                job: app.job,
+                applicant: app.applicant,
+                jobOwner: app.jobOwner,
+                status: app.status,
+                coverLetter: app.coverLetter,
+                appliedAt: app.appliedAt,
+                createdAt: app.createdAt,
+                updatedAt: app.updatedAt
+            }));
+
+            res.json({
+                success: true,
+                data: transformedApplications
+            });
         } catch (error) {
-            res.status(500).json({ message: error.message });
+            console.error('Error in getJobOwnerApplications:', error);
+            res.status(500).json({ 
+                success: false,
+                message: error.message 
+            });
         }
     },
 

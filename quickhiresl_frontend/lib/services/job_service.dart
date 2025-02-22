@@ -173,27 +173,44 @@ class JobService extends ChangeNotifier {
   Future<List<Application>> getJobOwnerApplications(String token) async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/api/applications/owner'),
+        Uri.parse('${Config.apiUrl}/applications/owner'),
         headers: {
           'Authorization': 'Bearer $token',
         },
       );
 
+      print('[DEBUG] Response status: ${response.statusCode}');
+      print('[DEBUG] Response body: ${response.body}');
+
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
-        return data.map((json) => Application.fromJson(json)).toList();
+        final responseData = json.decode(response.body);
+        
+        // Handle both old and new response formats
+        if (responseData is List) {
+          // Old format - direct array
+          return responseData.map((json) => Application.fromJson(json)).toList();
+        } else if (responseData['data'] != null) {
+          // New format - wrapped in success/data
+          final List<dynamic> applicationsJson = responseData['data'];
+          return applicationsJson.map((json) => Application.fromJson(json)).toList();
+        } else {
+          throw Exception('Invalid response format');
+        }
       } else {
-        throw Exception('Failed to load applications');
+        final responseData = json.decode(response.body);
+        throw Exception(responseData['message'] ?? 'Failed to load applications');
       }
     } catch (e) {
+      print('Error in getJobOwnerApplications: $e');
       rethrow;
     }
   }
 
   Future<void> updateApplicationStatus(String applicationId, String status, String token) async {
     try {
+      print('[DEBUG] Updating application status: ID=$applicationId, status=$status');
       final response = await http.patch(
-        Uri.parse('$baseUrl/api/applications/$applicationId/status'),
+        Uri.parse('${Config.apiUrl}/applications/$applicationId/status'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -201,10 +218,14 @@ class JobService extends ChangeNotifier {
         body: json.encode({'status': status}),
       );
 
+      print('[DEBUG] Update status response: ${response.statusCode} - ${response.body}');
+
       if (response.statusCode != 200) {
-        throw Exception('Failed to update application status');
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Failed to update application status');
       }
     } catch (e) {
+      print('[ERROR] Failed to update application status: $e');
       rethrow;
     }
   }
