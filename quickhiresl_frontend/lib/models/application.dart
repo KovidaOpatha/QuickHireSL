@@ -1,6 +1,34 @@
 import 'package:quickhiresl_frontend/models/job.dart';
 import 'package:quickhiresl_frontend/models/user.dart';
 
+class CompletionDetails {
+  final String? requestedBy;
+  final DateTime? requestedAt;
+  final DateTime? confirmedAt;
+
+  CompletionDetails({
+    this.requestedBy,
+    this.requestedAt,
+    this.confirmedAt,
+  });
+
+  factory CompletionDetails.fromJson(Map<String, dynamic> json) {
+    return CompletionDetails(
+      requestedBy: json['requestedBy'],
+      requestedAt: json['requestedAt'] != null ? DateTime.parse(json['requestedAt']) : null,
+      confirmedAt: json['confirmedAt'] != null ? DateTime.parse(json['confirmedAt']) : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'requestedBy': requestedBy,
+      'requestedAt': requestedAt?.toIso8601String(),
+      'confirmedAt': confirmedAt?.toIso8601String(),
+    };
+  }
+}
+
 class Application {
   final String id;
   final Job job;
@@ -9,6 +37,7 @@ class Application {
   final String status;
   final String coverLetter;
   final DateTime appliedAt;
+  final CompletionDetails? completionDetails;
 
   Application({
     required this.id,
@@ -18,11 +47,14 @@ class Application {
     required this.status,
     required this.coverLetter,
     required this.appliedAt,
+    this.completionDetails,
   });
 
   factory Application.fromJson(Map<String, dynamic> json) {
     try {
       print('Parsing application JSON: ${json['_id']}');
+      print('Full JSON data: $json');
+      print('Completion details from JSON: ${json['completionDetails']}');
       
       // Handle job data
       Job jobData;
@@ -75,6 +107,12 @@ class Application {
           : (json['createdAt'] != null 
               ? DateTime.parse(json['createdAt']) 
               : DateTime.now()),
+        completionDetails: json['completionDetails'] != null
+          ? (() {
+              print('Parsing completion details: ${json['completionDetails']}');
+              return CompletionDetails.fromJson(json['completionDetails']);
+            })()
+          : null,
       );
     } catch (e) {
       print('Error parsing application: $e');
@@ -92,6 +130,7 @@ class Application {
       'status': status,
       'coverLetter': coverLetter,
       'appliedAt': appliedAt.toIso8601String(),
+      'completionDetails': completionDetails?.toJson(),
     };
   }
 }

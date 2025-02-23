@@ -23,4 +23,10 @@ router.patch('/:applicationId/status', authMiddleware, applicationController.upd
 // Get applicant's applications
 router.get('/my-applications', authMiddleware, applicationController.getApplicantApplications);
 
+// Request job completion
+router.post('/:applicationId/request-completion', authMiddleware, applicationController.requestCompletion);
+
+// Confirm job completion
+router.post('/:applicationId/confirm-completion', authMiddleware, applicationController.confirmCompletion);
+
 module.exports = router;

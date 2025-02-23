@@ -6,15 +6,15 @@ import '../models/job.dart';
 import '../models/application.dart';
 
 class JobService extends ChangeNotifier {
-  final String baseUrl = '${Config.apiUrl}/jobs';
+  final String _baseUrl = '${Config.apiUrl}/jobs';
 
   Future<Job> createJob(Map<String, dynamic> jobData, String token) async {
     try {
-      print('Making request to: $baseUrl');
+      print('Making request to: $_baseUrl');
       print('Request data: ${json.encode(jobData)}');
       
       final response = await http.post(
-        Uri.parse(baseUrl),
+        Uri.parse(_baseUrl),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -59,8 +59,11 @@ class JobService extends ChangeNotifier {
       if (search != null) queryParams['search'] = search;
 
       final response = await http.get(
-        Uri.parse(baseUrl).replace(queryParameters: queryParams),
+        Uri.parse(_baseUrl).replace(queryParameters: queryParams),
       );
+
+      print('Jobs response: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
@@ -81,7 +84,10 @@ class JobService extends ChangeNotifier {
 
   Future<Job> getJob(String id) async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/$id'));
+      final response = await http.get(Uri.parse('$_baseUrl/$id'));
+
+      print('Job response: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
@@ -102,13 +108,16 @@ class JobService extends ChangeNotifier {
   Future<Job> updateJob(String id, Map<String, dynamic> jobData, String token) async {
     try {
       final response = await http.put(
-        Uri.parse('$baseUrl/$id'),
+        Uri.parse('$_baseUrl/$id'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
         body: json.encode(jobData),
       );
+
+      print('Update job response: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
@@ -129,11 +138,14 @@ class JobService extends ChangeNotifier {
   Future<void> deleteJob(String id, String token) async {
     try {
       final response = await http.delete(
-        Uri.parse('$baseUrl/$id'),
+        Uri.parse('$_baseUrl/$id'),
         headers: {
           'Authorization': 'Bearer $token',
         },
       );
+
+      print('Delete job response: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
       if (response.statusCode != 200) {
         throw Exception('Failed to delete job: ${response.body}');
@@ -159,7 +171,8 @@ class JobService extends ChangeNotifier {
         }),
       );
 
-      print('Apply response: ${response.statusCode} - ${response.body}');
+      print('Apply response: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
       if (response.statusCode != 201) {
         throw Exception('Failed to apply for job: ${response.body}');
@@ -176,29 +189,27 @@ class JobService extends ChangeNotifier {
         Uri.parse('${Config.apiUrl}/applications/owner'),
         headers: {
           'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
         },
       );
 
-      print('[DEBUG] Response status: ${response.statusCode}');
-      print('[DEBUG] Response body: ${response.body}');
+      print('Job owner applications response: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
-        final responseData = json.decode(response.body);
+        final Map<String, dynamic> responseData = json.decode(response.body);
         
-        // Handle both old and new response formats
-        if (responseData is List) {
-          // Old format - direct array
-          return responseData.map((json) => Application.fromJson(json)).toList();
-        } else if (responseData['data'] != null) {
-          // New format - wrapped in success/data
+        // Check if the response has a data field that contains the applications
+        if (responseData.containsKey('data')) {
           final List<dynamic> applicationsJson = responseData['data'];
+          print('Parsed applications: $applicationsJson');
           return applicationsJson.map((json) => Application.fromJson(json)).toList();
         } else {
-          throw Exception('Invalid response format');
+          print('Response data structure: $responseData');
+          throw Exception('Invalid response format: missing data field');
         }
       } else {
-        final responseData = json.decode(response.body);
-        throw Exception(responseData['message'] ?? 'Failed to load applications');
+        throw Exception('Failed to load applications: ${response.statusCode}');
       }
     } catch (e) {
       print('Error in getJobOwnerApplications: $e');
@@ -218,7 +229,8 @@ class JobService extends ChangeNotifier {
         body: json.encode({'status': status}),
       );
 
-      print('[DEBUG] Update status response: ${response.statusCode} - ${response.body}');
+      print('[DEBUG] Update status response: ${response.statusCode}');
+      print('[DEBUG] Response body: ${response.body}');
 
       if (response.statusCode != 200) {
         final errorData = json.decode(response.body);
@@ -239,6 +251,9 @@ class JobService extends ChangeNotifier {
         },
       );
 
+      print('My applications response: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         return data.map((json) => Application.fromJson(json)).toList();
@@ -246,6 +261,55 @@ class JobService extends ChangeNotifier {
         throw Exception('Failed to load my applications');
       }
     } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> requestCompletion(String applicationId, String requestedBy, String token) async {
+    try {
+      print('[DEBUG] Requesting completion: ID=$applicationId, requestedBy=$requestedBy');
+      final response = await http.post(
+        Uri.parse('${Config.apiUrl}/applications/$applicationId/request-completion'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({'requestedBy': requestedBy}),
+      );
+
+      print('[DEBUG] Request completion response: ${response.statusCode}');
+      print('[DEBUG] Response body: ${response.body}');
+
+      if (response.statusCode != 200) {
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Failed to request completion');
+      }
+    } catch (e) {
+      print('[ERROR] Failed to request completion: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> confirmCompletion(String applicationId, String token) async {
+    try {
+      print('[DEBUG] Confirming completion: ID=$applicationId');
+      final response = await http.post(
+        Uri.parse('${Config.apiUrl}/applications/$applicationId/confirm-completion'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('[DEBUG] Confirm completion response: ${response.statusCode}');
+      print('[DEBUG] Response body: ${response.body}');
+
+      if (response.statusCode != 200) {
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Failed to confirm completion');
+      }
+    } catch (e) {
+      print('[ERROR] Failed to confirm completion: $e');
       rethrow;
     }
   }

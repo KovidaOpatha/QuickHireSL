@@ -31,8 +31,21 @@
 
   <title>quickhiresl_frontend</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- This script adds the flutter initialization JS code -->
+  <script src="flutter.js" defer></script>
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+  <script>
+    window.addEventListener('load', async function(ev) {
+      // Download main.dart.js
+      await _flutter.loader.loadEntrypoint({
+        onEntrypointLoaded: async function(engineInitializer) {
+          let appRunner = await engineInitializer.initializeEngine();
+          await appRunner.runApp();
+        }
+      });
+    });
+  </script>
 </body>
 </html>

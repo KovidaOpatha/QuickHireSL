@@ -104,22 +104,34 @@ const applicationController = {
             const { applicationId } = req.params;
             const { status } = req.body;
 
-            const application = await Application.findById(applicationId);
-            
+            const application = await Application.findById(applicationId)
+                .populate('job')
+                .populate('applicant', '-password')
+                .populate('jobOwner', '-password');
+
             if (!application) {
                 return res.status(404).json({ message: 'Application not found' });
             }
 
-            // Ensure only the job owner can update the status
-            if (application.jobOwner.toString() !== req.user._id.toString()) {
-                return res.status(403).json({ message: 'Not authorized' });
+            // Check if the application is completed
+            if (application.status === 'completed') {
+                return res.status(400).json({ message: 'Cannot modify a completed application' });
+            }
+
+            // Check if user is the job owner
+            if (application.jobOwner._id.toString() !== req.user._id.toString()) {
+                return res.status(403).json({ message: 'Only job owner can update application status' });
             }
 
             application.status = status;
             await application.save();
 
-            res.json(application);
+            res.json({
+                success: true,
+                data: application
+            });
         } catch (error) {
+            console.error('Error updating application status:', error);
             res.status(500).json({ message: error.message });
         }
     },
@@ -142,7 +154,117 @@ const applicationController = {
         } catch (error) {
             res.status(500).json({ message: error.message });
         }
-    }
+    },
+
+    // Request job completion
+    requestCompletion: async (req, res) => {
+        try {
+            const { applicationId } = req.params;
+
+            const application = await Application.findById(applicationId)
+                .populate('job')
+                .populate('applicant', '-password')
+                .populate('jobOwner', '-password');
+
+            if (!application) {
+                return res.status(404).json({ message: 'Application not found' });
+            }
+
+            // Check if the user is either the job owner or the applicant
+            const isJobOwner = application.jobOwner._id.toString() === req.user._id.toString();
+            const isApplicant = application.applicant._id.toString() === req.user._id.toString();
+
+            if (!isJobOwner && !isApplicant) {
+                return res.status(403).json({ message: 'Not authorized' });
+            }
+
+            // Check if the application is already completed
+            if (application.status === 'completed') {
+                return res.status(400).json({ message: 'This application is already completed' });
+            }
+
+            // Check if the application is in an acceptable state for completion
+            if (application.status !== 'accepted') {
+                return res.status(400).json({ message: 'Application must be accepted before requesting completion' });
+            }
+
+            // Check if completion is already requested
+            if (application.completionDetails && application.completionDetails.requestedBy) {
+                return res.status(400).json({ message: 'Completion has already been requested' });
+            }
+
+            // Update application status and completion details
+            application.status = 'completion_requested';
+            application.completionDetails = {
+                requestedBy: isJobOwner ? 'jobOwner' : 'applicant',
+                requestedAt: new Date()
+            };
+
+            await application.save();
+
+            res.json({
+                success: true,
+                data: application
+            });
+        } catch (error) {
+            console.error('Error requesting completion:', error);
+            res.status(500).json({ message: error.message });
+        }
+    },
+
+    // Confirm job completion
+    confirmCompletion: async (req, res) => {
+        try {
+            const { applicationId } = req.params;
+
+            const application = await Application.findById(applicationId)
+                .populate('job')
+                .populate('applicant', '-password')
+                .populate('jobOwner', '-password');
+
+            if (!application) {
+                return res.status(404).json({ message: 'Application not found' });
+            }
+
+            // Check if the user is either the job owner or the applicant
+            const isJobOwner = application.jobOwner._id.toString() === req.user._id.toString();
+            const isApplicant = application.applicant._id.toString() === req.user._id.toString();
+
+            if (!isJobOwner && !isApplicant) {
+                return res.status(403).json({ message: 'Not authorized' });
+            }
+
+            // Check if the application is already completed
+            if (application.status === 'completed') {
+                return res.status(400).json({ message: 'This application is already completed' });
+            }
+
+            // Check if the application is in completion_requested state
+            if (application.status !== 'completion_requested') {
+                return res.status(400).json({ message: 'Completion must be requested before confirming' });
+            }
+
+            // Check if the confirming user is different from the requesting user
+            const requestedBy = application.completionDetails.requestedBy;
+            if ((requestedBy === 'jobOwner' && isJobOwner) || (requestedBy === 'applicant' && isApplicant)) {
+                return res.status(400).json({ message: 'Completion must be confirmed by the other party' });
+            }
+
+            // Update application status and completion details
+            application.status = 'completed';
+            application.completionDetails.confirmedAt = new Date();
+
+            await application.save();
+
+            res.json({
+                success: true,
+                data: application
+            });
+        } catch (error) {
+            console.error('Error confirming completion:', error);
+            res.status(500).json({ message: error.message });
+        }
+    },
 };
 
 console.log('Controller methods:', Object.keys(applicationController));

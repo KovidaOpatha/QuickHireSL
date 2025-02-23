@@ -18,7 +18,7 @@ const applicationSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'accepted', 'rejected'],
+        enum: ['pending', 'accepted', 'rejected', 'completion_requested', 'completed'],
         default: 'pending'
     },
     coverLetter: {
@@ -28,6 +28,14 @@ const applicationSchema = new mongoose.Schema({
     appliedAt: {
         type: Date,
         default: Date.now
+    },
+    completionDetails: {
+        requestedBy: {
+            type: String,
+            enum: ['jobOwner', 'applicant'],
+        },
+        requestedAt: Date,
+        confirmedAt: Date
     }
 }, {
     timestamps: true
