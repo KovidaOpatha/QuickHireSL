@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
@@ -9,9 +10,16 @@ import 'screens/applications_screen.dart';
 import 'screens/chooserole_screen.dart';
 import 'screens/studentregistration_screen.dart';
 import 'screens/jobownerregistration_screen.dart';
+import 'screens/applicant_details_screen.dart';
+import 'services/job_service.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => JobService(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
