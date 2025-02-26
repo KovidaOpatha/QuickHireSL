@@ -16,10 +16,20 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
   List<Application> _applications = [];
   bool _isLoading = true;
   String? _error;
+  String? _userId;
+  String _selectedFilter = 'all';
 
   @override
   void initState() {
     super.initState();
+    _loadUserIdAndApplications();
+  }
+
+  Future<void> _loadUserIdAndApplications() async {
+    final userId = await _storage.read(key: 'user_id');
+    setState(() {
+      _userId = userId;
+    });
     _loadApplications();
   }
 
@@ -52,214 +62,417 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: const Text('My Applications'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 1,
+  Future<void> _showCompletionDialog(Application application) async {
+    if (application.status != 'accepted') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Job must be accepted before requesting completion')),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Request Job Completion'),
+        content: Text(
+          _userId == application.applicant.id
+              ? 'Are you sure you want to mark this job as completed? This will send a completion request to the employer.'
+              : 'Are you sure you want to mark this job as completed? This will send a completion request to the student.'
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () {
-              // TODO: Implement filtering by status
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Filtering coming soon!')),
-              );
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              
+              try {
+                final token = await _storage.read(key: 'jwt_token');
+                if (token == null) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please login first')),
+                  );
+                  return;
+                }
+
+                await _jobService.requestCompletion(
+                  application.id,
+                  _userId == application.applicant.id ? 'applicant' : 'jobOwner',
+                  token,
+                );
+
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Completion request sent successfully')),
+                );
+                _loadApplications();
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error: ${e.toString()}')),
+                );
+              }
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.black,
+            ),
+            child: const Text('Confirm'),
           ),
         ],
       ),
-      body: _buildBody(),
     );
   }
 
-  Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
-            const SizedBox(height: 16),
-            Text(_error!, style: const TextStyle(color: Colors.red)),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _loadApplications,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
-            ),
-          ],
+  Future<void> _showConfirmationDialog(Application application) async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Job Completion'),
+        content: const Text(
+          'Are you sure you want to confirm this job as completed? This action cannot be undone.'
         ),
-      );
-    }
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              setState(() => _isLoading = true);
+              
+              try {
+                final token = await _storage.read(key: 'jwt_token');
+                if (token == null) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please login first')),
+                    );
+                  }
+                  return;
+                }
 
-    if (_applications.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.work_off, size: 64, color: Colors.grey),
-            const SizedBox(height: 16),
-            const Text(
-              'No Applications Yet',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
-              ),
+                await _jobService.confirmCompletion(application.id, token);
+
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Job completion confirmed successfully')),
+                  );
+                  _loadApplications();
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: ${e.toString()}')),
+                  );
+                }
+              } finally {
+                if (mounted) {
+                  setState(() => _isLoading = false);
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.black,
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Start applying for jobs to see them here!',
-              style: TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () => Navigator.pushNamed(context, '/jobs'),
-              icon: const Icon(Icons.search),
-              label: const Text('Browse Jobs'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              ),
-            ),
-          ],
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  List<Application> get _filteredApplications {
+    if (_selectedFilter == 'all') return _applications;
+    return _applications.where((app) => app.status == _selectedFilter).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF98C9C5),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text(
+          'Applications',
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadApplications,
-      child: ListView.builder(
-        itemCount: _applications.length,
-        padding: const EdgeInsets.all(16),
-        itemBuilder: (context, index) {
-          final application = _applications[index];
-          return Card(
-            elevation: 2,
-            margin: const EdgeInsets.only(bottom: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+      ),
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  FilterChip(
+                    label: const Text('All'),
+                    selected: _selectedFilter == 'all',
+                    onSelected: (bool selected) {
+                      setState(() => _selectedFilter = 'all');
+                    },
+                    backgroundColor: Colors.white,
+                    selectedColor: const Color(0xFF98C9C5).withOpacity(0.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: const BorderSide(color: Colors.black, width: 1),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  FilterChip(
+                    label: const Text('Pending'),
+                    selected: _selectedFilter == 'pending',
+                    onSelected: (bool selected) {
+                      setState(() => _selectedFilter = 'pending');
+                    },
+                    backgroundColor: Colors.white,
+                    selectedColor: const Color(0xFF98C9C5).withOpacity(0.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: const BorderSide(color: Colors.black, width: 1),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  FilterChip(
+                    label: const Text('Accepted'),
+                    selected: _selectedFilter == 'accepted',
+                    onSelected: (bool selected) {
+                      setState(() => _selectedFilter = 'accepted');
+                    },
+                    backgroundColor: Colors.white,
+                    selectedColor: const Color(0xFF98C9C5).withOpacity(0.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: const BorderSide(color: Colors.black, width: 1),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  FilterChip(
+                    label: const Text('Rejected'),
+                    selected: _selectedFilter == 'rejected',
+                    onSelected: (bool selected) {
+                      setState(() => _selectedFilter = 'rejected');
+                    },
+                    backgroundColor: Colors.white,
+                    selectedColor: const Color(0xFF98C9C5).withOpacity(0.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: const BorderSide(color: Colors.black, width: 1),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  FilterChip(
+                    label: const Text('In Progress'),
+                    selected: _selectedFilter == 'completion_requested',
+                    onSelected: (bool selected) {
+                      setState(() => _selectedFilter = 'completion_requested');
+                    },
+                    backgroundColor: Colors.white,
+                    selectedColor: const Color(0xFF98C9C5).withOpacity(0.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: const BorderSide(color: Colors.black, width: 1),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  FilterChip(
+                    label: const Text('Completed'),
+                    selected: _selectedFilter == 'completed',
+                    onSelected: (bool selected) {
+                      setState(() => _selectedFilter = 'completed');
+                    },
+                    backgroundColor: Colors.white,
+                    selectedColor: const Color(0xFF98C9C5).withOpacity(0.5),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: const BorderSide(color: Colors.black, width: 1),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            child: InkWell(
-              onTap: () {
-                // TODO: Navigate to detailed view
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Detailed view coming soon!')),
-                );
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                application.job.title,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                application.job.company,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _loadApplications,
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16.0),
+                      itemCount: _filteredApplications.length,
+                      itemBuilder: (context, index) {
+                        final application = _filteredApplications[index];
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 16.0),
                           decoration: BoxDecoration(
-                            color: _getStatusColor(application.status).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(20),
+                            color: Colors.white.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(15),
+                            border: Border.all(color: Colors.black, width: 1),
                           ),
-                          child: Text(
-                            application.status.toUpperCase(),
-                            style: TextStyle(
-                              color: _getStatusColor(application.status),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.all(16.0),
+                            title: Text(
+                              application.job.title,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 8),
+                                Text(
+                                  application.job.company,
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: _getStatusColor(application.status),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    application.status.toUpperCase(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                if (application.status == 'accepted')
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 16.0),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: ElevatedButton(
+                                            onPressed: () => _showCompletionDialog(application),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.black,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(10),
+                                              ),
+                                            ),
+                                            child: Text(
+                                              _userId == application.applicant.id
+                                                ? 'Request Job Completion'
+                                                : 'Request Student Completion',
+                                              style: const TextStyle(color: Colors.white),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                if (application.status == 'completion_requested')
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 16.0),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF98C9C5).withOpacity(0.2),
+                                            borderRadius: BorderRadius.circular(10),
+                                            border: Border.all(color: Colors.black, width: 1),
+                                          ),
+                                          child: Text(
+                                            _userId == application.jobOwner.id
+                                                ? 'Student has requested completion confirmation'
+                                                : 'Employer has requested completion confirmation',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        if ((_userId == application.jobOwner.id && application.completionDetails?.requestedBy == 'applicant') ||
+                                            (_userId == application.applicant.id && application.completionDetails?.requestedBy == 'jobOwner'))
+                                          ElevatedButton(
+                                            onPressed: () => _showConfirmationDialog(application),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.black,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(10),
+                                              ),
+                                            ),
+                                            child: const Text(
+                                              'Confirm Completion',
+                                              style: TextStyle(color: Colors.white),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                if (application.status == 'completed')
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 16.0),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: Colors.green, width: 1),
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Row(
+                                            children: [
+                                              Icon(Icons.check_circle, color: Colors.green),
+                                              SizedBox(width: 8),
+                                              Text(
+                                                'Job Successfully Completed',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.green,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          if (application.completionDetails?.confirmedAt != null)
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 4),
+                                              child: Text(
+                                                'Completed on ${_formatDate(application.completionDetails!.confirmedAt!)}',
+                                                style: const TextStyle(
+                                                  color: Colors.green,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
-                        ),
-                      ],
+                        );
+                      },
                     ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        const Icon(Icons.location_on, size: 16, color: Colors.grey),
-                        const SizedBox(width: 4),
-                        Text(
-                          application.job.location,
-                          style: const TextStyle(color: Colors.grey),
-                        ),
-                        const Spacer(),
-                        const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
-                        const SizedBox(width: 4),
-                        Text(
-                          _formatDate(application.appliedAt),
-                          style: const TextStyle(color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    ExpansionTile(
-                      title: const Text(
-                        'Cover Letter',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      tilePadding: EdgeInsets.zero,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: Text(
-                            application.coverLetter,
-                            style: const TextStyle(
-                              color: Colors.black87,
-                              height: 1.5,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
@@ -272,16 +485,12 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
         return Colors.green;
       case 'rejected':
         return Colors.red;
+      case 'completion_requested':
+        return Colors.blue;
+      case 'completed':
+        return Colors.purple;
       default:
         return Colors.grey;
     }
-  }
-
-  String _formatDate(DateTime date) {
-    final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 }

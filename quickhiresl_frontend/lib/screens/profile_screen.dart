@@ -156,43 +156,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   
-                  // Applications Button
+                  // Show appropriate button based on user role
                   const SizedBox(height: 24),
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/applications');
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF98C9C5),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(Icons.work, color: Colors.black),
-                          SizedBox(width: 8),
-                          Text(
-                            'View My Applications',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Job Owner Dashboard Button (only show for job owners)
                   if (_userData?['role'] == 'jobowner') ...[
-                    const SizedBox(height: 24),
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 16),
                       width: double.infinity,
@@ -219,6 +185,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             SizedBox(width: 8),
                             Text(
                               'Job Owner Dashboard',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/applications');
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF98C9C5),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: const [
+                            Icon(Icons.work, color: Colors.black),
+                            SizedBox(width: 8),
+                            Text(
+                              'View My Applications',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,

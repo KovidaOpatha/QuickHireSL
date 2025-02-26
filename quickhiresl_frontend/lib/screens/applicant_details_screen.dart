@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/application.dart';
 import '../services/job_service.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../services/auth_service.dart';
 
 class ApplicantDetailsScreen extends StatefulWidget {
   final Application application;
@@ -15,15 +15,16 @@ class ApplicantDetailsScreen extends StatefulWidget {
 }
 
 class _ApplicantDetailsScreenState extends State<ApplicantDetailsScreen> {
-  final _storage = const FlutterSecureStorage();
+  final _authService = AuthService();
 
   Future<void> _updateStatus(String status) async {
     try {
-      final token = await _storage.read(key: 'token');
+      final token = await _authService.getToken();
       if (token == null) {
         if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/login');
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please login again')),
+            const SnackBar(content: Text('Please login to continue')),
           );
           return;
         }
