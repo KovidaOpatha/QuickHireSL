@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { auth } = require('../middleware/auth');  
+const authMiddleware = require('../middleware/auth.middleware');  
 const {
     createJob,
     getJobs,
@@ -14,8 +14,8 @@ router.get('/', getJobs);
 router.get('/:id', getJob);
 
 // Protected routes (require authentication)
-router.post('/', auth, createJob);
-router.put('/:id', auth, updateJob);
-router.delete('/:id', auth, deleteJob);
+router.post('/', authMiddleware, createJob);
+router.put('/:id', authMiddleware, updateJob);
+router.delete('/:id', authMiddleware, deleteJob);
 
 module.exports = router;

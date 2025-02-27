@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const indexRoutes = require('./routes/api');
 const jobRoutes = require('./routes/job.routes');
+const applicationRoutes = require('./routes/application.routes');
 
 dotenv.config();
 
@@ -29,6 +30,7 @@ app.use('/api', indexRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/jobs', jobRoutes);
+app.use('/api/applications', applicationRoutes);
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)

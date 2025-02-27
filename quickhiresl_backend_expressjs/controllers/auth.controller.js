@@ -102,7 +102,7 @@ exports.login = async (req, res) => {
         // Generate token with user data
         const token = jwt.sign(
             { 
-                userId: user._id, 
+                _id: user._id, 
                 email: user.email, 
                 role: user.role 
             },
@@ -133,30 +133,25 @@ exports.login = async (req, res) => {
 // Update User Role
 exports.updateRole = async (req, res) => {
     try {
-        const { userId, role, studentDetails, jobOwnerDetails } = req.body;
+        const { userId } = req.params;
+        const { role } = req.body;
         console.log('[UpdateRole] Input:', { userId, role });
 
         // Validate role selection
-        if (!userId || !role || !['student', 'employer'].includes(role)) {
+        if (!role || !['student', 'jobseeker', 'jobowner'].includes(role)) {
             return res.status(400).json({ message: 'Invalid role selection' });
-        }
-
-        // Validate role-specific details
-        if (role === 'student' && !studentDetails) {
-            return res.status(400).json({ message: 'Student details are required' });
-        }
-        if (role === 'employer' && !jobOwnerDetails) {
-            return res.status(400).json({ message: 'Job owner details are required' });
         }
 
         // Update user role and details
         const updateData = { role };
-        if (role === 'student') {
-            updateData.studentDetails = studentDetails;
-        } else {
-            updateData.jobOwnerDetails = jobOwnerDetails;
+        
+        if (role === 'student' && req.body.studentDetails) {
+            updateData.studentDetails = req.body.studentDetails;
+        } else if (role === 'jobowner' && req.body.jobOwnerDetails) {
+            updateData.jobOwnerDetails = req.body.jobOwnerDetails;
         }
 
+        // Update user role
         const user = await User.findByIdAndUpdate(
             userId,
             updateData,
@@ -171,8 +166,6 @@ exports.updateRole = async (req, res) => {
         console.log('[UpdateRole] Successful:', { 
             userId: user._id, 
             role: user.role,
-            hasStudentDetails: !!user.studentDetails,
-            hasJobOwnerDetails: !!user.jobOwnerDetails
         });
 
         res.status(200).json({ 

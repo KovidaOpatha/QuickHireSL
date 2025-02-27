@@ -72,21 +72,23 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
 
         // Prepare student details
         final studentDetails = {
-          'fullName': fullNameController.text,
-          'leavingAddress': addressController.text,
-          'dateOfBirth': dobController.text,
-          'mobileNumber': mobileController.text,
-          'nicNumber': nicController.text,
+          'studentDetails': {
+            'fullName': fullNameController.text,
+            'leavingAddress': addressController.text,
+            'dateOfBirth': dobController.text,
+            'mobileNumber': mobileController.text,
+            'nicNumber': nicController.text,
+          }
         };
 
         // Update role and details
-        final success = await _authService.updateRole(
+        final response = await _authService.updateRole(
           userId,
           'student',
-          studentDetails,
+          details: studentDetails,
         );
 
-        if (success) {
+        if (response['success']) {
           if (!mounted) return;
           Navigator.pushReplacement(
             context,
