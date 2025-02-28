@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/job_service.dart';
 import '../models/application.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../widgets/feedback_dialog.dart';
 
 class ApplicationsScreen extends StatefulWidget {
   const ApplicationsScreen({Key? key}) : super(key: key);
@@ -60,6 +61,29 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  String _formatDate(DateTime date) {
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  List<Application> get _filteredApplications {
+    if (_selectedFilter == 'all') return _applications;
+    return _applications.where((app) => app.status == _selectedFilter).toList();
   }
 
   Future<void> _showCompletionDialog(Application application) async {
@@ -126,88 +150,6 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
         ],
       ),
     );
-  }
-
-  Future<void> _showConfirmationDialog(Application application) async {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirm Job Completion'),
-        content: const Text(
-            'Are you sure you want to confirm this job as completed? This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              setState(() => _isLoading = true);
-
-              try {
-                final token = await _storage.read(key: 'jwt_token');
-                if (token == null) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Please login first')),
-                    );
-                  }
-                  return;
-                }
-
-                await _jobService.confirmCompletion(application.id, token);
-
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Job completion confirmed successfully')),
-                  );
-                  _loadApplications();
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: ${e.toString()}')),
-                  );
-                }
-              } finally {
-                if (mounted) {
-                  setState(() => _isLoading = false);
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black,
-            ),
-            child: const Text('Confirm'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    final months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec'
-    ];
-    return '${date.day} ${months[date.month - 1]} ${date.year}';
-  }
-
-  List<Application> get _filteredApplications {
-    if (_selectedFilter == 'all') return _applications;
-    return _applications.where((app) => app.status == _selectedFilter).toList();
   }
 
   @override
@@ -440,7 +382,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                                                     'jobOwner'))
                                           ElevatedButton(
                                             onPressed: () =>
-                                                _showConfirmationDialog(
+                                                _showCompletionDialog(
                                                     application),
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: Colors.black,
@@ -501,6 +443,39 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                                                 ),
                                               ),
                                             ),
+                                          const SizedBox(height: 10),
+                                          Align(
+                                            alignment: Alignment.centerLeft,
+                                            child: ElevatedButton(
+                                              onPressed: () {
+                                                // Navigate to feedback screen
+                                                showFeedbackDialog(context);
+                                              },
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor:
+                                                    const Color.fromARGB(
+                                                        255, 2, 135, 29),
+                                                padding: EdgeInsets.symmetric(
+                                                    vertical: 12),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                ),
+                                                shadowColor:
+                                                    const Color.fromARGB(
+                                                        255, 1, 109, 19),
+                                                elevation: 5,
+                                              ),
+                                              child: const Text(
+                                                'Enter Feedback',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 16,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ),
