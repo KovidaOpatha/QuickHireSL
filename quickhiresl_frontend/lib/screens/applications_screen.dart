@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/job_service.dart';
 import '../models/application.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../widgets/feedback_dialog.dart';
 
 class ApplicationsScreen extends StatefulWidget {
   const ApplicationsScreen({Key? key}) : super(key: key);
@@ -65,7 +66,8 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
   Future<void> _showCompletionDialog(Application application) async {
     if (application.status != 'accepted') {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Job must be accepted before requesting completion')),
+        const SnackBar(
+            content: Text('Job must be accepted before requesting completion')),
       );
       return;
     }
@@ -74,11 +76,9 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Request Job Completion'),
-        content: Text(
-          _userId == application.applicant.id
-              ? 'Are you sure you want to mark this job as completed? This will send a completion request to the employer.'
-              : 'Are you sure you want to mark this job as completed? This will send a completion request to the student.'
-        ),
+        content: Text(_userId == application.applicant.id
+            ? 'Are you sure you want to mark this job as completed? This will send a completion request to the employer.'
+            : 'Are you sure you want to mark this job as completed? This will send a completion request to the student.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -87,7 +87,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(dialogContext);
-              
+
               try {
                 final token = await _storage.read(key: 'jwt_token');
                 if (token == null) {
@@ -100,15 +100,21 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
 
                 await _jobService.requestCompletion(
                   application.id,
-                  _userId == application.applicant.id ? 'applicant' : 'jobOwner',
+                  _userId == application.applicant.id
+                      ? 'applicant'
+                      : 'jobOwner',
                   token,
                 );
 
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Completion request sent successfully')),
+                  const SnackBar(
+                      content: Text('Completion request sent successfully')),
                 );
                 _loadApplications();
+
+                // Show the feedback dialog after confirming job completion
+                showFeedbackDialog(context);
               } catch (e) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -132,8 +138,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Confirm Job Completion'),
         content: const Text(
-          'Are you sure you want to confirm this job as completed? This action cannot be undone.'
-        ),
+            'Are you sure you want to confirm this job as completed? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -141,9 +146,9 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.pop(context); // Close the confirmation dialog
               setState(() => _isLoading = true);
-              
+
               try {
                 final token = await _storage.read(key: 'jwt_token');
                 if (token == null) {
@@ -159,10 +164,14 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
 
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Job completion confirmed successfully')),
+                    const SnackBar(
+                        content: Text('Job completion confirmed successfully')),
                   );
                   _loadApplications();
                 }
+
+                // Show the feedback dialog after confirming job completion
+                showFeedbackDialog(context);
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -187,8 +196,18 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
 
   String _formatDate(DateTime date) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
@@ -213,7 +232,8 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
       body: Column(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -364,36 +384,46 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                                       children: [
                                         Expanded(
                                           child: ElevatedButton(
-                                            onPressed: () => _showCompletionDialog(application),
+                                            onPressed: () =>
+                                                _showCompletionDialog(
+                                                    application),
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: Colors.black,
                                               shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(10),
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
                                               ),
                                             ),
                                             child: Text(
-                                              _userId == application.applicant.id
-                                                ? 'Request Job Completion'
-                                                : 'Request Student Completion',
-                                              style: const TextStyle(color: Colors.white),
+                                              _userId ==
+                                                      application.applicant.id
+                                                  ? 'Request Job Completion'
+                                                  : 'Request Student Completion',
+                                              style: const TextStyle(
+                                                  color: Colors.white),
                                             ),
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                if (application.status == 'completion_requested')
+                                if (application.status ==
+                                    'completion_requested')
                                   Padding(
                                     padding: const EdgeInsets.only(top: 16.0),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
                                       children: [
                                         Container(
                                           padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFF98C9C5).withOpacity(0.2),
-                                            borderRadius: BorderRadius.circular(10),
-                                            border: Border.all(color: Colors.black, width: 1),
+                                            color: const Color(0xFF98C9C5)
+                                                .withOpacity(0.2),
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                            border: Border.all(
+                                                color: Colors.black, width: 1),
                                           ),
                                           child: Text(
                                             _userId == application.jobOwner.id
@@ -405,19 +435,31 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                                           ),
                                         ),
                                         const SizedBox(height: 12),
-                                        if ((_userId == application.jobOwner.id && application.completionDetails?.requestedBy == 'applicant') ||
-                                            (_userId == application.applicant.id && application.completionDetails?.requestedBy == 'jobOwner'))
+                                        if ((_userId ==
+                                                    application.jobOwner.id &&
+                                                application.completionDetails
+                                                        ?.requestedBy ==
+                                                    'applicant') ||
+                                            (_userId ==
+                                                    application.applicant.id &&
+                                                application.completionDetails
+                                                        ?.requestedBy ==
+                                                    'jobOwner'))
                                           ElevatedButton(
-                                            onPressed: () => _showConfirmationDialog(application),
+                                            onPressed: () =>
+                                                _showConfirmationDialog(
+                                                    application),
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: Colors.black,
                                               shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(10),
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
                                               ),
                                             ),
                                             child: const Text(
                                               'Confirm Completion',
-                                              style: TextStyle(color: Colors.white),
+                                              style: TextStyle(
+                                                  color: Colors.white),
                                             ),
                                           ),
                                       ],
@@ -431,14 +473,17 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                                       decoration: BoxDecoration(
                                         color: Colors.green.withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(color: Colors.green, width: 1),
+                                        border: Border.all(
+                                            color: Colors.green, width: 1),
                                       ),
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           const Row(
                                             children: [
-                                              Icon(Icons.check_circle, color: Colors.green),
+                                              Icon(Icons.check_circle,
+                                                  color: Colors.green),
                                               SizedBox(width: 8),
                                               Text(
                                                 'Job Successfully Completed',
@@ -449,9 +494,12 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                                               ),
                                             ],
                                           ),
-                                          if (application.completionDetails?.confirmedAt != null)
+                                          if (application.completionDetails
+                                                  ?.confirmedAt !=
+                                              null)
                                             Padding(
-                                              padding: const EdgeInsets.only(top: 4),
+                                              padding:
+                                                  const EdgeInsets.only(top: 4),
                                               child: Text(
                                                 'Completed on ${_formatDate(application.completionDetails!.confirmedAt!)}',
                                                 style: const TextStyle(
