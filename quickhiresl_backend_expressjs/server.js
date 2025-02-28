@@ -1,9 +1,17 @@
 const express = require("express");
 const cors = require("cors");
+const mongoose = require("mongoose");
 
 const app = express();
 app.use(express.json());
 app.use(cors());
+
+// MongoDB Connection
+mongoose.connect("mongodb+srv://kovidaopathaz:hrHDidbvWWVigT5l@cluster0.de4ggus.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0", {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+}).then(() => console.log("MongoDB Connected"))
+  .catch(err => console.log(err));
 
 // Feedback Schema & Model
 const FeedbackSchema = new mongoose.Schema({
@@ -12,6 +20,7 @@ const FeedbackSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now }
 });
 
+const Feedback = mongoose.model("Feedback", FeedbackSchema);
 
 // API Endpoint to Save Feedback
 app.post("/feedback", async (req, res) => {
@@ -44,3 +53,7 @@ app.get("/feedbacks", async (req, res) => {
   }
 });
 
+const PORT = process.env.PORT || 5001;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+mongoose.set('debug', true);
