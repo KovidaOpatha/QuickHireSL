@@ -283,10 +283,12 @@ class _HomeScreenState extends State<HomeScreen> {
         child: const Icon(Icons.add),
       ),
       bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 1, // Set home as default selected
+        selectedItemColor: Colors.purple,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.people), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.location_on), label: ""),
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: "Community"),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+          BottomNavigationBarItem(icon: Icon(Icons.work), label: "Jobs"), // Changed to work icon
         ],
       ),
     );
