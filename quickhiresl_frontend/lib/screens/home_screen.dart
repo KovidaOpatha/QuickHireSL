@@ -83,9 +83,15 @@ class _HomeScreenState extends State<HomeScreen> {
           icon: const Icon(Icons.menu, color: Colors.black),
           onPressed: () {},
         ),
-        title: const Text(
-          'QuickHire',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        title: Image.asset(
+          'assets/quickhire_logo.png',
+          height: 40,
+          errorBuilder: (context, error, stackTrace) {
+            return const Text(
+              'QuickHire',
+              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            );
+          },
         ),
         centerTitle: true,
         actions: [
