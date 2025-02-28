@@ -6,6 +6,7 @@ import '../services/user_service.dart';
 import 'post_job_screen.dart';
 import 'job_details_screen.dart';
 import 'profile_screen.dart'; 
+import 'jobs_screen.dart';  
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -328,12 +329,16 @@ class _HomeScreenState extends State<HomeScreen> {
         child: const Icon(Icons.add),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 1, // Set home as default selected
+        currentIndex: 1,
         selectedItemColor: Colors.purple,
+        onTap: (index) => index == 2 ? Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const JobsScreen()),
+        ) : null,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.people), label: "Community"),
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.work), label: "Jobs"), // Changed to work icon
+          BottomNavigationBarItem(icon: Icon(Icons.work), label: "Jobs"),
         ],
       ),
     );
