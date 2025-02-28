@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import '../models/job.dart';
 import '../services/job_service.dart';
 import '../services/auth_service.dart';
+import '../services/user_service.dart';  
 import 'post_job_screen.dart';
 import 'job_details_screen.dart';
-import 'profile_screen.dart'; // Add this line
+import 'profile_screen.dart'; 
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -16,13 +17,16 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final JobService _jobService = JobService();
   final AuthService _authService = AuthService();
+  final UserService _userService = UserService();  
   List<Job> _jobs = [];
   bool _isLoading = true;
+  Map<String, dynamic>? _userData;  
 
   @override
   void initState() {
     super.initState();
     _loadJobs();
+    _loadUserData();  
   }
 
   Future<void> _loadJobs() async {
@@ -48,6 +52,19 @@ class _HomeScreenState extends State<HomeScreen> {
           SnackBar(content: Text('Error loading jobs: $e')),
         );
       }
+    }
+  }
+
+  Future<void> _loadUserData() async {  
+    try {
+      final response = await _userService.getUserProfile();
+      if (mounted) {
+        setState(() {
+          _userData = response['data'];
+        });
+      }
+    } catch (e) {
+      print('[ERROR] Failed to load user data: $e');
     }
   }
 
@@ -100,11 +117,33 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const ProfileScreen()),
-              );
+              ).then((_) => _loadUserData()); // Reload user data when returning from profile
             },
-            child: const CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Icon(Icons.person, color: Colors.black),
+            child: Container(
+              margin: const EdgeInsets.only(right: 10),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white,
+                  width: 2,
+                ),
+              ),
+              child: CircleAvatar(
+                backgroundColor: Colors.white,
+                child: _userData?['profileImage'] != null && _userData!['profileImage'].isNotEmpty
+                    ? ClipOval(
+                        child: Image.network(
+                          _userData!['profileImage'],
+                          width: 35,
+                          height: 35,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(Icons.person, color: Colors.black);
+                          },
+                        ),
+                      )
+                    : const Icon(Icons.person, color: Colors.black),
+              ),
             ),
           ),
           const SizedBox(width: 10),
