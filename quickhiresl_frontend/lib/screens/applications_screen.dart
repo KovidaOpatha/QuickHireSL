@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../services/job_service.dart';
 import '../models/application.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../widgets/feedback_dialog.dart';
 
 class ApplicationsScreen extends StatefulWidget {
   const ApplicationsScreen({Key? key}) : super(key: key);
@@ -112,9 +111,6 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                       content: Text('Completion request sent successfully')),
                 );
                 _loadApplications();
-
-                // Show the feedback dialog after confirming job completion
-                showFeedbackDialog(context);
               } catch (e) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -146,7 +142,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(context); // Close the confirmation dialog
+              Navigator.pop(context);
               setState(() => _isLoading = true);
 
               try {
@@ -169,9 +165,6 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                   );
                   _loadApplications();
                 }
-
-                // Show the feedback dialog after confirming job completion
-                showFeedbackDialog(context);
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
