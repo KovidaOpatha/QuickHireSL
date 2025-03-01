@@ -14,10 +14,12 @@ class JobOwnerRegistrationScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _JobOwnerRegistrationScreenState createState() => _JobOwnerRegistrationScreenState();
+  _JobOwnerRegistrationScreenState createState() =>
+      _JobOwnerRegistrationScreenState();
 }
 
-class _JobOwnerRegistrationScreenState extends State<JobOwnerRegistrationScreen> {
+class _JobOwnerRegistrationScreenState
+    extends State<JobOwnerRegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController shopNameController = TextEditingController();
   final TextEditingController shopLocationController = TextEditingController();
@@ -33,7 +35,8 @@ class _JobOwnerRegistrationScreenState extends State<JobOwnerRegistrationScreen>
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Location services are disabled. Please enable them.')),
+        const SnackBar(
+            content: Text('Location services are disabled. Please enable them.')),
       );
       return;
     }
@@ -51,7 +54,8 @@ class _JobOwnerRegistrationScreenState extends State<JobOwnerRegistrationScreen>
 
     if (permission == LocationPermission.deniedForever) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Location permissions are permanently denied.')),
+        const SnackBar(
+            content: Text('Location permissions are permanently denied.')),
       );
       return;
     }
@@ -92,9 +96,11 @@ class _JobOwnerRegistrationScreenState extends State<JobOwnerRegistrationScreen>
           }
         };
 
-        final response = await _authService.updateRole(userId, 'jobowner', details: jobOwnerDetails);
+        final response =
+            await _authService.updateRole(userId, 'jobowner', details: jobOwnerDetails);
         if (response['success']) {
-          final refreshResult = await _authService.login(widget.email, widget.password);
+          final refreshResult =
+              await _authService.login(widget.email, widget.password);
           if (refreshResult['success']) {
             Navigator.pushReplacement(
               context,
@@ -132,11 +138,12 @@ class _JobOwnerRegistrationScreenState extends State<JobOwnerRegistrationScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            /// Header with back button and title
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: const BoxDecoration(
-                color: Color(0xFF98C9C5),
+                color: Color(0xFF78A6A3),
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(20),
                   bottomRight: Radius.circular(20),
@@ -145,13 +152,11 @@ class _JobOwnerRegistrationScreenState extends State<JobOwnerRegistrationScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 30),
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.black),
-                      onPressed: () => Navigator.pop(context),
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.black),
+                    onPressed: () => Navigator.pop(context),
                   ),
+                  const SizedBox(height: 10),
                   const Text(
                     'Job Owners\nRegistration',
                     style: TextStyle(
@@ -163,38 +168,45 @@ class _JobOwnerRegistrationScreenState extends State<JobOwnerRegistrationScreen>
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    _buildTextField(shopNameController, "Shop Name"),
-                    const SizedBox(height: 15),
-                    _buildLocationField(),
-                    const SizedBox(height: 15),
-                    _buildTextField(shopRegNoController, "Shop Register No"),
-                    const SizedBox(height: 30),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _submitForm,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
+
+            /// Form Fields in the middle of the screen
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildTextField(shopNameController, "Shop Name"),
+                      const SizedBox(height: 15),
+                      _buildLocationField(),
+                      const SizedBox(height: 15),
+                      _buildTextField(shopRegNoController, "Shop Register No"),
+                      const SizedBox(height: 30),
+
+                      /// Next Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _submitForm,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.black,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
                           ),
+                          child: _isLoading
+                              ? const CircularProgressIndicator(color: Colors.white)
+                              : const Text(
+                                  'Next',
+                                  style: TextStyle(color: Colors.white, fontSize: 18),
+                                ),
                         ),
-                        child: _isLoading
-                            ? const CircularProgressIndicator(color: Colors.white)
-                            : const Text(
-                                'Next',
-                                style: TextStyle(color: Colors.white, fontSize: 18),
-                              ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -204,26 +216,43 @@ class _JobOwnerRegistrationScreenState extends State<JobOwnerRegistrationScreen>
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String hintText) {
+  /// Floating Label Text Field
+  Widget _buildTextField(TextEditingController controller, String label) {
     return TextFormField(
       controller: controller,
       decoration: InputDecoration(
-        hintText: hintText,
+        labelText: label,
         filled: true,
         fillColor: Colors.white,
+        floatingLabelBehavior: FloatingLabelBehavior.auto,
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide(color: Colors.grey.shade400),
+        ),
       ),
-      validator: (value) => value == null || value.isEmpty ? '$hintText is required' : null,
+      validator: (value) => value == null || value.isEmpty ? '$label is required' : null,
     );
   }
 
+  /// Location Field with GPS Button
   Widget _buildLocationField() {
-    return Row(
-      children: [
-        Expanded(child: _buildTextField(shopLocationController, "Shop Location")),
-        IconButton(icon: const Icon(Icons.location_on, color: Colors.red), onPressed: _getCurrentLocation),
-      ],
+    return TextFormField(
+      controller: shopLocationController,
+      decoration: InputDecoration(
+        labelText: "Shop Location",
+        filled: true,
+        fillColor: Colors.white,
+        floatingLabelBehavior: FloatingLabelBehavior.auto,
+        suffixIcon: IconButton(
+          icon: const Icon(Icons.location_on, color: Colors.red),
+          onPressed: _getCurrentLocation,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide(color: Colors.grey.shade400),
+        ),
+      ),
     );
   }
 }
