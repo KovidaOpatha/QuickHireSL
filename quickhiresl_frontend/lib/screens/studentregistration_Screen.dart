@@ -8,8 +8,8 @@ class StudentRegistrationScreen extends StatefulWidget {
   final String password;
 
   const StudentRegistrationScreen({
-    Key? key, 
-    required this.email, 
+    Key? key,
+    required this.email,
     required this.password,
   }) : super(key: key);
 
@@ -51,9 +51,8 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
       });
 
       try {
-        // First, login to get the token
         final loginResult = await _authService.login(widget.email, widget.password);
-        
+
         if (!loginResult['success']) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(loginResult['error'] ?? 'Login failed')),
@@ -61,7 +60,6 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
           return;
         }
 
-        // Get the userId
         final userId = await _authService.getUserId();
         if (userId == null) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -70,7 +68,6 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
           return;
         }
 
-        // Prepare student details
         final studentDetails = {
           'studentDetails': {
             'fullName': fullNameController.text,
@@ -81,7 +78,6 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
           }
         };
 
-        // Update role and details
         final response = await _authService.updateRole(
           userId,
           'student',
@@ -120,10 +116,10 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header Section
               Container(
@@ -147,7 +143,7 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
                     const Text(
                       'Student Registration',
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: 32,
                         fontWeight: FontWeight.bold,
                         color: Colors.black,
                       ),
@@ -163,106 +159,52 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
                   ],
                 ),
               ),
-              // Form Section
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Form(
-                  key: _formKey,
+              // Centering the Form Fields
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      TextFormField(
-                        controller: fullNameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Full Name',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your full name';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      TextFormField(
-                        controller: addressController,
-                        decoration: const InputDecoration(
-                          labelText: 'Address',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your address';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      TextFormField(
-                        controller: dobController,
-                        readOnly: true,
-                        onTap: () => _selectDate(context),
-                        decoration: const InputDecoration(
-                          labelText: 'Date of Birth',
-                          border: OutlineInputBorder(),
-                          suffixIcon: Icon(Icons.calendar_today),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please select your date of birth';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      TextFormField(
-                        controller: mobileController,
-                        decoration: const InputDecoration(
-                          labelText: 'Mobile Number',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your mobile number';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      TextFormField(
-                        controller: nicController,
-                        decoration: const InputDecoration(
-                          labelText: 'NIC Number',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your NIC number';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 30),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _submitForm,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF98C9C5),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          child: _isLoading
-                              ? const CircularProgressIndicator()
-                              : const Text(
-                                  'Register',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.black,
+                      const SizedBox(height: 50), // Space from the top
+                      Form(
+                        key: _formKey,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            buildRoundedTextField(fullNameController, 'Full Name'),
+                            const SizedBox(height: 20),
+                            buildRoundedTextField(addressController, 'Address'),
+                            const SizedBox(height: 20),
+                            buildRoundedTextField(dobController, 'Date of Birth', isDateField: true),
+                            const SizedBox(height: 20),
+                            buildRoundedTextField(mobileController, 'Mobile Number'),
+                            const SizedBox(height: 20),
+                            buildRoundedTextField(nicController, 'NIC Number'),
+                            const SizedBox(height: 30),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 50,
+                              child: ElevatedButton(
+                                onPressed: _isLoading ? null : _submitForm,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color.fromARGB(255, 0, 0, 0),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30),
                                   ),
                                 ),
+                                child: _isLoading
+                                    ? const CircularProgressIndicator()
+                                    : const Text(
+                                        'Register',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          color: Color.fromARGB(255, 255, 255, 255),
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -273,6 +215,30 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Function to create rounded text fields
+  Widget buildRoundedTextField(TextEditingController controller, String label, {bool isDateField = false}) {
+    return TextFormField(
+      controller: controller,
+      readOnly: isDateField,
+      onTap: isDateField ? () => _selectDate(context) : null,
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+        ),
+        fillColor: Colors.white,
+        filled: true,
+        suffixIcon: isDateField ? const Icon(Icons.calendar_today) : null,
+      ),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please enter your $label';
+        }
+        return null;
+      },
     );
   }
 }
