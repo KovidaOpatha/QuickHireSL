@@ -19,6 +19,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
   String? _error;
   String? _userId;
   String _selectedFilter = 'all';
+  Set<String> _feedbackProvidedApplications = {};
 
   @override
   void initState() {
@@ -31,7 +32,39 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
     setState(() {
       _userId = userId;
     });
+    await _loadFeedbackStatus();
     _loadApplications();
+  }
+
+  // Load feedback status from secure storage
+  Future<void> _loadFeedbackStatus() async {
+    try {
+      // Get the stored feedback status
+      final feedbackStatusJson = await _storage.read(key: 'feedback_status');
+      if (feedbackStatusJson != null) {
+        final List<dynamic> feedbackStatus = List<dynamic>.from(
+            feedbackStatusJson.split(',').where((id) => id.isNotEmpty));
+
+        setState(() {
+          _feedbackProvidedApplications =
+              Set<String>.from(feedbackStatus.map((id) => id.toString()));
+        });
+      }
+    } catch (e) {
+      print('Error loading feedback status: $e');
+    }
+  }
+
+  // Save feedback status to secure storage
+  Future<void> _saveFeedbackStatus() async {
+    try {
+      await _storage.write(
+        key: 'feedback_status',
+        value: _feedbackProvidedApplications.join(','),
+      );
+    } catch (e) {
+      print('Error saving feedback status: $e');
+    }
   }
 
   Future<void> _loadApplications() async {
@@ -152,6 +185,14 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
     );
   }
 
+  // Method to handle feedback submission
+  void _handleFeedbackSubmission(String applicationId) {
+    setState(() {
+      _feedbackProvidedApplications.add(applicationId);
+    });
+    _saveFeedbackStatus();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -270,6 +311,9 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                       itemCount: _filteredApplications.length,
                       itemBuilder: (context, index) {
                         final application = _filteredApplications[index];
+                        final feedbackProvided = _feedbackProvidedApplications
+                            .contains(application.id);
+
                         return Container(
                           margin: const EdgeInsets.only(bottom: 16.0),
                           decoration: BoxDecoration(
@@ -444,38 +488,150 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                                               ),
                                             ),
                                           const SizedBox(height: 10),
-                                          Align(
-                                            alignment: Alignment.centerLeft,
-                                            child: ElevatedButton(
-                                              onPressed: () {
-                                                // Navigate to feedback screen
-                                                showFeedbackDialog(context);
-                                              },
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor:
-                                                    const Color.fromARGB(
-                                                        255, 2, 135, 29),
-                                                padding: EdgeInsets.symmetric(
-                                                    vertical: 12),
-                                                shape: RoundedRectangleBorder(
+                                          if (!feedbackProvided)
+                                            Align(
+                                              alignment: Alignment.centerLeft,
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  gradient:
+                                                      const LinearGradient(
+                                                    colors: [
+                                                      Color(0xFF0C8E45),
+                                                      Color(0xFF076D32),
+                                                    ],
+                                                    begin: Alignment.topLeft,
+                                                    end: Alignment.bottomRight,
+                                                  ),
                                                   borderRadius:
-                                                      BorderRadius.circular(10),
+                                                      BorderRadius.circular(12),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black
+                                                          .withOpacity(0.3),
+                                                      spreadRadius: 1,
+                                                      blurRadius: 5,
+                                                      offset:
+                                                          const Offset(0, 3),
+                                                    ),
+                                                  ],
                                                 ),
-                                                shadowColor:
-                                                    const Color.fromARGB(
-                                                        255, 1, 109, 19),
-                                                elevation: 5,
+                                                child: ElevatedButton(
+                                                  onPressed: () {
+                                                    showFeedbackDialog(context,
+                                                        applicationId:
+                                                            application.id,
+                                                        onFeedbackSubmitted:
+                                                            () {
+                                                      _handleFeedbackSubmission(
+                                                          application.id);
+                                                    });
+                                                  },
+                                                  style:
+                                                      ElevatedButton.styleFrom(
+                                                    foregroundColor:
+                                                        Colors.white,
+                                                    backgroundColor:
+                                                        Colors.transparent,
+                                                    shadowColor:
+                                                        Colors.transparent,
+                                                    elevation: 0,
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 18,
+                                                        vertical: 12),
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
+                                                    ),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      const Icon(
+                                                        Icons.rate_review,
+                                                        color: Colors.white,
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      Text(
+                                                        'Enter Feedback',
+                                                        style: TextStyle(
+                                                          color: Colors.white,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 16,
+                                                          letterSpacing: 0.5,
+                                                          shadows: [
+                                                            Shadow(
+                                                              blurRadius: 3.0,
+                                                              color: Colors
+                                                                  .black
+                                                                  .withOpacity(
+                                                                      0.3),
+                                                              offset:
+                                                                  const Offset(
+                                                                      0, 1),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
                                               ),
-                                              child: const Text(
-                                                'Enter Feedback',
-                                                style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 16,
+                                            )
+                                          else
+                                            Align(
+                                              alignment: Alignment.centerLeft,
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 16,
+                                                        vertical: 10),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.grey[200],
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                  border: Border.all(
+                                                      color:
+                                                          Colors.grey.shade400,
+                                                      width: 1),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black
+                                                          .withOpacity(0.1),
+                                                      spreadRadius: 1,
+                                                      blurRadius: 3,
+                                                      offset:
+                                                          const Offset(0, 1),
+                                                    ),
+                                                  ],
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    const Icon(
+                                                      Icons.check_circle,
+                                                      color: Colors.grey,
+                                                      size: 20,
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    const Text(
+                                                      'Feedback Submitted',
+                                                      style: TextStyle(
+                                                        color: Colors.grey,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        fontSize: 14,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
                                             ),
-                                          ),
                                         ],
                                       ),
                                     ),
