@@ -12,6 +12,7 @@ import 'screens/studentregistration_screen.dart';
 import 'screens/jobownerregistration_screen.dart';
 import 'screens/applicant_details_screen.dart';
 import 'services/job_service.dart';
+import 'screens/community_screen.dart';
 
 void main() {
   runApp(
@@ -52,6 +53,7 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const HomeScreen(),
         '/applications': (context) => const ApplicationsScreen(),
         '/profile': (context) => const ProfileScreen(),
+        '/community': (context) => CommunityScreen(),
       },
       onGenerateRoute: (settings) {
         // Handle any undefined routes here

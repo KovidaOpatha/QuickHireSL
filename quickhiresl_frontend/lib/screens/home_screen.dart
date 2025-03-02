@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'job_details_screen.dart';
 import '../models/job.dart';
 import '../services/job_service.dart';
 import '../services/auth_service.dart';
 import '../services/user_service.dart';  
 import 'post_job_screen.dart';
-import 'job_details_screen.dart';
-import 'profile_screen.dart'; 
+import 'profile_screen.dart';
+import 'community_screen.dart';
 import 'jobs_screen.dart';  
 
 class HomeScreen extends StatefulWidget {
@@ -23,6 +24,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   Map<String, dynamic>? _userData;  
 
+  // Track the current index of BottomNavigationBar
+  int _selectedIndex = 1;
+
   @override
   void initState() {
     super.initState();
@@ -35,7 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _isLoading = true;
       });
-      
+
       final jobs = await _jobService.getJobs();
       if (mounted) {
         setState(() {
@@ -90,8 +94,35 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
+  // Handle Bottom Navigation Bar selection
+  void _onItemTapped(int index) {
+    if (index == 2) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const JobsScreen()),
+      );
+    } else {
+      setState(() {
+        _selectedIndex = index;
+      });
+    }
+  }
+
+  // Define the screens that will be shown based on the selected index
+  Widget _getSelectedScreen() {
+    switch (_selectedIndex) {
+      case 0:
+        return CommunityScreen();
+      case 1:
+        return _buildHomeScreen();
+      case 2:
+        return _buildLocationScreen();
+      default:
+        return _buildHomeScreen();
+    }
+  }
+
+  Widget _buildHomeScreen() {
     return Scaffold(
       backgroundColor: const Color(0xFF98C9C5),
       appBar: AppBar(
@@ -103,11 +134,15 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         title: Image.asset(
           'assets/quickhire_logo.png',
-          height: 40,
+          height: 30,
           errorBuilder: (context, error, stackTrace) {
             return const Text(
               'QuickHire',
-              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 20,
+                fontWeight: FontWeight.w500,
+              ),
             );
           },
         ),
@@ -118,36 +153,16 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const ProfileScreen()),
-              ).then((_) => _loadUserData()); // Reload user data when returning from profile
+              ).then((_) => _loadUserData());
             },
             child: Container(
-              margin: const EdgeInsets.only(right: 10),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white,
-                  width: 2,
-                ),
-              ),
-              child: CircleAvatar(
-                backgroundColor: Colors.white,
-                child: _userData?['profileImage'] != null && _userData!['profileImage'].isNotEmpty
-                    ? ClipOval(
-                        child: Image.network(
-                          _userData!['profileImage'],
-                          width: 35,
-                          height: 35,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Icon(Icons.person, color: Colors.black);
-                          },
-                        ),
-                      )
-                    : const Icon(Icons.person, color: Colors.black),
+              margin: const EdgeInsets.only(right: 16),
+              child: const CircleAvatar(
+                backgroundColor: Colors.black,
+                child: Icon(Icons.person, color: Colors.white),
               ),
             ),
           ),
-          const SizedBox(width: 10),
         ],
       ),
       body: Padding(
@@ -156,10 +171,10 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(15),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,71 +187,70 @@ class _HomeScreenState extends State<HomeScreen> {
                     'Part-time job',
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: "Search",
-                      prefixIcon: const Icon(Icons.search),
-                      filled: true,
-                      fillColor: Colors.grey[300],
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const TextField(
+                      decoration: InputDecoration(
+                        icon: Icon(Icons.search),
+                        hintText: 'Search',
+                        border: InputBorder.none,
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             const Text(
               'Available now',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 16),
             SizedBox(
               height: 100,
-              child: ListView(
+              child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                children: List.generate(5, (index) {
+                itemCount: 4,
+                itemBuilder: (context, index) {
                   return Container(
-                    margin: const EdgeInsets.only(right: 10),
                     width: 80,
+                    margin: const EdgeInsets.only(right: 12),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Column(
+                    child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        CircleAvatar(
+                        const CircleAvatar(
                           backgroundColor: Colors.grey,
                           child: Icon(Icons.person, color: Colors.white),
                         ),
-                        SizedBox(height: 5),
-                        Text("⭐⭐⭐⭐⭐"),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(
+                            5,
+                            (index) => const Icon(Icons.star_border, size: 14),
+                          ),
+                        ),
                       ],
                     ),
                   );
-                }),
+                },
               ),
             ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Recommended jobs',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                if (_isLoading)
-                  const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-              ],
+            const SizedBox(height: 24),
+            const Text(
+              'Recommended jobs',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 16),
             Expanded(
               child: _isLoading
                   ? ListView.builder(
@@ -247,12 +261,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     )
                   : _jobs.isEmpty
                       ? const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(16.0),
-                            child: Text(
-                              'No jobs available at the moment',
-                              style: TextStyle(color: Colors.grey),
-                            ),
+                          child: Text(
+                            'No jobs available at the moment',
+                            style: TextStyle(color: Colors.grey),
                           ),
                         )
                       : ListView.builder(
@@ -269,24 +280,24 @@ class _HomeScreenState extends State<HomeScreen> {
                                 );
                               },
                               child: Container(
-                                margin: const EdgeInsets.symmetric(vertical: 8),
-                                padding: const EdgeInsets.all(12),
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                 decoration: BoxDecoration(
                                   color: Colors.white,
-                                  borderRadius: BorderRadius.circular(15),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Row(
                                   children: [
                                     Container(
-                                      width: 50,
-                                      height: 50,
+                                      width: 36,
+                                      height: 36,
                                       decoration: BoxDecoration(
-                                        color: Colors.grey[300],
+                                        color: Colors.grey[200],
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      child: const Icon(Icons.business, color: Colors.grey),
+                                      child: const Icon(Icons.calendar_today_outlined, size: 20),
                                     ),
-                                    const SizedBox(width: 10),
+                                    const SizedBox(width: 12),
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -294,25 +305,38 @@ class _HomeScreenState extends State<HomeScreen> {
                                           Text(
                                             job.title,
                                             style: const TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w500,
                                             ),
                                           ),
                                           Text(
                                             '${job.company} • ${job.location}',
-                                            style: const TextStyle(color: Colors.grey),
+                                            style: TextStyle(
+                                              color: Colors.grey[600],
+                                              fontSize: 13,
+                                            ),
                                           ),
                                           Text(
                                             'LKR ${job.salary['min']} - ${job.salary['max']}',
                                             style: const TextStyle(
                                               color: Colors.green,
-                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w500,
                                             ),
                                           ),
                                         ],
                                       ),
                                     ),
-                                    const Icon(Icons.favorite_border),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.favorite_border,
+                                        color: Colors.grey,
+                                        size: 20,
+                                      ),
+                                      constraints: const BoxConstraints(),
+                                      padding: EdgeInsets.zero,
+                                      onPressed: () {},
+                                    ),
                                   ],
                                 ),
                               ),
@@ -328,58 +352,79 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.blue,
         child: const Icon(Icons.add),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 1,
-        selectedItemColor: Colors.purple,
-        onTap: (index) => index == 2 ? Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const JobsScreen()),
-        ) : null,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.people), label: "Community"),
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.work), label: "Jobs"),
-        ],
-      ),
     );
   }
 
   Widget _buildJobShimmer() {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
           Container(
-            width: 50,
-            height: 50,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: Colors.grey[300],
               borderRadius: BorderRadius.circular(8),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
                   height: 16,
-                  width: 150,
+                  width: 120,
                   color: Colors.grey[300],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Container(
                   height: 14,
-                  width: 100,
+                  width: 80,
                   color: Colors.grey[300],
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLocationScreen() {
+    return const Center(
+      child: Text(
+        'Location Screen - Coming Soon!',
+        style: TextStyle(fontSize: 24),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _getSelectedScreen(),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people),
+            label: 'Community',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.work),
+            label: 'Jobs',
           ),
         ],
       ),

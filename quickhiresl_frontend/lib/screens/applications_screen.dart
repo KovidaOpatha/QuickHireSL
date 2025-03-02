@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/job_service.dart';
 import '../models/application.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../widgets/feedback_dialog.dart';
 
 class ApplicationsScreen extends StatefulWidget {
   const ApplicationsScreen({Key? key}) : super(key: key);
@@ -18,6 +19,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
   String? _error;
   String? _userId;
   String _selectedFilter = 'all';
+  Set<String> _feedbackProvidedApplications = {};
 
   @override
   void initState() {
@@ -30,7 +32,39 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
     setState(() {
       _userId = userId;
     });
+    await _loadFeedbackStatus();
     _loadApplications();
+  }
+
+  // Load feedback status from secure storage
+  Future<void> _loadFeedbackStatus() async {
+    try {
+      // Get the stored feedback status
+      final feedbackStatusJson = await _storage.read(key: 'feedback_status');
+      if (feedbackStatusJson != null) {
+        final List<dynamic> feedbackStatus = List<dynamic>.from(
+            feedbackStatusJson.split(',').where((id) => id.isNotEmpty));
+
+        setState(() {
+          _feedbackProvidedApplications =
+              Set<String>.from(feedbackStatus.map((id) => id.toString()));
+        });
+      }
+    } catch (e) {
+      print('Error loading feedback status: $e');
+    }
+  }
+
+  // Save feedback status to secure storage
+  Future<void> _saveFeedbackStatus() async {
+    try {
+      await _storage.write(
+        key: 'feedback_status',
+        value: _feedbackProvidedApplications.join(','),
+      );
+    } catch (e) {
+      print('Error saving feedback status: $e');
+    }
   }
 
   Future<void> _loadApplications() async {
@@ -62,10 +96,34 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
     }
   }
 
+  String _formatDate(DateTime date) {
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  List<Application> get _filteredApplications {
+    if (_selectedFilter == 'all') return _applications;
+    return _applications.where((app) => app.status == _selectedFilter).toList();
+  }
+
   Future<void> _showCompletionDialog(Application application) async {
     if (application.status != 'accepted') {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Job must be accepted before requesting completion')),
+        const SnackBar(
+            content: Text('Job must be accepted before requesting completion')),
       );
       return;
     }
@@ -74,11 +132,9 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Request Job Completion'),
-        content: Text(
-          _userId == application.applicant.id
-              ? 'Are you sure you want to mark this job as completed? This will send a completion request to the employer.'
-              : 'Are you sure you want to mark this job as completed? This will send a completion request to the student.'
-        ),
+        content: Text(_userId == application.applicant.id
+            ? 'Are you sure you want to mark this job as completed? This will send a completion request to the employer.'
+            : 'Are you sure you want to mark this job as completed? This will send a completion request to the student.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -87,7 +143,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(dialogContext);
-              
+
               try {
                 final token = await _storage.read(key: 'jwt_token');
                 if (token == null) {
@@ -100,13 +156,16 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
 
                 await _jobService.requestCompletion(
                   application.id,
-                  _userId == application.applicant.id ? 'applicant' : 'jobOwner',
+                  _userId == application.applicant.id
+                      ? 'applicant'
+                      : 'jobOwner',
                   token,
                 );
 
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Completion request sent successfully')),
+                  const SnackBar(
+                      content: Text('Completion request sent successfully')),
                 );
                 _loadApplications();
               } catch (e) {
@@ -126,76 +185,12 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
     );
   }
 
-  Future<void> _showConfirmationDialog(Application application) async {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirm Job Completion'),
-        content: const Text(
-          'Are you sure you want to confirm this job as completed? This action cannot be undone.'
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              setState(() => _isLoading = true);
-              
-              try {
-                final token = await _storage.read(key: 'jwt_token');
-                if (token == null) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Please login first')),
-                    );
-                  }
-                  return;
-                }
-
-                await _jobService.confirmCompletion(application.id, token);
-
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Job completion confirmed successfully')),
-                  );
-                  _loadApplications();
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: ${e.toString()}')),
-                  );
-                }
-              } finally {
-                if (mounted) {
-                  setState(() => _isLoading = false);
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black,
-            ),
-            child: const Text('Confirm'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    return '${date.day} ${months[date.month - 1]} ${date.year}';
-  }
-
-  List<Application> get _filteredApplications {
-    if (_selectedFilter == 'all') return _applications;
-    return _applications.where((app) => app.status == _selectedFilter).toList();
+  // Method to handle feedback submission
+  void _handleFeedbackSubmission(String applicationId) {
+    setState(() {
+      _feedbackProvidedApplications.add(applicationId);
+    });
+    _saveFeedbackStatus();
   }
 
   @override
@@ -213,7 +208,8 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
       body: Column(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -315,6 +311,9 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                       itemCount: _filteredApplications.length,
                       itemBuilder: (context, index) {
                         final application = _filteredApplications[index];
+                        final feedbackProvided = _feedbackProvidedApplications
+                            .contains(application.id);
+
                         return Container(
                           margin: const EdgeInsets.only(bottom: 16.0),
                           decoration: BoxDecoration(
@@ -364,36 +363,46 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                                       children: [
                                         Expanded(
                                           child: ElevatedButton(
-                                            onPressed: () => _showCompletionDialog(application),
+                                            onPressed: () =>
+                                                _showCompletionDialog(
+                                                    application),
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: Colors.black,
                                               shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(10),
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
                                               ),
                                             ),
                                             child: Text(
-                                              _userId == application.applicant.id
-                                                ? 'Request Job Completion'
-                                                : 'Request Student Completion',
-                                              style: const TextStyle(color: Colors.white),
+                                              _userId ==
+                                                      application.applicant.id
+                                                  ? 'Request Job Completion'
+                                                  : 'Request Student Completion',
+                                              style: const TextStyle(
+                                                  color: Colors.white),
                                             ),
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                if (application.status == 'completion_requested')
+                                if (application.status ==
+                                    'completion_requested')
                                   Padding(
                                     padding: const EdgeInsets.only(top: 16.0),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
                                       children: [
                                         Container(
                                           padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFF98C9C5).withOpacity(0.2),
-                                            borderRadius: BorderRadius.circular(10),
-                                            border: Border.all(color: Colors.black, width: 1),
+                                            color: const Color(0xFF98C9C5)
+                                                .withOpacity(0.2),
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                            border: Border.all(
+                                                color: Colors.black, width: 1),
                                           ),
                                           child: Text(
                                             _userId == application.jobOwner.id
@@ -405,19 +414,31 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                                           ),
                                         ),
                                         const SizedBox(height: 12),
-                                        if ((_userId == application.jobOwner.id && application.completionDetails?.requestedBy == 'applicant') ||
-                                            (_userId == application.applicant.id && application.completionDetails?.requestedBy == 'jobOwner'))
+                                        if ((_userId ==
+                                                    application.jobOwner.id &&
+                                                application.completionDetails
+                                                        ?.requestedBy ==
+                                                    'applicant') ||
+                                            (_userId ==
+                                                    application.applicant.id &&
+                                                application.completionDetails
+                                                        ?.requestedBy ==
+                                                    'jobOwner'))
                                           ElevatedButton(
-                                            onPressed: () => _showConfirmationDialog(application),
+                                            onPressed: () =>
+                                                _showCompletionDialog(
+                                                    application),
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: Colors.black,
                                               shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(10),
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
                                               ),
                                             ),
                                             child: const Text(
                                               'Confirm Completion',
-                                              style: TextStyle(color: Colors.white),
+                                              style: TextStyle(
+                                                  color: Colors.white),
                                             ),
                                           ),
                                       ],
@@ -431,14 +452,17 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                                       decoration: BoxDecoration(
                                         color: Colors.green.withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(color: Colors.green, width: 1),
+                                        border: Border.all(
+                                            color: Colors.green, width: 1),
                                       ),
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           const Row(
                                             children: [
-                                              Icon(Icons.check_circle, color: Colors.green),
+                                              Icon(Icons.check_circle,
+                                                  color: Colors.green),
                                               SizedBox(width: 8),
                                               Text(
                                                 'Job Successfully Completed',
@@ -449,14 +473,162 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                                               ),
                                             ],
                                           ),
-                                          if (application.completionDetails?.confirmedAt != null)
+                                          if (application.completionDetails
+                                                  ?.confirmedAt !=
+                                              null)
                                             Padding(
-                                              padding: const EdgeInsets.only(top: 4),
+                                              padding:
+                                                  const EdgeInsets.only(top: 4),
                                               child: Text(
                                                 'Completed on ${_formatDate(application.completionDetails!.confirmedAt!)}',
                                                 style: const TextStyle(
                                                   color: Colors.green,
                                                   fontSize: 12,
+                                                ),
+                                              ),
+                                            ),
+                                          const SizedBox(height: 10),
+                                          if (!feedbackProvided)
+                                            Align(
+                                              alignment: Alignment.centerLeft,
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  gradient:
+                                                      const LinearGradient(
+                                                    colors: [
+                                                      Color(0xFF0C8E45),
+                                                      Color(0xFF076D32),
+                                                    ],
+                                                    begin: Alignment.topLeft,
+                                                    end: Alignment.bottomRight,
+                                                  ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black
+                                                          .withOpacity(0.3),
+                                                      spreadRadius: 1,
+                                                      blurRadius: 5,
+                                                      offset:
+                                                          const Offset(0, 3),
+                                                    ),
+                                                  ],
+                                                ),
+                                                child: ElevatedButton(
+                                                  onPressed: () {
+                                                    showFeedbackDialog(context,
+                                                        applicationId:
+                                                            application.id,
+                                                        onFeedbackSubmitted:
+                                                            () {
+                                                      _handleFeedbackSubmission(
+                                                          application.id);
+                                                    });
+                                                  },
+                                                  style:
+                                                      ElevatedButton.styleFrom(
+                                                    foregroundColor:
+                                                        Colors.white,
+                                                    backgroundColor:
+                                                        Colors.transparent,
+                                                    shadowColor:
+                                                        Colors.transparent,
+                                                    elevation: 0,
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 18,
+                                                        vertical: 12),
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
+                                                    ),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      const Icon(
+                                                        Icons.rate_review,
+                                                        color: Colors.white,
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      Text(
+                                                        'Enter Feedback',
+                                                        style: TextStyle(
+                                                          color: Colors.white,
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 16,
+                                                          letterSpacing: 0.5,
+                                                          shadows: [
+                                                            Shadow(
+                                                              blurRadius: 3.0,
+                                                              color: Colors
+                                                                  .black
+                                                                  .withOpacity(
+                                                                      0.3),
+                                                              offset:
+                                                                  const Offset(
+                                                                      0, 1),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            )
+                                          else
+                                            Align(
+                                              alignment: Alignment.centerLeft,
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 16,
+                                                        vertical: 10),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.grey[200],
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                  border: Border.all(
+                                                      color:
+                                                          Colors.grey.shade400,
+                                                      width: 1),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black
+                                                          .withOpacity(0.1),
+                                                      spreadRadius: 1,
+                                                      blurRadius: 3,
+                                                      offset:
+                                                          const Offset(0, 1),
+                                                    ),
+                                                  ],
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    const Icon(
+                                                      Icons.check_circle,
+                                                      color: Colors.grey,
+                                                      size: 20,
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    const Text(
+                                                      'Feedback Submitted',
+                                                      style: TextStyle(
+                                                        color: Colors.grey,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        fontSize: 14,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
                                             ),
