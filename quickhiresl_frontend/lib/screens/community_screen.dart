@@ -53,7 +53,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
     if (response.statusCode == 201) {
       setState(() {
-        posts.insert(0, newPost);
+        posts.insert(0, jsonDecode(response.body));
       });
     } else {
       print("Error posting message");
@@ -62,19 +62,51 @@ class _CommunityScreenState extends State<CommunityScreen> {
     _postController.clear();
   }
 
-  void toggleReaction(Map<String, dynamic> postOrReply) {
+  Future<void> toggleReaction(Map<String, dynamic> post) async {
+    // Create a copy of the post to update reactions
+    Map<String, dynamic> updatedPost = Map.from(post);
+
+    // Toggle the reaction locally first
+    if (updatedPost['reactions']['likedBy'].contains("You")) {
+      updatedPost['reactions']['likes']--;
+      updatedPost['reactions']['likedBy'].remove("You");
+    } else {
+      updatedPost['reactions']['likes']++;
+      updatedPost['reactions']['likedBy'].add("You");
+    }
+
+    // Update the UI immediately
     setState(() {
-      if (postOrReply['reactions']['likedBy'].contains("You")) {
-        postOrReply['reactions']['likes']--;
-        postOrReply['reactions']['likedBy'].remove("You");
-      } else {
-        postOrReply['reactions']['likes']++;
-        postOrReply['reactions']['likedBy'].add("You");
+      final index = posts.indexWhere((p) => p['_id'] == post['_id']);
+      if (index != -1) {
+        posts[index] = updatedPost;
       }
     });
+
+    // Send update to server
+    try {
+      final response = await http.put(
+        Uri.parse("http://localhost:5000/api/chats/${post['_id']}/react"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "user": "You",
+          "liked": !post['reactions']['likedBy'].contains("You"),
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        // If server update fails, revert the local change
+        print("Error updating reaction: ${response.statusCode}");
+        await fetchPosts(); // Refresh from server
+      }
+    } catch (e) {
+      print("Error updating reaction: $e");
+      await fetchPosts(); // Refresh from server on error
+    }
   }
 
-  void addReply(List<dynamic> replyList, String replyText) {
+  Future<void> addReply(
+      String postId, List<dynamic> replyList, String replyText) async {
     final String currentTime = DateFormat('h:mm a').format(DateTime.now());
 
     final newReply = {
@@ -82,13 +114,30 @@ class _CommunityScreenState extends State<CommunityScreen> {
       "avatar": "assets/avatar.png",
       "message": replyText,
       "time": currentTime,
-      "replies": [],
-      "reactions": {"likes": 0, "likedBy": []}, // Allow likes on replies
+      "reactions": {"likes": 0, "likedBy": []},
     };
 
     setState(() {
       replyList.add(newReply);
     });
+
+    // Send update to server
+    try {
+      final response = await http.post(
+        Uri.parse("http://localhost:5000/api/chats/${postId}/reply"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(newReply),
+      );
+
+      if (response.statusCode != 201) {
+        // If server update fails, refresh from server
+        print("Error adding reply: ${response.statusCode}");
+        await fetchPosts();
+      }
+    } catch (e) {
+      print("Error adding reply: $e");
+      await fetchPosts(); // Refresh from server on error
+    }
   }
 
   @override
@@ -177,20 +226,23 @@ class _CommunityScreenState extends State<CommunityScreen> {
               Spacer(),
               TextButton(
                 onPressed: () {
-                  _showReplyDialog(replies);
+                  _showReplyDialog(post['_id'], replies);
                 },
                 child: Text("Reply", style: TextStyle(color: Colors.blue)),
               ),
             ],
           ),
           ...replies
-              .map<Widget>((reply) => _buildReply(reply, reply["replies"]))
+              .map<Widget>((reply) =>
+                  _buildReply(post['_id'], reply, reply["replies"] ?? []))
+              .toList(),
         ],
       ),
     );
   }
 
-  Widget _buildReply(Map<String, dynamic> reply, List<dynamic> replyList) {
+  Widget _buildReply(
+      String postId, Map<String, dynamic> reply, List<dynamic> replyList) {
     return Padding(
       padding: EdgeInsets.only(left: 30, top: 5),
       child: Column(
@@ -199,7 +251,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               CircleAvatar(
-                backgroundImage: AssetImage("assets/avatar.png"),
+                backgroundImage: AssetImage(reply['avatar']),
                 radius: 15,
               ),
               SizedBox(width: 10),
@@ -229,7 +281,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                         SizedBox(width: 10),
                         TextButton(
                           onPressed: () {
-                            _showReplyDialog(replyList);
+                            _showReplyDialog(postId, replyList);
                           },
                           child: Text("Reply",
                               style: TextStyle(color: Colors.blue)),
@@ -241,14 +293,16 @@ class _CommunityScreenState extends State<CommunityScreen> {
               ),
             ],
           ),
-          ...replyList.map<Widget>((nestedReply) =>
-              _buildReply(nestedReply, nestedReply["replies"] ?? []))
+          ...replyList
+              .map<Widget>((nestedReply) => _buildReply(
+                  postId, nestedReply, nestedReply["replies"] ?? []))
+              .toList(),
         ],
       ),
     );
   }
 
-  void _showReplyDialog(List<dynamic> replyList) {
+  void _showReplyDialog(String postId, List<dynamic> replyList) {
     TextEditingController replyController = TextEditingController();
     showDialog(
       context: context,
@@ -265,7 +319,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
             TextButton(
               onPressed: () {
                 if (replyController.text.trim().isNotEmpty) {
-                  addReply(replyList, replyController.text.trim());
+                  addReply(postId, replyList, replyController.text.trim());
                   Navigator.pop(context);
                 }
               },
