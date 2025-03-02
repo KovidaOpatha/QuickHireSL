@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'job_details_screen.dart';
 import '../models/job.dart';
 import '../services/job_service.dart';
 import '../services/auth_service.dart';
-import '../services/user_service.dart';  
 import 'post_job_screen.dart';
+import 'job_details_screen.dart';
 import 'profile_screen.dart';
 import 'community_screen.dart';
-import 'jobs_screen.dart';  
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -19,10 +17,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final JobService _jobService = JobService();
   final AuthService _authService = AuthService();
-  final UserService _userService = UserService();  
   List<Job> _jobs = [];
   bool _isLoading = true;
-  Map<String, dynamic>? _userData;  
 
   // Track the current index of BottomNavigationBar
   int _selectedIndex = 1;
@@ -31,7 +27,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadJobs();
-    _loadUserData();  
   }
 
   Future<void> _loadJobs() async {
@@ -60,19 +55,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _loadUserData() async {  
-    try {
-      final response = await _userService.getUserProfile();
-      if (mounted) {
-        setState(() {
-          _userData = response['data'];
-        });
-      }
-    } catch (e) {
-      print('[ERROR] Failed to load user data: $e');
-    }
-  }
-
   Future<void> _navigateToPostJob() async {
     final token = await _authService.getToken();
     if (token == null) {
@@ -96,23 +78,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Handle Bottom Navigation Bar selection
   void _onItemTapped(int index) {
-    if (index == 2) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const JobsScreen()),
-      );
-    } else {
-      setState(() {
-        _selectedIndex = index;
-      });
-    }
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 
   // Define the screens that will be shown based on the selected index
   Widget _getSelectedScreen() {
     switch (_selectedIndex) {
       case 0:
-        return CommunityScreen();
+        return CommunityScreen(
+          onNavigateToTab: _onItemTapped,
+        );
       case 1:
         return _buildHomeScreen();
       case 2:
@@ -120,6 +97,23 @@ class _HomeScreenState extends State<HomeScreen> {
       default:
         return _buildHomeScreen();
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _getSelectedScreen(),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: "Community"),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.location_on), label: "Location"),
+        ],
+      ),
+    );
   }
 
   Widget _buildHomeScreen() {
@@ -132,19 +126,9 @@ class _HomeScreenState extends State<HomeScreen> {
           icon: const Icon(Icons.menu, color: Colors.black),
           onPressed: () {},
         ),
-        title: Image.asset(
-          'assets/quickhire_logo.png',
-          height: 30,
-          errorBuilder: (context, error, stackTrace) {
-            return const Text(
-              'QuickHire',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 20,
-                fontWeight: FontWeight.w500,
-              ),
-            );
-          },
+        title: const Text(
+          'QuickHire',
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         actions: [
@@ -153,16 +137,14 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const ProfileScreen()),
-              ).then((_) => _loadUserData());
+              );
             },
-            child: Container(
-              margin: const EdgeInsets.only(right: 16),
-              child: const CircleAvatar(
-                backgroundColor: Colors.black,
-                child: Icon(Icons.person, color: Colors.white),
-              ),
+            child: const CircleAvatar(
+              backgroundColor: Colors.white,
+              child: Icon(Icons.person, color: Colors.black),
             ),
           ),
+          const SizedBox(width: 10),
         ],
       ),
       body: Padding(
@@ -171,10 +153,10 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(15),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -187,70 +169,65 @@ class _HomeScreenState extends State<HomeScreen> {
                     'Part-time job',
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const TextField(
-                      decoration: InputDecoration(
-                        icon: Icon(Icons.search),
-                        hintText: 'Search',
-                        border: InputBorder.none,
+                  const SizedBox(height: 10),
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: "Search",
+                      prefixIcon: const Icon(Icons.search),
+                      filled: true,
+                      fillColor: Colors.grey[300],
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             const Text(
               'Available now',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
             SizedBox(
               height: 100,
-              child: ListView.builder(
+              child: ListView(
                 scrollDirection: Axis.horizontal,
-                itemCount: 4,
-                itemBuilder: (context, index) {
+                children: List.generate(5, (index) {
                   return Container(
+                    margin: const EdgeInsets.only(right: 10),
                     width: 80,
-                    margin: const EdgeInsets.only(right: 12),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Column(
+                    child: const Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const CircleAvatar(
+                        CircleAvatar(
                           backgroundColor: Colors.grey,
                           child: Icon(Icons.person, color: Colors.white),
                         ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(
-                            5,
-                            (index) => const Icon(Icons.star_border, size: 14),
-                          ),
-                        ),
+                        SizedBox(height: 5),
+                        Text("⭐⭐⭐⭐⭐"),
                       ],
                     ),
                   );
-                },
+                }),
               ),
             ),
-            const SizedBox(height: 24),
-            const Text(
-              'Recommended jobs',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Recommended jobs',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
             Expanded(
               child: _isLoading
                   ? ListView.builder(
@@ -261,9 +238,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     )
                   : _jobs.isEmpty
                       ? const Center(
-                          child: Text(
-                            'No jobs available at the moment',
-                            style: TextStyle(color: Colors.grey),
+                          child: Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Text(
+                              'No jobs available at the moment',
+                              style: TextStyle(color: Colors.grey),
+                            ),
                           ),
                         )
                       : ListView.builder(
@@ -275,68 +255,59 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => JobDetailsScreen(job: job),
+                                    builder: (context) =>
+                                        JobDetailsScreen(job: job),
                                   ),
                                 );
                               },
                               child: Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                margin: const EdgeInsets.symmetric(vertical: 8),
+                                padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
                                   color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(15),
                                 ),
                                 child: Row(
                                   children: [
                                     Container(
-                                      width: 36,
-                                      height: 36,
+                                      width: 50,
+                                      height: 50,
                                       decoration: BoxDecoration(
-                                        color: Colors.grey[200],
+                                        color: Colors.grey[300],
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      child: const Icon(Icons.calendar_today_outlined, size: 20),
+                                      child: const Icon(Icons.business,
+                                          color: Colors.grey),
                                     ),
-                                    const SizedBox(width: 12),
+                                    const SizedBox(width: 10),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             job.title,
                                             style: const TextStyle(
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.w500,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
                                             ),
                                           ),
                                           Text(
                                             '${job.company} • ${job.location}',
-                                            style: TextStyle(
-                                              color: Colors.grey[600],
-                                              fontSize: 13,
-                                            ),
+                                            style: const TextStyle(
+                                                color: Colors.grey),
                                           ),
                                           Text(
                                             'LKR ${job.salary['min']} - ${job.salary['max']}',
                                             style: const TextStyle(
                                               color: Colors.green,
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w500,
+                                              fontWeight: FontWeight.bold,
                                             ),
                                           ),
                                         ],
                                       ),
                                     ),
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons.favorite_border,
-                                        color: Colors.grey,
-                                        size: 20,
-                                      ),
-                                      constraints: const BoxConstraints(),
-                                      padding: EdgeInsets.zero,
-                                      onPressed: () {},
-                                    ),
+                                    const Icon(Icons.favorite_border),
                                   ],
                                 ),
                               ),
@@ -357,36 +328,36 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildJobShimmer() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(15),
       ),
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 50,
+            height: 50,
             decoration: BoxDecoration(
               color: Colors.grey[300],
               borderRadius: BorderRadius.circular(8),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
                   height: 16,
-                  width: 120,
+                  width: 150,
                   color: Colors.grey[300],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 Container(
                   height: 14,
-                  width: 80,
+                  width: 100,
                   color: Colors.grey[300],
                 ),
               ],
@@ -398,36 +369,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildLocationScreen() {
-    return const Center(
-      child: Text(
-        'Location Screen - Coming Soon!',
-        style: TextStyle(fontSize: 24),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
-      body: _getSelectedScreen(),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Community',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.work),
-            label: 'Jobs',
-          ),
-        ],
+      appBar: AppBar(
+        title: const Text('Location Screen'),
       ),
+      body: Center(child: const Text('Location Screen Content')),
     );
   }
 }
