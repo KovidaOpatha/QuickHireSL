@@ -4,6 +4,9 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class CommunityScreen extends StatefulWidget {
+  final Function(int)? onNavigateToTab;
+  CommunityScreen({this.onNavigateToTab});
+
   @override
   _CommunityScreenState createState() => _CommunityScreenState();
 }
@@ -103,7 +106,13 @@ class _CommunityScreenState extends State<CommunityScreen> {
         centerTitle: true,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (widget.onNavigateToTab != null) {
+              widget.onNavigateToTab!(1);
+            } else {
+              Navigator.pop(context);
+            }
+          },
         ),
       ),
       body: Column(
