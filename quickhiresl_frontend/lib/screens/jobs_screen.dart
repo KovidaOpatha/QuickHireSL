@@ -124,6 +124,7 @@ class _JobsScreenState extends State<JobsScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        automaticallyImplyLeading: false,  
         title: const Text(
           'Available Jobs',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),

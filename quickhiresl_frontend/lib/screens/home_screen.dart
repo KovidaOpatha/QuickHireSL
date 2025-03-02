@@ -6,6 +6,7 @@ import 'post_job_screen.dart';
 import 'job_details_screen.dart';
 import 'profile_screen.dart';
 import 'community_screen.dart';
+import 'jobs_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -93,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 1:
         return _buildHomeScreen();
       case 2:
-        return _buildLocationScreen();
+        return const JobsScreen();
       default:
         return _buildHomeScreen();
     }
@@ -101,17 +102,33 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _getSelectedScreen(),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.people), label: "Community"),
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.location_on), label: "Location"),
-        ],
+    return WillPopScope(
+      onWillPop: () async {
+        if (_selectedIndex != 1) {
+          setState(() {
+            _selectedIndex = 1;
+          });
+          return false;
+        }
+        return true;
+      },
+      child: Scaffold(
+        body: _getSelectedScreen(),
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.people), label: "Community"),
+            BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.work), label: "Jobs"),
+          ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _navigateToPostJob,
+          backgroundColor: Colors.blue,
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
@@ -317,11 +334,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToPostJob,
-        backgroundColor: Colors.blue,
-        child: const Icon(Icons.add),
       ),
     );
   }
