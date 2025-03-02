@@ -143,7 +143,7 @@ class _JobOwnerRegistrationScreenState
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: const BoxDecoration(
-                color: Color(0xFF78A6A3),
+                color: Color(0xFF98C9C5),
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(20),
                   bottomRight: Radius.circular(20),
