@@ -4,6 +4,7 @@ import '../services/job_service.dart';
 import '../services/auth_service.dart';
 import '../models/application.dart';
 import 'applicant_details_screen.dart';
+import '../widgets/feedback_dialog.dart';
 
 class JobOwnerDashboard extends StatefulWidget {
   const JobOwnerDashboard({Key? key}) : super(key: key);
@@ -31,7 +32,6 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
       });
 
       final token = await _authService.getToken();
-      print('[DEBUG] Retrieved token: $token');
       if (token == null) {
         setState(() => _isLoading = false);
         if (mounted) {
@@ -43,23 +43,15 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
         }
       }
 
-      final jobService = provider.Provider.of<JobService>(context, listen: false);
+      final jobService =
+          provider.Provider.of<JobService>(context, listen: false);
       final applications = await jobService.getJobOwnerApplications(token!);
-      
-      print('[DEBUG] Loaded applications: ${applications.length}');
-      for (var app in applications) {
-        print('[DEBUG] Application ID: ${app.id}');
-        print('[DEBUG] Status: ${app.status}');
-        print('[DEBUG] Completion Details: ${app.completionDetails?.toJson()}');
-        print('[DEBUG] Requested By: ${app.completionDetails?.requestedBy}');
-      }
 
       setState(() {
         _applications = applications;
         _isLoading = false;
       });
     } catch (e) {
-      print('[DEBUG] Error loading applications: $e');
       setState(() {
         _isLoading = false;
         _applications = [];
@@ -72,7 +64,8 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
     }
   }
 
-  Future<void> _updateApplicationStatus(String applicationId, String status) async {
+  Future<void> _updateApplicationStatus(
+      String applicationId, String status) async {
     try {
       final token = await _authService.getToken();
       if (token == null) {
@@ -85,7 +78,8 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
         }
       }
 
-      final jobService = provider.Provider.of<JobService>(context, listen: false);
+      final jobService =
+          provider.Provider.of<JobService>(context, listen: false);
       await jobService.updateApplicationStatus(applicationId, status, token!);
       await _loadApplications(); // Reload the list
     } catch (e) {
@@ -110,14 +104,19 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
         }
       }
 
-      final jobService = provider.Provider.of<JobService>(context, listen: false);
+      final jobService =
+          provider.Provider.of<JobService>(context, listen: false);
       await jobService.confirmCompletion(applicationId, token!);
       await _loadApplications(); // Reload the list
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Job completion confirmed successfully')),
+          const SnackBar(
+              content: Text('Job completion confirmed successfully')),
         );
       }
+
+      // Show the feedback dialog after confirming the completion
+      showFeedbackDialog(context);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -128,7 +127,7 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
   }
 
   Widget _buildCompletionButton(Application application) {
-    if (application.status == 'completion_requested' && 
+    if (application.status == 'completion_requested' &&
         application.completionDetails?.requestedBy == 'applicant') {
       return Expanded(
         child: ElevatedButton(
@@ -150,8 +149,7 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Confirm Job Completion'),
         content: const Text(
-          'Are you sure you want to confirm this job as completed? This action cannot be undone.'
-        ),
+            'Are you sure you want to confirm this job as completed? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -160,7 +158,7 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(dialogContext);
-              
+
               try {
                 final token = await _authService.getToken();
                 if (token == null) {
@@ -171,14 +169,19 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
                   return;
                 }
 
-                final jobService = provider.Provider.of<JobService>(context, listen: false);
+                final jobService =
+                    provider.Provider.of<JobService>(context, listen: false);
                 await jobService.confirmCompletion(application.id, token);
                 await _loadApplications();
-                
+
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Job completion confirmed successfully')),
+                  const SnackBar(
+                      content: Text('Job completion confirmed successfully')),
                 );
+
+                // Show the feedback dialog after confirming the completion
+                showFeedbackDialog(context);
               } catch (e) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -223,17 +226,6 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
                   itemCount: _applications.length,
                   itemBuilder: (context, index) {
                     final application = _applications[index];
-                    
-                    // Debug print for each application card
-                    print('[DEBUG] Building card for application:');
-                    print('[DEBUG] - ID: ${application.id}');
-                    print('[DEBUG] - Status: ${application.status}');
-                    print('[DEBUG] - Completion Details: ${application.completionDetails?.toJson()}');
-                    print('[DEBUG] - Requested By: ${application.completionDetails?.requestedBy}');
-                    
-                    final bool showCompletionButton = application.status == 'completion_requested';
-                    
-                    print('[DEBUG] Show completion button: $showCompletionButton');
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 16.0),
@@ -277,7 +269,7 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
                                 ),
                               ),
                             ),
-                            if (showCompletionButton)
+                            if (application.status == 'completion_requested')
                               Padding(
                                 padding: const EdgeInsets.only(top: 8.0),
                                 child: Container(
@@ -305,7 +297,8 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) => ApplicantDetailsScreen(
+                                          builder: (context) =>
+                                              ApplicantDetailsScreen(
                                             application: application,
                                           ),
                                         ),
@@ -327,15 +320,18 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
                                     ),
                                   ),
                                 ),
-                                if (showCompletionButton) ...[
+                                if (application.status ==
+                                    'completion_requested') ...[
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: ElevatedButton(
-                                      onPressed: () => _showConfirmationDialog(application),
+                                      onPressed: () =>
+                                          _showConfirmationDialog(application),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.green,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(10),
+                                          borderRadius:
+                                              BorderRadius.circular(10),
                                         ),
                                       ),
                                       child: const Text(

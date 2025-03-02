@@ -5,7 +5,8 @@ import '../services/auth_service.dart';
 import '../services/user_service.dart';  
 import 'post_job_screen.dart';
 import 'job_details_screen.dart';
-import 'profile_screen.dart'; 
+import 'profile_screen.dart';
+import 'community_screen.dart';
 import 'jobs_screen.dart';  
 
 class HomeScreen extends StatefulWidget {
@@ -23,6 +24,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   Map<String, dynamic>? _userData;  
 
+  // Track the current index of BottomNavigationBar
+  int _selectedIndex = 1;
+
   @override
   void initState() {
     super.initState();
@@ -35,7 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _isLoading = true;
       });
-      
+
       final jobs = await _jobService.getJobs();
       if (mounted) {
         setState(() {
@@ -90,8 +94,45 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Handle Bottom Navigation Bar selection
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  // Define the screens that will be shown based on the selected index
+  Widget _getSelectedScreen() {
+    switch (_selectedIndex) {
+      case 0:
+        return CommunityScreen();
+      case 1:
+        return _buildHomeScreen();
+      case 2:
+        return _buildLocationScreen();
+      default:
+        return _buildHomeScreen();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    return Scaffold(
+      body: _getSelectedScreen(),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: "Community"),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.location_on), label: "Location"),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHomeScreen() {
     return Scaffold(
       backgroundColor: const Color(0xFF98C9C5),
       appBar: AppBar(
@@ -229,12 +270,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   'Recommended jobs',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                if (_isLoading)
-                  const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
               ],
             ),
             Expanded(
@@ -264,7 +299,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => JobDetailsScreen(job: job),
+                                    builder: (context) =>
+                                        JobDetailsScreen(job: job),
                                   ),
                                 );
                               },
@@ -284,12 +320,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                         color: Colors.grey[300],
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      child: const Icon(Icons.business, color: Colors.grey),
+                                      child: const Icon(Icons.business,
+                                          color: Colors.grey),
                                     ),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             job.title,
@@ -300,7 +338,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ),
                                           Text(
                                             '${job.company} • ${job.location}',
-                                            style: const TextStyle(color: Colors.grey),
+                                            style: const TextStyle(
+                                                color: Colors.grey),
                                           ),
                                           Text(
                                             'LKR ${job.salary['min']} - ${job.salary['max']}',
@@ -328,6 +367,7 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.blue,
         child: const Icon(Icons.add),
       ),
+
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 1,
         selectedItemColor: Colors.purple,
@@ -341,8 +381,6 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.work), label: "Jobs"),
         ],
       ),
-    );
-  }
 
   Widget _buildJobShimmer() {
     return Container(
@@ -383,6 +421,15 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLocationScreen() {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Location Screen'),
+      ),
+      body: Center(child: const Text('Location Screen Content')),
     );
   }
 }
