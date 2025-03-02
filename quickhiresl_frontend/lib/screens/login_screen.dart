@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'forgot_password_screen.dart';
 import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -107,66 +108,72 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 40),
-                      _buildTextField(
-                        label: 'Username or Email',
-                        icon: Icons.person_outline,
-                        controller: _emailController,
-                      ),
-                      const SizedBox(height: 20),
-                      _buildTextField(
-                        label: 'Password',
-                        icon: Icons.lock_outline,
-                        isPassword: true,
-                        controller: _passwordController,
-                      ),
-                      const SizedBox(height: 10),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () => Navigator.pushNamed(context, '/forgotpassword'),
-                          child: const Text('Forgot Password?', style: TextStyle(color: Colors.black)),
+        child: Column(
+          children: [
+            _buildHeader(), // Keep the header as it is
+            Expanded(
+              child: Center( // Center the text fields
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min, // Makes it compact
+                      children: [
+                        _buildTextField(
+                          label: 'Username or Email',
+                          icon: Icons.person_outline,
+                          controller: _emailController,
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 55,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _login,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
+                        const SizedBox(height: 20),
+                        _buildTextField(
+                          label: 'Password',
+                          icon: Icons.lock_outline,
+                          isPassword: true,
+                          controller: _passwordController,
+                        ),
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 55,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _login,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
                             ),
+                            child: _isLoading
+                                ? const CircularProgressIndicator(color: Colors.white)
+                                : const Text(
+                                    'Login',
+                                    style: TextStyle(fontSize: 16, color: Colors.white),
+                                  ),
                           ),
-                          child: _isLoading
-                              ? const CircularProgressIndicator(color: Colors.white)
-                              : const Text(
-                                  'Login',
-                                  style: TextStyle(fontSize: 16, color: Colors.white),
-                                ),
                         ),
-                      ),
-                      const SizedBox(height: 30),
-                      _buildSignUpText(),
-                    ],
+                        const SizedBox(height: 10),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
+                              );
+                            },
+                            child: const Text('Forgot Password?', style: TextStyle(color: Colors.black)),
+                          ),
+                        ),
+                        const SizedBox(height: 30),
+                        _buildSignUpText(),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -224,4 +231,3 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 }
-
