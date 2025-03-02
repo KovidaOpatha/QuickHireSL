@@ -61,6 +61,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
       "replies": [],
       "reactions": {"likes": 0, "likedBy": []},
     };
+
+    saveChat(newChat); // Save chat to the database
+    _postController.clear();
   }
 
   @override
