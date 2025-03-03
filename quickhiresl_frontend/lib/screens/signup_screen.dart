@@ -250,7 +250,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         controller: _emailController,
                         decoration: InputDecoration(
                           labelText: 'Email',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(30)),
+                          prefixIcon: Icon(Icons.person_outline, color: Colors.grey[600]), // Use prefixIcon instead of icon
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
