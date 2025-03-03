@@ -23,7 +23,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   Future<void> fetchPosts() async {
     final response =
-        await http.get(Uri.parse("http://localhost:5000/api/chats"));
+        await http.get(Uri.parse("http://localhost:3000/api/chats"));
     if (response.statusCode == 200) {
       setState(() {
         posts = List<Map<String, dynamic>>.from(jsonDecode(response.body));
@@ -46,7 +46,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
     };
 
     final response = await http.post(
-      Uri.parse("http://localhost:5000/api/chats"),
+      Uri.parse("http://localhost:3000/api/chats"),
       headers: {"Content-Type": "application/json"},
       body: jsonEncode(newPost),
     );
@@ -84,7 +84,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
       // Send update to server
       try {
         final response = await http.put(
-          Uri.parse("http://localhost:5000/api/chats/${post['_id']}/react"),
+          Uri.parse("http://localhost:3000/api/chats/${post['_id']}/react"),
           headers: {"Content-Type": "application/json"},
           body: jsonEncode({
             "user": "You",
@@ -124,7 +124,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
     try {
       final response = await http.put(
         Uri.parse(
-            "http://localhost:5000/api/chats/$postId/reply/$replyIndex/react"),
+            "http://localhost:3000/api/chats/$postId/reply/$replyIndex/react"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "user": "You",
@@ -164,7 +164,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
     // Send update to server
     try {
       final response = await http.post(
-        Uri.parse("http://localhost:5000/api/chats/$postId/reply"),
+        Uri.parse("http://localhost:3000/api/chats/$postId/reply"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode(newReply),
       );
@@ -205,7 +205,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
     try {
       final response = await http.post(
         Uri.parse(
-            "http://localhost:5000/api/chats/$postId/reply/$replyIndex/nested"),
+            "http://localhost:3000/api/chats/$postId/reply/$replyIndex/nested"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode(newReply),
       );
