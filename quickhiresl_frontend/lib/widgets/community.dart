@@ -11,7 +11,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
   final TextEditingController _postController = TextEditingController();
   List<Map<String, dynamic>> posts = [];
 
-  final String apiUrl = 'http://localhost:5001/community/posts';
+  final String apiUrl = 'http://localhost:3000/api/chats';
 
   @override
   void initState() {

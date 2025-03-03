@@ -36,7 +36,7 @@ void showFeedbackDialog(BuildContext context,
               }
 
               final response = await http.post(
-                Uri.parse("http://localhost:5001/feedback"),
+                Uri.parse("http://localhost:3000/api/feedback"),
                 headers: {
                   "Content-Type": "application/json",
                   "Authorization": "Bearer $token"
