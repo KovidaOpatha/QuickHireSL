@@ -15,7 +15,7 @@ class NotificationService {
       }
 
       final response = await http.get(
-        Uri.parse('$baseUrl/api/notifications'),
+        Uri.parse('$baseUrl/notifications'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -41,7 +41,7 @@ class NotificationService {
       }
 
       final response = await http.patch(
-        Uri.parse('$baseUrl/api/notifications/$notificationId/read'),
+        Uri.parse('$baseUrl/notifications/$notificationId/read'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -64,7 +64,7 @@ class NotificationService {
       }
 
       final response = await http.patch(
-        Uri.parse('$baseUrl/api/notifications/mark-all-read'),
+        Uri.parse('$baseUrl/notifications/mark-all-read'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
