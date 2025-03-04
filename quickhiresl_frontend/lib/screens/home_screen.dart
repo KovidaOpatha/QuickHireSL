@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import '../models/job.dart';
 import '../services/job_service.dart';
 import '../services/auth_service.dart';
+import '../services/notification_service.dart';
+import '../widgets/notification_icon.dart';
 import 'post_job_screen.dart';
 import 'job_details_screen.dart';
 import 'profile_screen.dart';
 import 'community_screen.dart';
 import 'jobs_screen.dart';
-import 'notification_screen.dart'; // Add this line
+import 'notification_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -19,8 +21,11 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final JobService _jobService = JobService();
   final AuthService _authService = AuthService();
+  final NotificationService _notificationService = NotificationService();
   List<Job> _jobs = [];
   bool _isLoading = true;
+  bool _isLoadingNotifications = true;
+  int _unreadNotifications = 0;
 
   // Track the current index of BottomNavigationBar
   int _selectedIndex = 1;
@@ -29,6 +34,43 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadJobs();
+    _loadNotificationCount();
+    // Refresh notification count every 30 seconds
+    _setupNotificationRefresh();
+  }
+
+  void _setupNotificationRefresh() {
+    Future.delayed(const Duration(seconds: 30), () {
+      if (mounted) {
+        _loadNotificationCount();
+        _setupNotificationRefresh();
+      }
+    });
+  }
+
+  Future<void> _loadNotificationCount() async {
+    if (mounted) {
+      setState(() {
+        _isLoadingNotifications = true;
+      });
+    }
+
+    try {
+      final count = await _notificationService.getUnreadCount();
+      if (mounted) {
+        setState(() {
+          _unreadNotifications = count;
+          _isLoadingNotifications = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading notification count: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingNotifications = false;
+        });
+      }
+    }
   }
 
   Future<void> _loadJobs() async {
@@ -74,18 +116,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     if (result == true) {
-      await _loadJobs(); // Reload jobs after successful posting
+      await _loadJobs();
     }
   }
 
-  // Handle Bottom Navigation Bar selection
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
   }
 
-  // Define the screens that will be shown based on the selected index
   Widget _getSelectedScreen() {
     switch (_selectedIndex) {
       case 0:
@@ -121,8 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.people), label: "Community"),
             BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-            BottomNavigationBarItem(
-                icon: Icon(Icons.work), label: "Jobs"),
+            BottomNavigationBarItem(icon: Icon(Icons.work), label: "Jobs"),
           ],
         ),
         floatingActionButton: FloatingActionButton(
@@ -150,15 +189,19 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications, color: Colors.black),
-            onPressed: () {
-              Navigator.push(
+          NotificationIcon(
+            unreadCount: _unreadNotifications,
+            isLoading: _isLoadingNotifications,
+            onTap: () async {
+              await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const NotificationScreen()),
               );
+              // Refresh notification count after returning from notification screen
+              _loadNotificationCount();
             },
           ),
+          const SizedBox(width: 8),
           GestureDetector(
             onTap: () {
               Navigator.push(

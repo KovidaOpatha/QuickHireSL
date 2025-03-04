@@ -33,6 +33,16 @@ class NotificationService {
     }
   }
 
+  Future<int> getUnreadCount() async {
+    try {
+      final notifications = await getNotifications();
+      return notifications.where((notification) => !notification['read']).length;
+    } catch (e) {
+      print('Error getting unread count: $e');
+      return 0;
+    }
+  }
+
   Future<void> markAsRead(String notificationId) async {
     try {
       final token = await _authService.getToken();
