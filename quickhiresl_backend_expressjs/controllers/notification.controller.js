@@ -1,0 +1,81 @@
+const Notification = require('../models/notification.model');
+const User = require('../models/user.model');
+
+// Get user's notifications
+exports.getUserNotifications = async (req, res) => {
+    try {
+        const notifications = await Notification.find({ recipient: req.user._id })
+            .sort({ createdAt: -1 })
+            .populate('relatedJob');
+        
+        res.status(200).json(notifications);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching notifications', error: error.message });
+    }
+};
+
+// Mark notification as read
+exports.markAsRead = async (req, res) => {
+    try {
+        const notification = await Notification.findByIdAndUpdate(
+            req.params.notificationId,
+            { read: true },
+            { new: true }
+        );
+        
+        if (!notification) {
+            return res.status(404).json({ message: 'Notification not found' });
+        }
+        
+        res.status(200).json(notification);
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating notification', error: error.message });
+    }
+};
+
+// Mark all notifications as read
+exports.markAllAsRead = async (req, res) => {
+    try {
+        await Notification.updateMany(
+            { recipient: req.user._id },
+            { read: true }
+        );
+        
+        res.status(200).json({ message: 'All notifications marked as read' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating notifications', error: error.message });
+    }
+};
+
+// Create notification for new job
+exports.createJobNotification = async (jobData, jobOwnerId) => {
+    try {
+        // Find all students
+        const students = await User.find({ role: 'student' });
+        
+        // Create notifications for each student
+        const notifications = students.map(student => ({
+            recipient: student._id,
+            type: 'job_posted',
+            title: 'New Job Opportunity',
+            message: `New job posted: ${jobData.title} at ${jobData.company}`,
+            relatedJob: jobData._id
+        }));
+        
+        // Insert all notifications
+        const createdNotifications = await Notification.insertMany(notifications);
+        
+        // Update users' notification arrays
+        await Promise.all(students.map(async (student) => {
+            await User.findByIdAndUpdate(
+                student._id,
+                { $push: { notifications: { $each: createdNotifications.filter(n => n.recipient.equals(student._id)) } } }
+            );
+        }));
+        
+        return createdNotifications;
+    } catch (error) {
+        console.error('Error creating job notifications:', error);
+        throw error;
+    }
+};
