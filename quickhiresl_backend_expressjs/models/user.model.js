@@ -7,6 +7,10 @@ const userSchema = new mongoose.Schema({
     profileImage: { type: String },
     rating: { type: Number, default: 0, min: 0, max: 5 },
     completedJobs: { type: Number, default: 0 },
+    notifications: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Notification'
+    }],
     studentDetails: {
         fullName: { type: String },
         leavingAddress: { type: String },

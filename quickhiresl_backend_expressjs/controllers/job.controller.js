@@ -1,4 +1,6 @@
 const Job = require('../models/job.model');
+const User = require('../models/user.model');
+const { createJobNotification } = require('./notification.controller');
 
 // Create a new job posting
 exports.createJob = async (req, res) => {
@@ -6,19 +8,21 @@ exports.createJob = async (req, res) => {
         console.log('Creating job with data:', req.body);
         console.log('User:', req.user);
 
-        const jobData = {
+        const job = new Job({
             ...req.body,
             postedBy: req.user._id
-        };
+        });
 
-        const job = new Job(jobData);
-        await job.save();
+        const savedJob = await job.save();
+        
+        // Create notifications for all students
+        await createJobNotification(savedJob, req.user._id);
 
-        console.log('Job created successfully:', job);
+        console.log('Job created successfully:', savedJob);
 
         res.status(201).json({
             success: true,
-            data: job
+            data: savedJob
         });
     } catch (error) {
         console.error('Error in createJob:', error);
