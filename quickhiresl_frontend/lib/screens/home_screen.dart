@@ -7,6 +7,7 @@ import 'job_details_screen.dart';
 import 'profile_screen.dart';
 import 'community_screen.dart';
 import 'jobs_screen.dart';
+import 'notification_screen.dart'; // Add this line
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -149,6 +150,15 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications, color: Colors.black),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const NotificationScreen()),
+              );
+            },
+          ),
           GestureDetector(
             onTap: () {
               Navigator.push(
