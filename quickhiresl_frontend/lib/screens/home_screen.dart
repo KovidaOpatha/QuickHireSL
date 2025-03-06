@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import '../models/job.dart';
 import '../services/job_service.dart';
 import '../services/auth_service.dart';
 import '../services/notification_service.dart';
+import '../services/user_service.dart';
 import '../widgets/notification_icon.dart';
 import 'post_job_screen.dart';
 import 'job_details_screen.dart';
@@ -22,10 +25,12 @@ class _HomeScreenState extends State<HomeScreen> {
   final JobService _jobService = JobService();
   final AuthService _authService = AuthService();
   final NotificationService _notificationService = NotificationService();
+  final UserService _userService = UserService();
   List<Job> _jobs = [];
   bool _isLoading = true;
   bool _isLoadingNotifications = true;
   int _unreadNotifications = 0;
+  Map<String, Map<String, dynamic>> _jobOwnerData = {};
 
   // Track the current index of BottomNavigationBar
   int _selectedIndex = 1;
@@ -85,6 +90,13 @@ class _HomeScreenState extends State<HomeScreen> {
           _jobs = jobs;
           _isLoading = false;
         });
+        
+        // Fetch job owner data for each job
+        for (final job in jobs) {
+          if (job.postedBy != null && job.postedBy!.isNotEmpty) {
+            _fetchJobOwnerData(job.postedBy!);
+          }
+        }
       }
     } catch (e) {
       print('Error loading jobs: $e');
@@ -96,6 +108,38 @@ class _HomeScreenState extends State<HomeScreen> {
           SnackBar(content: Text('Error loading jobs: $e')),
         );
       }
+    }
+  }
+
+  Future<void> _fetchJobOwnerData(String userId) async {
+    try {
+      final token = await _authService.getToken();
+      
+      print('Fetching job owner data for ID: $userId');
+      
+      final response = await http.get(
+        Uri.parse('${_userService.baseUrl}/users/$userId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        
+        if (data['profileImage'] != null) {
+          data['profilePicture'] = _userService.getFullImageUrl(data['profileImage']);
+        }
+        
+        setState(() {
+          _jobOwnerData[userId] = data;
+        });
+      } else {
+        print('Failed to fetch job owner data: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching job owner data: $e');
     }
   }
 
@@ -336,24 +380,52 @@ class _HomeScreenState extends State<HomeScreen> {
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(15),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.grey.withOpacity(0.2),
+                                      spreadRadius: 1,
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
                                 ),
                                 child: Row(
                                   children: [
+                                    // Profile picture
                                     Container(
                                       width: 50,
                                       height: 50,
                                       decoration: BoxDecoration(
-                                        color: Colors.grey[300],
+                                        color: const Color(0xFF98C9C5),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      child: const Icon(Icons.business,
-                                          color: Colors.grey),
+                                      child: job.postedBy != null && 
+                                            _jobOwnerData.containsKey(job.postedBy) && 
+                                            _jobOwnerData[job.postedBy]!['profilePicture'] != null
+                                          ? ClipRRect(
+                                              borderRadius: BorderRadius.circular(8),
+                                              child: Image.network(
+                                                _jobOwnerData[job.postedBy]!['profilePicture'],
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (context, error, stackTrace) {
+                                                  return Icon(
+                                                    Icons.business,
+                                                    color: Colors.white.withOpacity(0.7),
+                                                    size: 30,
+                                                  );
+                                                },
+                                              ),
+                                            )
+                                          : Icon(
+                                              Icons.business,
+                                              color: Colors.white.withOpacity(0.7),
+                                              size: 30,
+                                            ),
                                     ),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             job.title,
@@ -365,7 +437,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                           Text(
                                             '${job.company} • ${job.location}',
                                             style: const TextStyle(
-                                                color: Colors.grey),
+                                              color: Colors.grey,
+                                            ),
                                           ),
                                           Text(
                                             'LKR ${job.salary['min']} - ${job.salary['max']}',
