@@ -224,16 +224,67 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Background gradient
+                  // Background with profile picture
+                  !isJobOwnerLoading && 
+                  jobOwnerData.isNotEmpty && 
+                  jobOwnerData['profilePicture'] != null && 
+                  jobOwnerData['profilePicture'].toString().isNotEmpty
+                      ? Image.network(
+                          jobOwnerData['profilePicture'],
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    const Color(0xFF98C9C5),
+                                    const Color(0xFF98C9C5).withOpacity(0.8),
+                                  ],
+                                ),
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  Icons.business,
+                                  size: 50,
+                                  color: Colors.white.withOpacity(0.7),
+                                ),
+                              ),
+                            );
+                          },
+                        )
+                      : Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                const Color(0xFF98C9C5),
+                                const Color(0xFF98C9C5).withOpacity(0.8),
+                              ],
+                            ),
+                          ),
+                          child: Center(
+                            child: Icon(
+                              Icons.business,
+                              size: 50,
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                          ),
+                        ),
+                  
+                  // Overlay gradient for better text visibility
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
                         colors: [
-                          const Color(0xFF98C9C5),
-                          const Color(0xFF98C9C5).withOpacity(0.8),
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.5),
                         ],
+                        stops: const [0.5, 1.0],
                       ),
                     ),
                   ),
@@ -257,114 +308,58 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                     bottom: 20,
                     left: 20,
                     right: 20,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Profile picture
-                        Container(
-                          width: 70,
-                          height: 70,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white,
-                              width: 3,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
+                        Text(
+                          widget.job.title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            shadows: [
+                              Shadow(
+                                offset: Offset(1, 1),
+                                blurRadius: 3,
+                                color: Colors.black45,
                               ),
                             ],
                           ),
-                          child: !isJobOwnerLoading && 
-                                jobOwnerData.isNotEmpty && 
-                                jobOwnerData['profilePicture'] != null && 
-                                jobOwnerData['profilePicture'].toString().isNotEmpty
-                              ? ClipOval(
-                                  child: Image.network(
-                                    jobOwnerData['profilePicture'],
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return CircleAvatar(
-                                        backgroundColor: Colors.white,
-                                        child: Icon(
-                                          Icons.business,
-                                          size: 30,
-                                          color: const Color(0xFF98C9C5),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                )
-                              : CircleAvatar(
-                                  backgroundColor: Colors.white,
-                                  child: Icon(
-                                    Icons.business,
-                                    size: 30,
-                                    color: const Color(0xFF98C9C5),
-                                  ),
-                                ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(width: 15),
-                        // Job title and company
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Text(
+                              widget.job.company,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            if (jobOwnerData.isNotEmpty && jobOwnerData['fullName'] != null) ...[
+                              const Text(
+                                ' • ',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                ),
+                              ),
                               Text(
-                                widget.job.title,
+                                jobOwnerData['fullName'],
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  shadows: [
-                                    Shadow(
-                                      offset: Offset(1, 1),
-                                      blurRadius: 3,
-                                      color: Colors.black45,
-                                    ),
-                                  ],
+                                  fontSize: 16,
+                                  fontStyle: FontStyle.italic,
                                 ),
-                                maxLines: 2,
+                                maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Text(
-                                    widget.job.company,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  if (jobOwnerData.isNotEmpty && jobOwnerData['fullName'] != null) ...[
-                                    const Text(
-                                      ' • ',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                    Text(
-                                      jobOwnerData['fullName'],
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ],
-                              ),
                             ],
-                          ),
+                          ],
                         ),
                       ],
                     ),
@@ -502,7 +497,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                         child: ElevatedButton(
                           onPressed: _isApplying ? null : _applyForJob,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF98C9C5),
+                            backgroundColor: Colors.black,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 15),
                             shape: RoundedRectangleBorder(
