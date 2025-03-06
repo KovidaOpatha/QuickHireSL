@@ -1,6 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import '../models/job.dart';
 import '../services/job_service.dart';
+import '../services/user_service.dart';
+import '../services/auth_service.dart';
 import 'job_details_screen.dart';
 
 class JobsScreen extends StatefulWidget {
@@ -12,10 +16,13 @@ class JobsScreen extends StatefulWidget {
 
 class _JobsScreenState extends State<JobsScreen> {
   final JobService _jobService = JobService();
+  final UserService _userService = UserService();
+  final AuthService _authService = AuthService();
   List<Job> _jobs = [];
   List<Job> _filteredJobs = [];
   bool _isLoading = true;
   final TextEditingController _searchController = TextEditingController();
+  Map<String, Map<String, dynamic>> _jobOwnerData = {};
 
   @override
   void initState() {
@@ -42,6 +49,13 @@ class _JobsScreenState extends State<JobsScreen> {
           _filteredJobs = jobs;
           _isLoading = false;
         });
+        
+        // Fetch job owner data for each job
+        for (final job in jobs) {
+          if (job.postedBy != null && job.postedBy!.isNotEmpty) {
+            _fetchJobOwnerData(job.postedBy!);
+          }
+        }
       }
     } catch (e) {
       print('Error loading jobs: $e');
@@ -53,6 +67,38 @@ class _JobsScreenState extends State<JobsScreen> {
           SnackBar(content: Text('Error loading jobs: $e')),
         );
       }
+    }
+  }
+
+  Future<void> _fetchJobOwnerData(String userId) async {
+    try {
+      final token = await _authService.getToken();
+      
+      print('Fetching job owner data for ID: $userId');
+      
+      final response = await http.get(
+        Uri.parse('${_userService.baseUrl}/users/$userId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        
+        if (data['profileImage'] != null) {
+          data['profilePicture'] = _userService.getFullImageUrl(data['profileImage']);
+        }
+        
+        setState(() {
+          _jobOwnerData[userId] = data;
+        });
+      } else {
+        print('Failed to fetch job owner data: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching job owner data: $e');
     }
   }
 
@@ -246,10 +292,31 @@ class _JobsScreenState extends State<JobsScreen> {
                                         width: 50,
                                         height: 50,
                                         decoration: BoxDecoration(
-                                          color: Colors.grey[300],
+                                          color: const Color(0xFF98C9C5),
                                           borderRadius: BorderRadius.circular(8),
                                         ),
-                                        child: const Icon(Icons.business, color: Colors.grey),
+                                        child: job.postedBy != null && 
+                                              _jobOwnerData.containsKey(job.postedBy) && 
+                                              _jobOwnerData[job.postedBy]!['profilePicture'] != null
+                                            ? ClipRRect(
+                                                borderRadius: BorderRadius.circular(8),
+                                                child: Image.network(
+                                                  _jobOwnerData[job.postedBy]!['profilePicture'],
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (context, error, stackTrace) {
+                                                    return Icon(
+                                                      Icons.business,
+                                                      color: Colors.white.withOpacity(0.7),
+                                                      size: 30,
+                                                    );
+                                                  },
+                                                ),
+                                              )
+                                            : Icon(
+                                                Icons.business,
+                                                color: Colors.white.withOpacity(0.7),
+                                                size: 30,
+                                              ),
                                       ),
                                       const SizedBox(width: 10),
                                       Expanded(
