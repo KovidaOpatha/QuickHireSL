@@ -6,6 +6,7 @@ import '../services/job_service.dart';
 import '../services/auth_service.dart';
 import '../services/notification_service.dart';
 import '../services/user_service.dart';
+import '../services/favorites_service.dart';
 import '../widgets/notification_icon.dart';
 import 'post_job_screen.dart';
 import 'job_details_screen.dart';
@@ -13,6 +14,7 @@ import 'profile_screen.dart';
 import 'community_screen.dart';
 import 'jobs_screen.dart';
 import 'notification_screen.dart';
+import 'favorites_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -26,14 +28,16 @@ class _HomeScreenState extends State<HomeScreen> {
   final AuthService _authService = AuthService();
   final NotificationService _notificationService = NotificationService();
   final UserService _userService = UserService();
+  final FavoritesService _favoritesService = FavoritesService();
   List<Job> _jobs = [];
   bool _isLoading = true;
   bool _isLoadingNotifications = true;
   int _unreadNotifications = 0;
   Map<String, Map<String, dynamic>> _jobOwnerData = {};
+  Map<String, bool> _favoriteStatus = {};
 
   // Track the current index of BottomNavigationBar
-  int _selectedIndex = 1;
+  int _selectedIndex = 2;
 
   @override
   void initState() {
@@ -96,6 +100,11 @@ class _HomeScreenState extends State<HomeScreen> {
           if (job.postedBy != null && job.postedBy!.isNotEmpty) {
             _fetchJobOwnerData(job.postedBy!);
           }
+          
+          // Load favorite status for each job
+          if (job.id != null) {
+            _loadFavoriteStatus(job.id!);
+          }
         }
       }
     } catch (e) {
@@ -143,6 +152,44 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _loadFavoriteStatus(String jobId) async {
+    try {
+      final isFavorite = await _favoritesService.isJobFavorite(jobId);
+      if (mounted) {
+        setState(() {
+          _favoriteStatus[jobId] = isFavorite;
+        });
+      }
+    } catch (e) {
+      print('Error loading favorite status: $e');
+    }
+  }
+
+  Future<void> _toggleFavorite(String jobId) async {
+    try {
+      final newStatus = await _favoritesService.toggleFavorite(jobId);
+      if (mounted) {
+        setState(() {
+          _favoriteStatus[jobId] = newStatus;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(newStatus ? 'Added to favorites' : 'Removed from favorites'),
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error toggling favorite: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error updating favorites')),
+        );
+      }
+    }
+  }
+
   Future<void> _navigateToPostJob() async {
     final token = await _authService.getToken();
     if (token == null) {
@@ -173,51 +220,61 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _getSelectedScreen() {
     switch (_selectedIndex) {
       case 0:
-        return CommunityScreen(
-          onNavigateToTab: _onItemTapped,
-        );
+        return CommunityScreen(onNavigateToTab: _onItemTapped);
       case 1:
-        return _buildHomeScreen();
-      case 2:
         return const JobsScreen();
+      case 2:
+        return _buildHomeContent();
+      case 3:
+        return const FavoritesScreen();
       default:
-        return _buildHomeScreen();
+        return _buildHomeContent();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        if (_selectedIndex != 1) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF98C9C5),
+      body: _getSelectedScreen(),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: (index) {
           setState(() {
-            _selectedIndex = 1;
+            _selectedIndex = index;
           });
-          return false;
-        }
-        return true;
-      },
-      child: Scaffold(
-        body: _getSelectedScreen(),
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.people), label: "Community"),
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-            BottomNavigationBarItem(icon: Icon(Icons.work), label: "Jobs"),
-          ],
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: _navigateToPostJob,
-          backgroundColor: Colors.blue,
-          child: const Icon(Icons.add),
-        ),
+        },
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people),
+            label: 'Community',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.work),
+            label: 'Jobs',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite),
+            label: 'Favorites',
+          ),
+        ],
       ),
+      floatingActionButton: _selectedIndex == 2
+          ? FloatingActionButton(
+              onPressed: _navigateToPostJob,
+              child: const Icon(Icons.add),
+              backgroundColor: Colors.black,
+            )
+          : null,
     );
   }
 
-  Widget _buildHomeScreen() {
+  Widget _buildHomeContent() {
     return Scaffold(
       backgroundColor: const Color(0xFF98C9C5),
       appBar: AppBar(
@@ -450,7 +507,22 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ],
                                       ),
                                     ),
-                                    const Icon(Icons.favorite_border),
+                                    GestureDetector(
+                                      onTap: () {
+                                        if (job.id != null) {
+                                          _toggleFavorite(job.id!);
+                                        }
+                                      },
+                                      child: Icon(
+                                        job.id != null && _favoriteStatus[job.id] == true
+                                            ? Icons.favorite
+                                            : Icons.favorite_border,
+                                        color: job.id != null && _favoriteStatus[job.id] == true
+                                            ? Colors.red
+                                            : null,
+                                        size: 20,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),

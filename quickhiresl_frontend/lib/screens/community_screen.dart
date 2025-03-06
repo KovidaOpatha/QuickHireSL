@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'home_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
   final Function(int)? onNavigateToTab;
@@ -222,47 +223,57 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(0xFF1C1F26),
-      appBar: AppBar(
-        backgroundColor: Color(0xFF1C1F26),
-        elevation: 0,
-        title: Text(
-          "Community",
-          style: TextStyle(
-              fontWeight: FontWeight.bold, fontSize: 24, color: Colors.white),
-        ),
-        centerTitle: true,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            if (widget.onNavigateToTab != null) {
-              widget.onNavigateToTab!(1);
-            } else {
-              Navigator.pop(context);
-            }
-          },
-        ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: posts.isEmpty
-                ? Center(child: CircularProgressIndicator(color: Colors.white))
-                : RefreshIndicator(
-                    onRefresh: fetchPosts,
-                    child: ListView.builder(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      itemCount: posts.length,
-                      itemBuilder: (context, index) {
-                        return _buildPost(posts[index]);
-                      },
-                    ),
-                  ),
+    return WillPopScope(
+      onWillPop: () async {
+        // Navigate to home screen when back button is pressed
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => HomeScreen()),
+          (route) => false,
+        );
+        return false; // Prevent default back button behavior
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF1C1F26),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF1C1F26),
+          elevation: 0,
+          title: const Text(
+            'Community',
+            style: TextStyle(
+                fontWeight: FontWeight.bold, fontSize: 24, color: Colors.white),
           ),
-          _buildPostInput(),
-        ],
+          centerTitle: true,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () {
+              // Navigate to home screen when back button is pressed
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => HomeScreen()),
+                (route) => false,
+              );
+            },
+          ),
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              child: posts.isEmpty
+                  ? Center(child: CircularProgressIndicator(color: Colors.white))
+                  : RefreshIndicator(
+                      onRefresh: fetchPosts,
+                      child: ListView.builder(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        itemCount: posts.length,
+                        itemBuilder: (context, index) {
+                          return _buildPost(posts[index]);
+                        },
+                      ),
+                    ),
+            ),
+            _buildPostInput(),
+          ],
+        ),
       ),
     );
   }
