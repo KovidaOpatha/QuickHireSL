@@ -27,25 +27,29 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final JobService _jobService = JobService();
   final AuthService _authService = AuthService();
-  final NotificationService _notificationService = NotificationService();
   final UserService _userService = UserService();
   final FavoritesService _favoritesService = FavoritesService();
+  final NotificationService _notificationService = NotificationService();
+  
+  final TextEditingController _searchController = TextEditingController();
+  
   List<Job> _jobs = [];
+  List<Job> _filteredJobs = [];
   bool _isLoading = true;
-  bool _isLoadingNotifications = true;
   int _unreadNotifications = 0;
-  Map<String, Map<String, dynamic>> _jobOwnerData = {};
+  bool _isLoadingNotifications = true;
+  Map<String, dynamic> _jobOwnerData = {};
   Map<String, bool> _favoriteStatus = {};
 
   // Track the current index of BottomNavigationBar
-  int _selectedIndex = 2;
+  int _selectedIndex = 1;
 
   @override
   void initState() {
     super.initState();
     _loadJobs();
     _loadNotificationCount();
-    // Refresh notification count every 30 seconds
+    _loadFavorites();
     _setupNotificationRefresh();
   }
 
@@ -93,6 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         setState(() {
           _jobs = jobs;
+          _filteredJobs = List.from(_jobs);
           _isLoading = false;
         });
         
@@ -168,26 +173,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _toggleFavorite(String jobId) async {
     try {
-      final newStatus = await _favoritesService.toggleFavorite(jobId);
-      if (mounted) {
-        setState(() {
-          _favoriteStatus[jobId] = newStatus;
-        });
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(newStatus ? 'Added to favorites' : 'Removed from favorites'),
-            duration: const Duration(seconds: 1),
-          ),
-        );
-      }
+      final isFavorite = await _favoritesService.toggleFavorite(jobId);
+      setState(() {
+        _favoriteStatus[jobId] = isFavorite;
+      });
     } catch (e) {
       print('Error toggling favorite: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating favorites')),
-        );
-      }
     }
   }
 
@@ -218,14 +209,35 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _filterJobs(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredJobs = List.from(_jobs);
+      } else {
+        query = query.toLowerCase();
+        _filteredJobs = _jobs.where((job) {
+          final title = job.title.toLowerCase();
+          final company = job.company.toLowerCase();
+          final location = job.location.toLowerCase();
+          final description = job.description.toLowerCase();
+          
+          return title.contains(query) || 
+                 company.contains(query) || 
+                 location.contains(query) ||
+                 description.contains(query);
+        }).toList();
+      }
+    });
+  }
+
   Widget _getSelectedScreen() {
     switch (_selectedIndex) {
       case 0:
         return CommunityScreen(onNavigateToTab: _onItemTapped);
       case 1:
-        return const JobsScreen();
-      case 2:
         return _buildHomeContent();
+      case 2:
+        return const JobsScreen();
       default:
         return _buildHomeContent();
     }
@@ -256,15 +268,26 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 10),
-                TextField(
-                  decoration: InputDecoration(
-                    hintText: "Search",
-                    prefixIcon: const Icon(Icons.search),
-                    filled: true,
-                    fillColor: Colors.grey[300],
-                    border: OutlineInputBorder(
+                GestureDetector(
+                  onTap: () {
+                    _showSearchPage(context);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
+                      border: Border.all(color: Colors.transparent),
+                    ),
+                    child: Row(
+                      children: const [
+                        Icon(Icons.search, color: Colors.grey),
+                        SizedBox(width: 8),
+                        Text(
+                          "Search jobs, companies, or locations",
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -322,7 +345,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       return _buildJobShimmer();
                     },
                   )
-                : _jobs.isEmpty
+                : _filteredJobs.isEmpty
                     ? const Center(
                         child: Padding(
                           padding: EdgeInsets.all(16.0),
@@ -333,9 +356,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       )
                     : ListView.builder(
-                        itemCount: _jobs.length,
+                        itemCount: _filteredJobs.length,
                         itemBuilder: (context, index) {
-                          final job = _jobs[index];
+                          final job = _filteredJobs[index];
                           return GestureDetector(
                             onTap: () {
                               Navigator.push(
@@ -501,13 +524,39 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _loadFavorites() async {
+    try {
+      final favoriteJobIds = await _favoritesService.getFavoriteJobIds();
+      setState(() {
+        for (String jobId in favoriteJobIds) {
+          _favoriteStatus[jobId] = true;
+        }
+      });
+    } catch (e) {
+      print('Error loading favorites: $e');
+    }
+  }
+
+  void _showSearchPage(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => _SearchPage(
+          jobs: _jobs,
+          jobOwnerData: _jobOwnerData,
+          favoriteStatus: _favoriteStatus,
+          onToggleFavorite: _toggleFavorite,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     Widget selectedScreen = _getSelectedScreen();
     
     return Scaffold(
       backgroundColor: const Color(0xFF98C9C5),
-      appBar: _selectedIndex == 2 ? AppBar(
+      appBar: _selectedIndex == 1 ? AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: Builder(
@@ -555,16 +604,16 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Community',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.work),
-            label: 'Jobs',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.home),
             label: 'Home',
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.work),
+            label: 'Jobs',
+          ),
         ],
       ),
-      floatingActionButton: _selectedIndex == 2
+      floatingActionButton: _selectedIndex == 1
           ? FloatingActionButton(
               onPressed: _navigateToPostJob,
               child: const Icon(Icons.add),
@@ -706,6 +755,232 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 );
               },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SearchPage extends StatefulWidget {
+  final List<Job> jobs;
+  final Map<String, dynamic> jobOwnerData;
+  final Map<String, bool> favoriteStatus;
+  final Function(String) onToggleFavorite;
+
+  const _SearchPage({
+    required this.jobs,
+    required this.jobOwnerData,
+    required this.favoriteStatus,
+    required this.onToggleFavorite,
+  });
+
+  @override
+  _SearchPageState createState() => _SearchPageState();
+}
+
+class _SearchPageState extends State<_SearchPage> {
+  final TextEditingController _searchController = TextEditingController();
+  List<Job> _filteredJobs = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredJobs = List.from(widget.jobs);
+  }
+
+  void _filterJobs(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredJobs = List.from(widget.jobs);
+      } else {
+        query = query.toLowerCase();
+        _filteredJobs = widget.jobs.where((job) {
+          final title = job.title.toLowerCase();
+          final company = job.company.toLowerCase();
+          final location = job.location.toLowerCase();
+          final description = job.description.toLowerCase();
+          
+          return title.contains(query) || 
+                 company.contains(query) || 
+                 location.contains(query) ||
+                 description.contains(query);
+        }).toList();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF98C9C5),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+        title: const Text(
+          'Search Jobs',
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: TextField(
+                controller: _searchController,
+                onChanged: _filterJobs,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: "Search jobs, companies, or locations",
+                  prefixIcon: const Icon(Icons.search),
+                  border: InputBorder.none,
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            _filterJobs('');
+                          },
+                        )
+                      : null,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: _filteredJobs.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No jobs found',
+                        style: TextStyle(color: Colors.black54, fontSize: 16),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: _filteredJobs.length,
+                      itemBuilder: (context, index) {
+                        final job = _filteredJobs[index];
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => JobDetailsScreen(job: job),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(15),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.2),
+                                  spreadRadius: 1,
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                // Profile picture
+                                Container(
+                                  width: 50,
+                                  height: 50,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF98C9C5),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: job.postedBy != null && 
+                                        widget.jobOwnerData.containsKey(job.postedBy) && 
+                                        widget.jobOwnerData[job.postedBy]?['profilePicture'] != null
+                                      ? ClipRRect(
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: Image.network(
+                                            widget.jobOwnerData[job.postedBy]['profilePicture'],
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return Icon(
+                                                Icons.business,
+                                                color: Colors.white.withOpacity(0.7),
+                                                size: 30,
+                                              );
+                                            },
+                                          ),
+                                        )
+                                      : Icon(
+                                          Icons.business,
+                                          color: Colors.white.withOpacity(0.7),
+                                          size: 30,
+                                        ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        job.title,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${job.company} • ${job.location}',
+                                        style: const TextStyle(
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                      Text(
+                                        'LKR ${job.salary['min']} - ${job.salary['max']}',
+                                        style: const TextStyle(
+                                          color: Colors.green,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () {
+                                    if (job.id != null) {
+                                      widget.onToggleFavorite(job.id!);
+                                      setState(() {}); // Refresh UI
+                                    }
+                                  },
+                                  child: Icon(
+                                    job.id != null && widget.favoriteStatus[job.id] == true
+                                        ? Icons.favorite
+                                        : Icons.favorite_border,
+                                    color: job.id != null && widget.favoriteStatus[job.id] == true
+                                        ? Colors.red
+                                        : null,
+                                    size: 20,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
