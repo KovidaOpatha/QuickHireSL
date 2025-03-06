@@ -15,6 +15,7 @@ import 'community_screen.dart';
 import 'jobs_screen.dart';
 import 'notification_screen.dart';
 import 'favorites_screen.dart';
+import 'login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -672,8 +673,38 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               onTap: () async {
                 Navigator.pop(context); // Close the drawer
-                await _authService.logout();
-                // Navigate to login screen
+                
+                // Show confirmation dialog
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      backgroundColor: Colors.white,
+                      title: const Text('Confirm Logout'),
+                      content: const Text('Are you sure you want to logout?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop(); // Close the dialog
+                          },
+                          child: const Text('Cancel', style: TextStyle(color: Colors.black)),
+                        ),
+                        TextButton(
+                          onPressed: () async {
+                            Navigator.of(context).pop(); // Close the dialog
+                            await _authService.logout();
+                            // Navigate to login screen and clear all previous routes
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(builder: (context) => const LoginScreen()),
+                              (route) => false,
+                            );
+                          },
+                          child: const Text('Logout', style: TextStyle(color: Colors.red)),
+                        ),
+                      ],
+                    );
+                  },
+                );
               },
             ),
           ],
