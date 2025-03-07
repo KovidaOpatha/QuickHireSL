@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import '../models/job.dart';
 import '../services/job_service.dart';
@@ -9,35 +10,27 @@ import '../services/favorites_service.dart';
 import 'job_details_screen.dart';
 import 'home_screen.dart';
 
-class JobsScreen extends StatefulWidget {
-  const JobsScreen({Key? key}) : super(key: key);
+class FavoritesScreen extends StatefulWidget {
+  const FavoritesScreen({Key? key}) : super(key: key);
 
   @override
-  State<JobsScreen> createState() => _JobsScreenState();
+  State<FavoritesScreen> createState() => _FavoritesScreenState();
 }
 
-class _JobsScreenState extends State<JobsScreen> {
+class _FavoritesScreenState extends State<FavoritesScreen> {
   final JobService _jobService = JobService();
   final UserService _userService = UserService();
   final AuthService _authService = AuthService();
   final FavoritesService _favoritesService = FavoritesService();
-  List<Job> _jobs = [];
-  List<Job> _filteredJobs = [];
+  List<Job> _allJobs = [];
+  List<Job> _favoriteJobs = [];
   bool _isLoading = true;
-  final TextEditingController _searchController = TextEditingController();
   Map<String, Map<String, dynamic>> _jobOwnerData = {};
-  Map<String, bool> _favoriteStatus = {};
 
   @override
   void initState() {
     super.initState();
     _loadJobs();
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadJobs() async {
@@ -47,33 +40,30 @@ class _JobsScreenState extends State<JobsScreen> {
       });
       
       final jobs = await _jobService.getJobs();
+      final favoriteJobs = await _favoritesService.getFavoriteJobs(jobs);
+      
       if (mounted) {
         setState(() {
-          _jobs = jobs;
-          _filteredJobs = jobs;
+          _allJobs = jobs;
+          _favoriteJobs = favoriteJobs;
           _isLoading = false;
         });
         
-        // Fetch job owner data for each job
-        for (final job in jobs) {
+        // Fetch job owner data for each favorite job
+        for (final job in favoriteJobs) {
           if (job.postedBy != null && job.postedBy!.isNotEmpty) {
             _fetchJobOwnerData(job.postedBy!);
-          }
-          
-          // Load favorite status for each job
-          if (job.id != null) {
-            _loadFavoriteStatus(job.id!);
           }
         }
       }
     } catch (e) {
-      print('Error loading jobs: $e');
+      print('Error loading favorite jobs: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading jobs: $e')),
+          SnackBar(content: Text('Error loading favorite jobs: $e')),
         );
       }
     }
@@ -82,8 +72,6 @@ class _JobsScreenState extends State<JobsScreen> {
   Future<void> _fetchJobOwnerData(String userId) async {
     try {
       final token = await _authService.getToken();
-      
-      print('Fetching job owner data for ID: $userId');
       
       final response = await http.get(
         Uri.parse('${_userService.baseUrl}/users/$userId'),
@@ -111,61 +99,29 @@ class _JobsScreenState extends State<JobsScreen> {
     }
   }
 
-  Future<void> _loadFavoriteStatus(String jobId) async {
-    try {
-      final isFavorite = await _favoritesService.isJobFavorite(jobId);
-      if (mounted) {
-        setState(() {
-          _favoriteStatus[jobId] = isFavorite;
-        });
-      }
-    } catch (e) {
-      print('Error loading favorite status: $e');
-    }
-  }
-
   Future<void> _toggleFavorite(String jobId) async {
     try {
       final newStatus = await _favoritesService.toggleFavorite(jobId);
-      if (mounted) {
+      
+      // If removed from favorites, update the UI
+      if (!newStatus) {
         setState(() {
-          _favoriteStatus[jobId] = newStatus;
+          _favoriteJobs.removeWhere((job) => job.id == jobId);
         });
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(newStatus ? 'Added to favorites' : 'Removed from favorites'),
-            duration: const Duration(seconds: 1),
-          ),
-        );
       }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(newStatus ? 'Added to favorites' : 'Removed from favorites'),
+          duration: const Duration(seconds: 1),
+        ),
+      );
     } catch (e) {
       print('Error toggling favorite: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating favorites')),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error updating favorites')),
+      );
     }
-  }
-
-  void _filterJobs(String query) {
-    setState(() {
-      if (query.isEmpty) {
-        _filteredJobs = _jobs;
-      } else {
-        _filteredJobs = _jobs.where((job) {
-          final titleLower = job.title.toLowerCase();
-          final companyLower = job.company.toLowerCase();
-          final locationLower = job.location.toLowerCase();
-          final searchLower = query.toLowerCase();
-          
-          return titleLower.contains(searchLower) ||
-                 companyLower.contains(searchLower) ||
-                 locationLower.contains(searchLower);
-        }).toList();
-      }
-    });
   }
 
   Widget _buildJobShimmer() {
@@ -216,7 +172,7 @@ class _JobsScreenState extends State<JobsScreen> {
       onWillPop: () async {
         // Navigate to home screen when back button is pressed
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => HomeScreen()),
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
           (route) => false,
         );
         return false; // Prevent default back button behavior
@@ -226,21 +182,22 @@ class _JobsScreenState extends State<JobsScreen> {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
+          title: const Text(
+            'Favorite Jobs',
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          ),
+          centerTitle: true,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.black),
             onPressed: () {
-              // Navigate to home screen when back button is pressed
+              // Navigate to home screen when back button is pressed with home tab selected
+              final homeScreen = HomeScreen();
               Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => HomeScreen()),
+                MaterialPageRoute(builder: (context) => homeScreen),
                 (route) => false,
               );
             },
           ),
-          title: const Text(
-            'Available Jobs',
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-          ),
-          centerTitle: true,
         ),
         body: RefreshIndicator(
           onRefresh: _loadJobs,
@@ -249,45 +206,11 @@ class _JobsScreenState extends State<JobsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Search Bar
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: _filterJobs,
-                    decoration: InputDecoration(
-                      hintText: "Search jobs, companies, or locations",
-                      prefixIcon: const Icon(Icons.search),
-                      filled: true,
-                      fillColor: Colors.grey[300],
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
-                      ),
-                      suffixIcon: _searchController.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                _searchController.clear();
-                                _filterJobs('');
-                              },
-                            )
-                          : null,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      _searchController.text.isEmpty
-                          ? 'All Jobs'
-                          : 'Search Results (${_filteredJobs.length})',
+                      'Your Favorites (${_favoriteJobs.length})',
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     if (_isLoading)
@@ -307,24 +230,28 @@ class _JobsScreenState extends State<JobsScreen> {
                             return _buildJobShimmer();
                           },
                         )
-                      : _filteredJobs.isEmpty
+                      : _favoriteJobs.isEmpty
                           ? Center(
                               child: Padding(
                                 padding: const EdgeInsets.all(16.0),
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(
-                                      Icons.search_off,
+                                  children: const [
+                                    Icon(
+                                      Icons.favorite_border,
                                       size: 48,
                                       color: Colors.grey,
                                     ),
-                                    const SizedBox(height: 16),
+                                    SizedBox(height: 16),
                                     Text(
-                                      _searchController.text.isEmpty
-                                          ? 'No jobs available at the moment'
-                                          : 'No jobs found matching "${_searchController.text}"',
-                                      style: const TextStyle(color: Colors.grey),
+                                      'No favorite jobs yet',
+                                      style: TextStyle(color: Colors.grey),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      'Tap the heart icon on jobs you like to add them to favorites',
+                                      style: TextStyle(color: Colors.grey),
                                       textAlign: TextAlign.center,
                                     ),
                                   ],
@@ -332,9 +259,9 @@ class _JobsScreenState extends State<JobsScreen> {
                               ),
                             )
                           : ListView.builder(
-                              itemCount: _filteredJobs.length,
+                              itemCount: _favoriteJobs.length,
                               itemBuilder: (context, index) {
-                                final job = _filteredJobs[index];
+                                final job = _favoriteJobs[index];
                                 return GestureDetector(
                                   onTap: () {
                                     Navigator.push(
@@ -342,7 +269,7 @@ class _JobsScreenState extends State<JobsScreen> {
                                       MaterialPageRoute(
                                         builder: (context) => JobDetailsScreen(job: job),
                                       ),
-                                    );
+                                    ).then((_) => _loadJobs()); // Refresh when returning
                                   },
                                   child: Container(
                                     margin: const EdgeInsets.symmetric(vertical: 8),
@@ -415,13 +342,9 @@ class _JobsScreenState extends State<JobsScreen> {
                                               _toggleFavorite(job.id!);
                                             }
                                           },
-                                          child: Icon(
-                                            job.id != null && _favoriteStatus[job.id] == true
-                                                ? Icons.favorite
-                                                : Icons.favorite_border,
-                                            color: job.id != null && _favoriteStatus[job.id] == true
-                                                ? Colors.red
-                                                : null,
+                                          child: const Icon(
+                                            Icons.favorite,
+                                            color: Colors.red,
                                           ),
                                         ),
                                       ],
