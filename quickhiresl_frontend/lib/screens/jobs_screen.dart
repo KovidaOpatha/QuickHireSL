@@ -45,7 +45,7 @@ class _JobsScreenState extends State<JobsScreen> {
       setState(() {
         _isLoading = true;
       });
-      
+
       final jobs = await _jobService.getJobs();
       if (mounted) {
         setState(() {
@@ -53,13 +53,13 @@ class _JobsScreenState extends State<JobsScreen> {
           _filteredJobs = jobs;
           _isLoading = false;
         });
-        
+
         // Fetch job owner data for each job
         for (final job in jobs) {
           if (job.postedBy != null && job.postedBy!.isNotEmpty) {
             _fetchJobOwnerData(job.postedBy!);
           }
-          
+
           // Load favorite status for each job
           if (job.id != null) {
             _loadFavoriteStatus(job.id!);
@@ -82,9 +82,9 @@ class _JobsScreenState extends State<JobsScreen> {
   Future<void> _fetchJobOwnerData(String userId) async {
     try {
       final token = await _authService.getToken();
-      
+
       print('Fetching job owner data for ID: $userId');
-      
+
       final response = await http.get(
         Uri.parse('${_userService.baseUrl}/users/$userId'),
         headers: {
@@ -92,14 +92,15 @@ class _JobsScreenState extends State<JobsScreen> {
           'Authorization': 'Bearer $token',
         },
       );
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        
+
         if (data['profileImage'] != null) {
-          data['profilePicture'] = _userService.getFullImageUrl(data['profileImage']);
+          data['profilePicture'] =
+              _userService.getFullImageUrl(data['profileImage']);
         }
-        
+
         setState(() {
           _jobOwnerData[userId] = data;
         });
@@ -131,10 +132,11 @@ class _JobsScreenState extends State<JobsScreen> {
         setState(() {
           _favoriteStatus[jobId] = newStatus;
         });
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(newStatus ? 'Added to favorites' : 'Removed from favorites'),
+            content: Text(
+                newStatus ? 'Added to favorites' : 'Removed from favorites'),
             duration: const Duration(seconds: 1),
           ),
         );
@@ -159,10 +161,10 @@ class _JobsScreenState extends State<JobsScreen> {
           final companyLower = job.company.toLowerCase();
           final locationLower = job.location.toLowerCase();
           final searchLower = query.toLowerCase();
-          
+
           return titleLower.contains(searchLower) ||
-                 companyLower.contains(searchLower) ||
-                 locationLower.contains(searchLower);
+              companyLower.contains(searchLower) ||
+              locationLower.contains(searchLower);
         }).toList();
       }
     });
@@ -288,7 +290,8 @@ class _JobsScreenState extends State<JobsScreen> {
                       _searchController.text.isEmpty
                           ? 'All Jobs'
                           : 'Search Results (${_filteredJobs.length})',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     if (_isLoading)
                       const SizedBox(
@@ -324,7 +327,8 @@ class _JobsScreenState extends State<JobsScreen> {
                                       _searchController.text.isEmpty
                                           ? 'No jobs available at the moment'
                                           : 'No jobs found matching "${_searchController.text}"',
-                                      style: const TextStyle(color: Colors.grey),
+                                      style:
+                                          const TextStyle(color: Colors.grey),
                                       textAlign: TextAlign.center,
                                     ),
                                   ],
@@ -340,12 +344,14 @@ class _JobsScreenState extends State<JobsScreen> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => JobDetailsScreen(job: job),
+                                        builder: (context) =>
+                                            JobDetailsScreen(job: job),
                                       ),
                                     );
                                   },
                                   child: Container(
-                                    margin: const EdgeInsets.symmetric(vertical: 8),
+                                    margin:
+                                        const EdgeInsets.symmetric(vertical: 8),
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
                                       color: Colors.white,
@@ -358,20 +364,29 @@ class _JobsScreenState extends State<JobsScreen> {
                                           height: 50,
                                           decoration: BoxDecoration(
                                             color: const Color(0xFF98C9C5),
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
                                           ),
-                                          child: job.postedBy != null && 
-                                                _jobOwnerData.containsKey(job.postedBy) && 
-                                                _jobOwnerData[job.postedBy]!['profilePicture'] != null
+                                          child: job.postedBy != null &&
+                                                  _jobOwnerData.containsKey(
+                                                      job.postedBy) &&
+                                                  _jobOwnerData[job.postedBy]![
+                                                          'profilePicture'] !=
+                                                      null
                                               ? ClipRRect(
-                                                  borderRadius: BorderRadius.circular(8),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
                                                   child: Image.network(
-                                                    _jobOwnerData[job.postedBy]!['profilePicture'],
+                                                    _jobOwnerData[
+                                                            job.postedBy]![
+                                                        'profilePicture'],
                                                     fit: BoxFit.cover,
-                                                    errorBuilder: (context, error, stackTrace) {
+                                                    errorBuilder: (context,
+                                                        error, stackTrace) {
                                                       return Icon(
                                                         Icons.business,
-                                                        color: Colors.white.withOpacity(0.7),
+                                                        color: Colors.white
+                                                            .withOpacity(0.7),
                                                         size: 30,
                                                       );
                                                     },
@@ -379,14 +394,16 @@ class _JobsScreenState extends State<JobsScreen> {
                                                 )
                                               : Icon(
                                                   Icons.business,
-                                                  color: Colors.white.withOpacity(0.7),
+                                                  color: Colors.white
+                                                      .withOpacity(0.7),
                                                   size: 30,
                                                 ),
                                         ),
                                         const SizedBox(width: 10),
                                         Expanded(
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 job.title,
@@ -397,10 +414,11 @@ class _JobsScreenState extends State<JobsScreen> {
                                               ),
                                               Text(
                                                 '${job.company} • ${job.location}',
-                                                style: const TextStyle(color: Colors.grey),
+                                                style: const TextStyle(
+                                                    color: Colors.grey),
                                               ),
                                               Text(
-                                                'LKR ${job.salary['min']} - ${job.salary['max']}',
+                                                'LKR ${job.salary.min} - ${job.salary.max}',
                                                 style: const TextStyle(
                                                   color: Colors.green,
                                                   fontWeight: FontWeight.bold,
@@ -416,10 +434,14 @@ class _JobsScreenState extends State<JobsScreen> {
                                             }
                                           },
                                           child: Icon(
-                                            job.id != null && _favoriteStatus[job.id] == true
+                                            job.id != null &&
+                                                    _favoriteStatus[job.id] ==
+                                                        true
                                                 ? Icons.favorite
                                                 : Icons.favorite_border,
-                                            color: job.id != null && _favoriteStatus[job.id] == true
+                                            color: job.id != null &&
+                                                    _favoriteStatus[job.id] ==
+                                                        true
                                                 ? Colors.red
                                                 : null,
                                           ),

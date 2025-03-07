@@ -47,9 +47,9 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
 
     try {
       final token = await _storage.read(key: 'jwt_token');
-      
+
       print('Fetching job owner data for ID: ${widget.job.postedBy}');
-      
+
       final response = await http.get(
         Uri.parse('${_userService.baseUrl}/users/${widget.job.postedBy}'),
         headers: {
@@ -59,22 +59,24 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
       );
 
       print('API Response Status Code: ${response.statusCode}');
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         print('Job Owner Data: $data');
-        
+
         if (data['profileImage'] != null) {
-          data['profilePicture'] = _userService.getFullImageUrl(data['profileImage']);
+          data['profilePicture'] =
+              _userService.getFullImageUrl(data['profileImage']);
           print('Profile Picture URL: ${data['profilePicture']}');
         }
-        
+
         setState(() {
           jobOwnerData = data;
           isJobOwnerLoading = false;
         });
       } else {
-        print('Failed to fetch job owner data: ${response.statusCode} - ${response.body}');
+        print(
+            'Failed to fetch job owner data: ${response.statusCode} - ${response.body}');
         setState(() {
           isJobOwnerLoading = false;
           jobOwnerData = {
@@ -225,10 +227,10 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                 fit: StackFit.expand,
                 children: [
                   // Background with profile picture
-                  !isJobOwnerLoading && 
-                  jobOwnerData.isNotEmpty && 
-                  jobOwnerData['profilePicture'] != null && 
-                  jobOwnerData['profilePicture'].toString().isNotEmpty
+                  !isJobOwnerLoading &&
+                          jobOwnerData.isNotEmpty &&
+                          jobOwnerData['profilePicture'] != null &&
+                          jobOwnerData['profilePicture'].toString().isNotEmpty
                       ? Image.network(
                           jobOwnerData['profilePicture'],
                           fit: BoxFit.cover,
@@ -273,7 +275,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                             ),
                           ),
                         ),
-                  
+
                   // Overlay gradient for better text visibility
                   Container(
                     decoration: BoxDecoration(
@@ -288,7 +290,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                       ),
                     ),
                   ),
-                  
+
                   // Decorative wave pattern
                   Positioned(
                     bottom: 0,
@@ -302,7 +304,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                       ),
                     ),
                   ),
-                  
+
                   // Job title and company info
                   Positioned(
                     bottom: 20,
@@ -340,7 +342,8 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                            if (jobOwnerData.isNotEmpty && jobOwnerData['fullName'] != null) ...[
+                            if (jobOwnerData.isNotEmpty &&
+                                jobOwnerData['fullName'] != null) ...[
                               const Text(
                                 ' • ',
                                 style: TextStyle(
@@ -372,7 +375,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
               onPressed: () => Navigator.pop(context),
             ),
           ),
-          
+
           // Job details content
           SliverToBoxAdapter(
             child: Container(
@@ -411,7 +414,8 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                               _buildDetailItem(
                                 icon: Icons.attach_money,
                                 title: 'Salary',
-                                value: 'LKR ${widget.job.salary['min']} - ${widget.job.salary['max']}',
+                                value:
+                                    'LKR ${widget.job.salary.min} - ${widget.job.salary.max}',
                                 iconColor: Colors.green,
                               ),
                               _buildDetailItem(
@@ -449,9 +453,9 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                         ],
                       ),
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Job description
                     const Text(
                       'Job Description',
@@ -470,7 +474,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                         height: 1.5,
                       ),
                     ),
-                    
+
                     // Requirements
                     if (widget.job.requirements.isNotEmpty) ...[
                       const SizedBox(height: 24),
@@ -487,9 +491,9 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                           .map((req) => _buildRequirementItem(req))
                           .toList(),
                     ],
-                    
+
                     const SizedBox(height: 30),
-                    
+
                     // Apply button
                     Center(
                       child: SizedBox(
@@ -510,7 +514,8 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                                   height: 20,
                                   width: 20,
                                   child: CircularProgressIndicator(
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white),
                                     strokeWidth: 2,
                                   ),
                                 )
@@ -545,8 +550,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
           MaterialPageRoute(
             builder: (context) => JobApplicationScreen(
               jobTitle: widget.job.title,
-              salary:
-                  'LKR ${widget.job.salary['min']} - ${widget.job.salary['max']}',
+              salary: 'LKR ${widget.job.salary.min} - ${widget.job.salary.max}',
               email: email,
               jobOwnerEmail: widget.job.postedBy ?? '',
             ),
@@ -586,25 +590,17 @@ class WaveClipper extends CustomClipper<Path> {
     path.lineTo(0, size.height);
     path.lineTo(size.width, size.height);
     path.lineTo(size.width, 0);
-    
+
     final firstControlPoint = Offset(size.width * 0.75, size.height - 30);
     final firstEndPoint = Offset(size.width * 0.5, size.height - 15);
-    path.quadraticBezierTo(
-      firstControlPoint.dx, 
-      firstControlPoint.dy, 
-      firstEndPoint.dx, 
-      firstEndPoint.dy
-    );
-    
+    path.quadraticBezierTo(firstControlPoint.dx, firstControlPoint.dy,
+        firstEndPoint.dx, firstEndPoint.dy);
+
     final secondControlPoint = Offset(size.width * 0.25, size.height);
     final secondEndPoint = Offset(0, size.height - 20);
-    path.quadraticBezierTo(
-      secondControlPoint.dx, 
-      secondControlPoint.dy, 
-      secondEndPoint.dx, 
-      secondEndPoint.dy
-    );
-    
+    path.quadraticBezierTo(secondControlPoint.dx, secondControlPoint.dy,
+        secondEndPoint.dx, secondEndPoint.dy);
+
     path.close();
     return path;
   }
