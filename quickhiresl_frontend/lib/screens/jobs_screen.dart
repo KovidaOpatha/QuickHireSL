@@ -34,7 +34,7 @@ class _JobsScreenState extends State<JobsScreen> {
       setState(() {
         _isLoading = true;
       });
-      
+
       final jobs = await _jobService.getJobs();
       if (mounted) {
         setState(() {
@@ -66,10 +66,10 @@ class _JobsScreenState extends State<JobsScreen> {
           final companyLower = job.company.toLowerCase();
           final locationLower = job.location.toLowerCase();
           final searchLower = query.toLowerCase();
-          
+
           return titleLower.contains(searchLower) ||
-                 companyLower.contains(searchLower) ||
-                 locationLower.contains(searchLower);
+              companyLower.contains(searchLower) ||
+              locationLower.contains(searchLower);
         }).toList();
       }
     });
@@ -124,6 +124,7 @@ class _JobsScreenState extends State<JobsScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        automaticallyImplyLeading: false,
         title: const Text(
           'Available Jobs',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
@@ -176,7 +177,8 @@ class _JobsScreenState extends State<JobsScreen> {
                     _searchController.text.isEmpty
                         ? 'All Jobs'
                         : 'Search Results (${_filteredJobs.length})',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   if (_isLoading)
                     const SizedBox(
@@ -228,12 +230,14 @@ class _JobsScreenState extends State<JobsScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => JobDetailsScreen(job: job),
+                                      builder: (context) =>
+                                          JobDetailsScreen(job: job),
                                     ),
                                   );
                                 },
                                 child: Container(
-                                  margin: const EdgeInsets.symmetric(vertical: 8),
+                                  margin:
+                                      const EdgeInsets.symmetric(vertical: 8),
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
                                     color: Colors.white,
@@ -246,14 +250,17 @@ class _JobsScreenState extends State<JobsScreen> {
                                         height: 50,
                                         decoration: BoxDecoration(
                                           color: Colors.grey[300],
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
                                         ),
-                                        child: const Icon(Icons.business, color: Colors.grey),
+                                        child: const Icon(Icons.business,
+                                            color: Colors.grey),
                                       ),
                                       const SizedBox(width: 10),
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               job.title,
@@ -264,10 +271,11 @@ class _JobsScreenState extends State<JobsScreen> {
                                             ),
                                             Text(
                                               '${job.company} • ${job.location}',
-                                              style: const TextStyle(color: Colors.grey),
+                                              style: const TextStyle(
+                                                  color: Colors.grey),
                                             ),
                                             Text(
-                                              'LKR ${job.salary['min']} - ${job.salary['max']}',
+                                              'LKR ${job.salary.min} - ${job.salary.max}',
                                               style: const TextStyle(
                                                 color: Colors.green,
                                                 fontWeight: FontWeight.bold,

@@ -15,7 +15,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
   final _authService = AuthService();
   final List<String> _requirements = [];
   final _requirementController = TextEditingController();
-  
+
   String _title = '';
   String _company = '';
   String _location = '';
@@ -67,7 +67,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
       try {
         // Get the current token
         final token = await _authService.getToken();
-        
+
         if (token == null) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -168,30 +168,34 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   children: [
                     TextFormField(
                       decoration: _getInputDecoration('Job Title'),
-                      validator: (value) =>
-                          value?.isEmpty ?? true ? 'Please enter a job title' : null,
+                      validator: (value) => value?.isEmpty ?? true
+                          ? 'Please enter a job title'
+                          : null,
                       onSaved: (value) => _title = value ?? '',
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       decoration: _getInputDecoration('Company'),
-                      validator: (value) =>
-                          value?.isEmpty ?? true ? 'Please enter a company name' : null,
+                      validator: (value) => value?.isEmpty ?? true
+                          ? 'Please enter a company name'
+                          : null,
                       onSaved: (value) => _company = value ?? '',
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       decoration: _getInputDecoration('Location'),
-                      validator: (value) =>
-                          value?.isEmpty ?? true ? 'Please enter a location' : null,
+                      validator: (value) => value?.isEmpty ?? true
+                          ? 'Please enter a location'
+                          : null,
                       onSaved: (value) => _location = value ?? '',
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       decoration: _getInputDecoration('Description'),
                       maxLines: 3,
-                      validator: (value) =>
-                          value?.isEmpty ?? true ? 'Please enter a description' : null,
+                      validator: (value) => value?.isEmpty ?? true
+                          ? 'Please enter a description'
+                          : null,
                       onSaved: (value) => _description = value ?? '',
                     ),
                     const SizedBox(height: 16),
@@ -204,8 +208,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
                                 child: Text(type),
                               ))
                           .toList(),
-                      onChanged: (value) =>
-                          setState(() => _employmentType = value ?? 'Full-time'),
+                      onChanged: (value) => setState(
+                          () => _employmentType = value ?? 'Full-time'),
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
@@ -269,12 +273,16 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: _requirements.map((req) => Chip(
-                        label: Text(req),
-                        backgroundColor: const Color(0xFF98C9C5).withOpacity(0.2),
-                        deleteIcon: const Icon(Icons.cancel, size: 18),
-                        onDeleted: () => setState(() => _requirements.remove(req)),
-                      )).toList(),
+                      children: _requirements
+                          .map((req) => Chip(
+                                label: Text(req),
+                                backgroundColor:
+                                    const Color(0xFF98C9C5).withOpacity(0.2),
+                                deleteIcon: const Icon(Icons.cancel, size: 18),
+                                onDeleted: () =>
+                                    setState(() => _requirements.remove(req)),
+                              ))
+                          .toList(),
                     ),
                     const SizedBox(height: 24),
                     SizedBox(
@@ -293,7 +301,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
                                 ),
                               )
                             : const Text(
