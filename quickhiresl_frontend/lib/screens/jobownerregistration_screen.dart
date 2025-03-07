@@ -88,6 +88,19 @@ class _JobOwnerRegistrationScreenState
           return;
         }
 
+        // Ensure all required fields are filled
+        if (shopNameController.text.isEmpty ||
+            shopLocationController.text.isEmpty ||
+            shopRegNoController.text.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('All fields are required')),
+          );
+          setState(() {
+            _isLoading = false;
+          });
+          return;
+        }
+
         final jobOwnerDetails = {
           'jobOwnerDetails': {
             'shopName': shopNameController.text,
@@ -96,26 +109,45 @@ class _JobOwnerRegistrationScreenState
           }
         };
 
+        print('Sending job owner details: $jobOwnerDetails');
+
         final response =
             await _authService.updateRole(userId, 'jobowner', details: jobOwnerDetails);
+        
         if (response['success']) {
-          final refreshResult =
-              await _authService.login(widget.email, widget.password);
-          if (refreshResult['success']) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const PersonalInformationScreen(),
-              ),
-            );
+          // Verify the data was saved correctly
+          final verifyResult = await _authService.verifyUserData(userId);
+          
+          if (verifyResult['success'] && verifyResult['verified'] == true) {
+            final refreshResult =
+                await _authService.login(widget.email, widget.password);
+                
+            if (refreshResult['success']) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PersonalInformationScreen(),
+                ),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Failed to refresh session. Please log in again.')),
+              );
+            }
           } else {
+            // Data wasn't saved correctly
+            String errorMessage = 'Your information was not saved correctly. Please try again.';
+            if (verifyResult['missingFields'] != null) {
+              errorMessage += ' Missing fields: ${verifyResult['missingFields']}';
+            }
+            
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Failed to refresh session. Please log in again.')),
+              SnackBar(content: Text(errorMessage)),
             );
           }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to update role. Please try again.')),
+            SnackBar(content: Text(response['error'] ?? 'Failed to update role. Please try again.')),
           );
         }
       } catch (e) {

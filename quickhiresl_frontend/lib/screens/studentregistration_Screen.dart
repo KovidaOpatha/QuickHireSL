@@ -65,6 +65,19 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
           return;
         }
 
+        // Ensure all required fields are filled
+        if (fullNameController.text.isEmpty ||
+            addressController.text.isEmpty ||
+            dobController.text.isEmpty ||
+            mobileController.text.isEmpty ||
+            nicController.text.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('All fields are required')),
+          );
+          setState(() => _isLoading = false);
+          return;
+        }
+
         final studentDetails = {
           'studentDetails': {
             'fullName': fullNameController.text,
@@ -75,17 +88,34 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
           }
         };
 
+        print('Sending student details: $studentDetails');
+
         final response = await _authService.updateRole(userId, 'student', details: studentDetails);
 
         if (response['success']) {
-          if (!mounted) return;
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const JobCategoriesScreen()),
-          );
+          // Verify the data was saved correctly
+          final verifyResult = await _authService.verifyUserData(userId);
+          
+          if (verifyResult['success'] && verifyResult['verified'] == true) {
+            if (!mounted) return;
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const JobCategoriesScreen()),
+            );
+          } else {
+            // Data wasn't saved correctly
+            String errorMessage = 'Your information was not saved correctly. Please try again.';
+            if (verifyResult['missingFields'] != null) {
+              errorMessage += ' Missing fields: ${verifyResult['missingFields']}';
+            }
+            
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(errorMessage)),
+            );
+          }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to update role. Please try again.')),
+            SnackBar(content: Text(response['error'] ?? 'Failed to update role. Please try again.')),
           );
         }
       } catch (e) {

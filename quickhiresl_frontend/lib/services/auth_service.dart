@@ -238,4 +238,99 @@ class AuthService {
       };
     }
   }
+
+  // Get user profile
+  Future<Map<String, dynamic>> getUserProfile(String userId) async {
+    try {
+      print('[GetUserProfile] Fetching profile for user: $userId');
+      
+      final token = await getToken();
+      if (token == null) {
+        return {
+          'success': false,
+          'error': 'Authentication token not found',
+        };
+      }
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/users/$userId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('[GetUserProfile] Response status: ${response.statusCode}');
+      print('[GetUserProfile] Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return {
+          'success': true,
+          'data': responseData,
+        };
+      }
+
+      final responseData = response.body.isNotEmpty ? jsonDecode(response.body) : {};
+      return {
+        'success': false,
+        'error': responseData['message'] ?? 'Failed to fetch user profile',
+      };
+    } catch (e) {
+      print('[ERROR] Get user profile error: $e');
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
+  // Verify user data was saved correctly
+  Future<Map<String, dynamic>> verifyUserData(String userId) async {
+    try {
+      print('[VerifyUserData] Verifying data for user: $userId');
+      
+      final token = await getToken();
+      if (token == null) {
+        return {
+          'success': false,
+          'error': 'Authentication token not found',
+        };
+      }
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/auth/verify/$userId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('[VerifyUserData] Response status: ${response.statusCode}');
+      print('[VerifyUserData] Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return {
+          'success': true,
+          'verified': responseData['verified'],
+          'role': responseData['role'],
+          'missingFields': responseData['missingFields'],
+          'message': responseData['message'],
+        };
+      }
+
+      final responseData = response.body.isNotEmpty ? jsonDecode(response.body) : {};
+      return {
+        'success': false,
+        'error': responseData['message'] ?? 'Failed to verify user data',
+      };
+    } catch (e) {
+      print('[ERROR] Verify user data error: $e');
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
 }

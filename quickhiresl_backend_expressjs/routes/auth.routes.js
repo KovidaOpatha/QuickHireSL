@@ -11,4 +11,7 @@ router.post('/login', authController.login);
 // Update user role
 router.patch('/role/:userId', authController.updateRole);
 
+// Verify user data
+router.get('/verify/:userId', authController.verifyUserData);
+
 module.exports = router;

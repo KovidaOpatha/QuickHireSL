@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
 const User = require('../models/user.model');
 const fs = require('fs');
 const path = require('path');
@@ -136,44 +137,204 @@ exports.updateRole = async (req, res) => {
         const { userId } = req.params;
         const { role } = req.body;
         console.log('[UpdateRole] Input:', { userId, role });
+        console.log('[UpdateRole] Request body:', JSON.stringify(req.body, null, 2));
 
         // Validate role selection
-        if (!role || !['student', 'jobseeker', 'jobowner'].includes(role)) {
+        if (!role || !['student', 'jobowner'].includes(role)) {
             return res.status(400).json({ message: 'Invalid role selection' });
         }
 
-        // Update user role and details
+        // Initialize update data with role
         const updateData = { role };
         
-        if (role === 'student' && req.body.studentDetails) {
+        // Handle student details
+        if (role === 'student') {
+            if (!req.body.studentDetails) {
+                return res.status(400).json({ message: 'Student details are required' });
+            }
+            
+            const { fullName, leavingAddress, dateOfBirth, mobileNumber, nicNumber } = req.body.studentDetails;
+            
+            // Validate required student fields
+            if (!fullName || !leavingAddress || !dateOfBirth || !mobileNumber || !nicNumber) {
+                return res.status(400).json({ 
+                    message: 'All student details are required',
+                    missingFields: [
+                        !fullName ? 'fullName' : null,
+                        !leavingAddress ? 'leavingAddress' : null,
+                        !dateOfBirth ? 'dateOfBirth' : null,
+                        !mobileNumber ? 'mobileNumber' : null,
+                        !nicNumber ? 'nicNumber' : null
+                    ].filter(Boolean)
+                });
+            }
+            
             updateData.studentDetails = req.body.studentDetails;
-        } else if (role === 'jobowner' && req.body.jobOwnerDetails) {
+            console.log('[UpdateRole] Student details received:', JSON.stringify(req.body.studentDetails, null, 2));
+        } 
+        // Handle job owner details
+        else if (role === 'jobowner') {
+            if (!req.body.jobOwnerDetails) {
+                return res.status(400).json({ message: 'Job owner details are required' });
+            }
+            
+            const { shopName, shopLocation, shopRegisterNo } = req.body.jobOwnerDetails;
+            
+            // Validate required job owner fields
+            if (!shopName || !shopLocation || !shopRegisterNo) {
+                return res.status(400).json({ 
+                    message: 'All job owner details are required',
+                    missingFields: [
+                        !shopName ? 'shopName' : null,
+                        !shopLocation ? 'shopLocation' : null,
+                        !shopRegisterNo ? 'shopRegisterNo' : null
+                    ].filter(Boolean)
+                });
+            }
+            
             updateData.jobOwnerDetails = req.body.jobOwnerDetails;
+            console.log('[UpdateRole] Job owner details received:', JSON.stringify(req.body.jobOwnerDetails, null, 2));
         }
 
-        // Update user role
-        const user = await User.findByIdAndUpdate(
-            userId,
-            updateData,
-            { new: true }
-        );
+        console.log('[UpdateRole] Final update data:', JSON.stringify(updateData, null, 2));
 
+        // Update user role with transaction-like approach
+        const session = await mongoose.startSession();
+        session.startTransaction();
+
+        try {
+            // Update user role
+            const user = await User.findByIdAndUpdate(
+                userId,
+                updateData,
+                { new: true, session }
+            );
+
+            if (!user) {
+                await session.abortTransaction();
+                session.endSession();
+                console.log('[ERROR] Update role failed: User not found');
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            // Verify the update was successful
+            const verifiedUser = await User.findById(userId).session(session);
+            
+            // Check if role-specific details were saved correctly
+            let detailsSavedCorrectly = true;
+            let missingDetails = [];
+            
+            if (role === 'student' && (!verifiedUser.studentDetails || Object.keys(verifiedUser.studentDetails).length === 0)) {
+                detailsSavedCorrectly = false;
+                missingDetails.push('studentDetails');
+            } else if (role === 'jobowner' && (!verifiedUser.jobOwnerDetails || Object.keys(verifiedUser.jobOwnerDetails).length === 0)) {
+                detailsSavedCorrectly = false;
+                missingDetails.push('jobOwnerDetails');
+            }
+            
+            if (!detailsSavedCorrectly) {
+                await session.abortTransaction();
+                session.endSession();
+                console.log('[ERROR] Role details not saved correctly:', missingDetails);
+                return res.status(500).json({ 
+                    message: 'Failed to save role details', 
+                    missingDetails 
+                });
+            }
+
+            await session.commitTransaction();
+            session.endSession();
+
+            console.log('[UpdateRole] Successful:', { 
+                userId: user._id, 
+                role: user.role,
+                hasStudentDetails: !!user.studentDetails,
+                hasJobOwnerDetails: !!user.jobOwnerDetails,
+                studentDetails: user.studentDetails,
+                jobOwnerDetails: user.jobOwnerDetails
+            });
+
+            res.status(200).json({ 
+                message: 'Role updated successfully',
+                role: user.role,
+                detailsSaved: true
+            });
+        } catch (error) {
+            await session.abortTransaction();
+            session.endSession();
+            throw error;
+        }
+    } catch (error) {
+        console.error('[ERROR] Update role error:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
+// Verify user data was saved correctly
+exports.verifyUserData = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        console.log('[VerifyUserData] Verifying data for user:', userId);
+
+        const user = await User.findById(userId).select('-password');
+        
         if (!user) {
-            console.log('[ERROR] Update role failed: User not found');
+            console.log('[VerifyUserData] User not found:', userId);
             return res.status(404).json({ message: 'User not found' });
         }
 
-        console.log('[UpdateRole] Successful:', { 
-            userId: user._id, 
-            role: user.role,
-        });
+        // Check if role is set
+        if (!user.role) {
+            console.log('[VerifyUserData] Role not set for user:', userId);
+            return res.status(400).json({ 
+                verified: false, 
+                message: 'User role not set',
+                missingFields: ['role']
+            });
+        }
 
-        res.status(200).json({ 
-            message: 'Role updated successfully',
-            role: user.role
+        // Check role-specific details
+        let verified = true;
+        let missingFields = [];
+
+        if (user.role === 'student') {
+            if (!user.studentDetails) {
+                verified = false;
+                missingFields.push('studentDetails');
+            } else {
+                const { fullName, leavingAddress, dateOfBirth, mobileNumber, nicNumber } = user.studentDetails;
+                if (!fullName) missingFields.push('studentDetails.fullName');
+                if (!leavingAddress) missingFields.push('studentDetails.leavingAddress');
+                if (!dateOfBirth) missingFields.push('studentDetails.dateOfBirth');
+                if (!mobileNumber) missingFields.push('studentDetails.mobileNumber');
+                if (!nicNumber) missingFields.push('studentDetails.nicNumber');
+                
+                if (missingFields.length > 0) verified = false;
+            }
+        } else if (user.role === 'jobowner') {
+            if (!user.jobOwnerDetails) {
+                verified = false;
+                missingFields.push('jobOwnerDetails');
+            } else {
+                const { shopName, shopLocation, shopRegisterNo } = user.jobOwnerDetails;
+                if (!shopName) missingFields.push('jobOwnerDetails.shopName');
+                if (!shopLocation) missingFields.push('jobOwnerDetails.shopLocation');
+                if (!shopRegisterNo) missingFields.push('jobOwnerDetails.shopRegisterNo');
+                
+                if (missingFields.length > 0) verified = false;
+            }
+        }
+
+        console.log('[VerifyUserData] Verification result:', { verified, missingFields });
+
+        res.status(200).json({
+            verified,
+            role: user.role,
+            missingFields: missingFields.length > 0 ? missingFields : undefined,
+            message: verified ? 'User data verified successfully' : 'User data verification failed'
         });
     } catch (error) {
-        console.error('[ERROR] Update role error:', error);
+        console.error('[ERROR] Verify user data error:', error);
         res.status(500).json({ error: error.message });
     }
 };
