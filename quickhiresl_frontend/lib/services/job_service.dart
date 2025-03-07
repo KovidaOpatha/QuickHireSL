@@ -12,7 +12,7 @@ class JobService extends ChangeNotifier {
     try {
       print('Making request to: $_baseUrl');
       print('Request data: ${json.encode(jobData)}');
-      
+
       final response = await http.post(
         Uri.parse(_baseUrl),
         headers: {
@@ -52,8 +52,10 @@ class JobService extends ChangeNotifier {
     try {
       final queryParams = <String, String>{};
       if (location != null) queryParams['location'] = location;
-      if (employmentType != null) queryParams['employmentType'] = employmentType;
-      if (experienceLevel != null) queryParams['experienceLevel'] = experienceLevel;
+      if (employmentType != null)
+        queryParams['employmentType'] = employmentType;
+      if (experienceLevel != null)
+        queryParams['experienceLevel'] = experienceLevel;
       if (salaryMin != null) queryParams['salaryMin'] = salaryMin.toString();
       if (salaryMax != null) queryParams['salaryMax'] = salaryMax.toString();
       if (search != null) queryParams['search'] = search;
@@ -105,7 +107,8 @@ class JobService extends ChangeNotifier {
     }
   }
 
-  Future<Job> updateJob(String id, Map<String, dynamic> jobData, String token) async {
+  Future<Job> updateJob(
+      String id, Map<String, dynamic> jobData, String token) async {
     try {
       final response = await http.put(
         Uri.parse('$_baseUrl/$id'),
@@ -157,7 +160,8 @@ class JobService extends ChangeNotifier {
   }
 
   // Application related methods
-  Future<void> applyForJob(String jobId, String coverLetter, String token) async {
+  Future<void> applyForJob(
+      String jobId, String coverLetter, String token) async {
     try {
       final response = await http.post(
         Uri.parse('${Config.apiUrl}/applications'),
@@ -198,12 +202,14 @@ class JobService extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = json.decode(response.body);
-        
+
         // Check if the response has a data field that contains the applications
         if (responseData.containsKey('data')) {
           final List<dynamic> applicationsJson = responseData['data'];
           print('Parsed applications: $applicationsJson');
-          return applicationsJson.map((json) => Application.fromJson(json)).toList();
+          return applicationsJson
+              .map((json) => Application.fromJson(json))
+              .toList();
         } else {
           print('Response data structure: $responseData');
           throw Exception('Invalid response format: missing data field');
@@ -217,9 +223,11 @@ class JobService extends ChangeNotifier {
     }
   }
 
-  Future<void> updateApplicationStatus(String applicationId, String status, String token) async {
+  Future<void> updateApplicationStatus(
+      String applicationId, String status, String token) async {
     try {
-      print('[DEBUG] Updating application status: ID=$applicationId, status=$status');
+      print(
+          '[DEBUG] Updating application status: ID=$applicationId, status=$status');
       final response = await http.patch(
         Uri.parse('${Config.apiUrl}/applications/$applicationId/status'),
         headers: {
@@ -234,7 +242,8 @@ class JobService extends ChangeNotifier {
 
       if (response.statusCode != 200) {
         final errorData = json.decode(response.body);
-        throw Exception(errorData['message'] ?? 'Failed to update application status');
+        throw Exception(
+            errorData['message'] ?? 'Failed to update application status');
       }
     } catch (e) {
       print('[ERROR] Failed to update application status: $e');
@@ -265,11 +274,14 @@ class JobService extends ChangeNotifier {
     }
   }
 
-  Future<void> requestCompletion(String applicationId, String requestedBy, String token) async {
+  Future<void> requestCompletion(
+      String applicationId, String requestedBy, String token) async {
     try {
-      print('[DEBUG] Requesting completion: ID=$applicationId, requestedBy=$requestedBy');
+      print(
+          '[DEBUG] Requesting completion: ID=$applicationId, requestedBy=$requestedBy');
       final response = await http.post(
-        Uri.parse('${Config.apiUrl}/applications/$applicationId/request-completion'),
+        Uri.parse(
+            '${Config.apiUrl}/applications/$applicationId/request-completion'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -294,7 +306,8 @@ class JobService extends ChangeNotifier {
     try {
       print('[DEBUG] Confirming completion: ID=$applicationId');
       final response = await http.post(
-        Uri.parse('${Config.apiUrl}/applications/$applicationId/confirm-completion'),
+        Uri.parse(
+            '${Config.apiUrl}/applications/$applicationId/confirm-completion'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
