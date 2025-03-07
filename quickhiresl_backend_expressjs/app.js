@@ -10,6 +10,8 @@ const indexRoutes = require('./routes/api');
 const jobRoutes = require('./routes/job.routes');
 const applicationRoutes = require('./routes/application.routes');
 const notificationRoutes = require('./routes/notification.routes');
+const chatController = require('./controllers/chat.controller');
+const authMiddleware = require('./middleware/auth.middleware');
 
 dotenv.config();
 
@@ -35,6 +37,10 @@ app.use('/api/users', userRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/notifications', notificationRoutes);
+
+// Chat routes
+app.get('/api/jobs/:jobId/chat', authMiddleware, chatController.getJobChat);
+app.post('/api/jobs/:jobId/chat', authMiddleware, chatController.addMessage);
 
 // Feedback Schema & Model
 const FeedbackSchema = new mongoose.Schema({
@@ -268,7 +274,7 @@ app.use((err, req, res, next) => {
     });
 });
 
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
