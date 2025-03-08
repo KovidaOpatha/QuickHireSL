@@ -3,6 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 class CommunityScreen extends StatefulWidget {
+  final Function(int) onNavigateToTab;
+
+  const CommunityScreen({Key? key, required this.onNavigateToTab})
+      : super(key: key);
+
   @override
   _CommunityScreenState createState() => _CommunityScreenState();
 }
@@ -68,41 +73,47 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(0xFF2C2F38),
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(80),
-        child: AppBar(
-          backgroundColor: Color(0xFF2C2F38),
-          elevation: 0,
-          title: Padding(
-            padding: const EdgeInsets.only(top: 20),
-            child: Text(
-              "Community",
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 32,
-                color: Colors.white,
+    return WillPopScope(
+      onWillPop: () async {
+        widget.onNavigateToTab(1); // Navigate to home tab
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: Color(0xFF2C2F38),
+        appBar: PreferredSize(
+          preferredSize: Size.fromHeight(80),
+          child: AppBar(
+            backgroundColor: Color(0xFF2C2F38),
+            elevation: 0,
+            title: Padding(
+              padding: const EdgeInsets.only(top: 20),
+              child: Text(
+                "Community",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 32,
+                  color: Colors.white,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
             ),
+            centerTitle: true,
           ),
-          centerTitle: true,
         ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              padding: EdgeInsets.all(10),
-              itemCount: posts.length,
-              itemBuilder: (context, index) {
-                return _buildPost(posts[index]);
-              },
+        body: Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                padding: EdgeInsets.all(10),
+                itemCount: posts.length,
+                itemBuilder: (context, index) {
+                  return _buildPost(posts[index]);
+                },
+              ),
             ),
-          ),
-          _buildPostInput(),
-        ],
+            _buildPostInput(),
+          ],
+        ),
       ),
     );
   }
