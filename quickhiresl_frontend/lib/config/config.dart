@@ -17,13 +17,13 @@ class Config {
   // CHOOSE ONE OF THESE OPTIONS:
   
   // Option 1: For physical device testing (replace with your computer's IP)
-  static const String apiUrl = 'http://192.168.1.16:3000/api';
+  // static const String apiUrl = 'http://192.168.1.16:3000/api';
   
   // Option 2: For Android emulator testing
   // static const String apiUrl = 'http://10.0.2.2:3000/api';
   
   // Option 3: For local development on the same machine
-  // static const String apiUrl = 'http://localhost:3000/api';
+  static const String apiUrl = 'http://localhost:3000/api';
   
   // Option 4: For production with hosted backend
   // static const String apiUrl = 'https://your-backend-url.com/api';
