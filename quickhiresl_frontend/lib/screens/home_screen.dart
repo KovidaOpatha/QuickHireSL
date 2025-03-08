@@ -436,7 +436,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ),
                                         ),
                                         Text(
-                                          'LKR ${job.salary['min']} - ${job.salary['max']}',
+                                          'LKR ${job.salary.min} - ${job.salary.max}',
                                           style: const TextStyle(
                                             color: Colors.green,
                                             fontWeight: FontWeight.bold,
@@ -949,7 +949,7 @@ class _SearchPageState extends State<_SearchPage> {
                                         ),
                                       ),
                                       Text(
-                                        'LKR ${job.salary['min']} - ${job.salary['max']}',
+                                        'LKR ${job.salary.min} - ${job.salary.max}',
                                         style: const TextStyle(
                                           color: Colors.green,
                                           fontWeight: FontWeight.bold,
