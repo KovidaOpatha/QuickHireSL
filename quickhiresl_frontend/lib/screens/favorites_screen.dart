@@ -327,7 +327,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                                 style: const TextStyle(color: Colors.grey),
                                               ),
                                               Text(
-                                                'LKR ${job.salary['min']} - ${job.salary['max']}',
+                                                'LKR ${job.salary.min} - ${job.salary.max}',
                                                 style: const TextStyle(
                                                   color: Colors.green,
                                                   fontWeight: FontWeight.bold,
