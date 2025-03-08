@@ -1,0 +1,1 @@
+ C:\\Users\\kovid\\OneDrive\\Desktop\\IIT\\Github\\QuickHireSL\\quickhiresl_frontend\\.dart_tool\\flutter_build\\076d51a3d6fed09cc0c100b3fb7e520a\\native_assets.yaml: 

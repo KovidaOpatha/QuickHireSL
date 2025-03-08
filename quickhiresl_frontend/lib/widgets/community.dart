@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../config/config.dart';
 
 class CommunityScreen extends StatefulWidget {
   final Function(int) onNavigateToTab;
@@ -16,7 +17,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
   final TextEditingController _postController = TextEditingController();
   List<Map<String, dynamic>> posts = [];
 
-  final String apiUrl = 'http://localhost:3000/api/chats';
+  final String apiUrl = '${Config.apiUrl.replaceAll('/api', '')}/api/chats';
 
   @override
   void initState() {

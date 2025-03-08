@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/job.dart';
+import '../config/config.dart';
 
 class JobChatScreen extends StatefulWidget {
   final Job job;
@@ -27,7 +28,7 @@ class _JobChatScreenState extends State<JobChatScreen> {
     setState(() => isLoading = true);
     try {
       final response = await http.get(
-        Uri.parse('http://localhost:3000/api/jobs/${widget.job.id}/chat'),
+        Uri.parse('${Config.apiUrl}/jobs/${widget.job.id}/chat'),
       );
       if (response.statusCode == 200) {
         setState(() {
@@ -48,7 +49,7 @@ class _JobChatScreenState extends State<JobChatScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:3000/api/jobs/${widget.job.id}/chat'),
+        Uri.parse('${Config.apiUrl}/jobs/${widget.job.id}/chat'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'content': content}),
       );

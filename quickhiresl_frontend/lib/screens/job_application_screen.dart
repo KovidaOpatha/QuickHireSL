@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../config/config.dart';
 
 class JobApplicationScreen extends StatefulWidget {
   final String jobTitle;
@@ -51,7 +52,7 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
 
     try {
       final url = Uri.parse(
-          "http://localhost:3000/api/getUser/${widget.jobOwnerEmail}");
+          "${Config.apiUrl}/getUser/${widget.jobOwnerEmail}");
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
@@ -74,7 +75,7 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
   Future<void> _fetchUserData() async {
     setState(() => isLoading = true);
 
-    final url = Uri.parse("http://localhost:3000/api/getUser/${widget.email}");
+    final url = Uri.parse("${Config.apiUrl}/getUser/${widget.email}");
 
     try {
       final response = await http.get(url);
@@ -101,7 +102,7 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
 
     setState(() => isLoading = true);
 
-    final url = Uri.parse("http://localhost:3000/api/apply");
+    final url = Uri.parse("${Config.apiUrl}/apply");
     try {
       final response = await http.post(
         url,

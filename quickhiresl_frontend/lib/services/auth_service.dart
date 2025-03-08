@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../config/config.dart';
 
 class AuthService {
-  final String baseUrl = 'http://localhost:3000/api';
+  final String baseUrl = Config.apiUrl;
   final storage = const FlutterSecureStorage();
 
   // Register user with optional profile image
@@ -140,7 +141,9 @@ class AuthService {
     if (imagePath == null || imagePath.isEmpty) return '';
     // Remove any leading slashes and add the correct base URL
     final cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
-    return 'http://localhost:3000/$cleanPath';
+    // Extract the base server URL without the /api path
+    final serverUrl = Config.apiUrl.replaceAll('/api', '');
+    return '$serverUrl/$cleanPath';
   }
 
   // Save data to storage

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../config/config.dart';
 
 void showFeedbackDialog(BuildContext context,
     {bool returnToHome = false,
@@ -36,7 +37,7 @@ void showFeedbackDialog(BuildContext context,
               }
 
               final response = await http.post(
-                Uri.parse("http://localhost:3000/api/feedback"),
+                Uri.parse("${Config.apiUrl}/feedback"),
                 headers: {
                   "Content-Type": "application/json",
                   "Authorization": "Bearer $token"
