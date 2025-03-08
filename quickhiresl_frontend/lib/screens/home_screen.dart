@@ -630,7 +630,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ? FloatingActionButton(
                 onPressed: _navigateToPostJob,
                 child: const Icon(Icons.add),
-                backgroundColor: Colors.black,
+                backgroundColor: const Color.fromARGB(255, 152, 201, 197),
               )
             : null,
       ),
