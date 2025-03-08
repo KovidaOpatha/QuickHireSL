@@ -582,10 +582,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                   ),
                 ),
-                title: const Text(
-                  'QuickHire',
-                  style: TextStyle(
-                      color: Colors.black, fontWeight: FontWeight.bold),
+                title: Image.asset(
+                  'assets/quickhire_logo.png',  // Path to your logo
+                  height: 30,  
                 ),
                 centerTitle: true,
                 actions: [
