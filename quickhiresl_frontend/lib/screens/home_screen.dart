@@ -30,9 +30,9 @@ class _HomeScreenState extends State<HomeScreen> {
   final UserService _userService = UserService();
   final FavoritesService _favoritesService = FavoritesService();
   final NotificationService _notificationService = NotificationService();
-  
+
   final TextEditingController _searchController = TextEditingController();
-  
+
   List<Job> _jobs = [];
   List<Job> _filteredJobs = [];
   bool _isLoading = true;
@@ -100,13 +100,13 @@ class _HomeScreenState extends State<HomeScreen> {
           _filteredJobs = List.from(_jobs);
           _isLoading = false;
         });
-        
+
         // Fetch job owner data for each job
         for (final job in jobs) {
           if (job.postedBy != null && job.postedBy!.isNotEmpty) {
             _fetchJobOwnerData(job.postedBy!);
           }
-          
+
           // Load favorite status for each job
           if (job.id != null) {
             _loadFavoriteStatus(job.id!);
@@ -129,9 +129,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _fetchJobOwnerData(String userId) async {
     try {
       final token = await _authService.getToken();
-      
+
       print('Fetching job owner data for ID: $userId');
-      
+
       final response = await http.get(
         Uri.parse('${_userService.baseUrl}/users/$userId'),
         headers: {
@@ -139,14 +139,15 @@ class _HomeScreenState extends State<HomeScreen> {
           'Authorization': 'Bearer $token',
         },
       );
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        
+
         if (data['profileImage'] != null) {
-          data['profilePicture'] = _userService.getFullImageUrl(data['profileImage']);
+          data['profilePicture'] =
+              _userService.getFullImageUrl(data['profileImage']);
         }
-        
+
         setState(() {
           _jobOwnerData[userId] = data;
         });
@@ -220,11 +221,11 @@ class _HomeScreenState extends State<HomeScreen> {
           final company = job.company.toLowerCase();
           final location = job.location.toLowerCase();
           final description = job.description.toLowerCase();
-          
-          return title.contains(query) || 
-                 company.contains(query) || 
-                 location.contains(query) ||
-                 description.contains(query);
+
+          return title.contains(query) ||
+              company.contains(query) ||
+              location.contains(query) ||
+              description.contains(query);
         }).toList();
       }
     });
@@ -273,7 +274,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     _showSearchPage(context);
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 12),
                     decoration: BoxDecoration(
                       color: Colors.grey[300],
                       borderRadius: BorderRadius.circular(10),
@@ -394,18 +396,25 @@ class _HomeScreenState extends State<HomeScreen> {
                                       color: const Color(0xFF98C9C5),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: job.postedBy != null && 
-                                          _jobOwnerData.containsKey(job.postedBy) && 
-                                          _jobOwnerData[job.postedBy]!['profilePicture'] != null
+                                    child: job.postedBy != null &&
+                                            _jobOwnerData
+                                                .containsKey(job.postedBy) &&
+                                            _jobOwnerData[job.postedBy]![
+                                                    'profilePicture'] !=
+                                                null
                                         ? ClipRRect(
-                                            borderRadius: BorderRadius.circular(8),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
                                             child: Image.network(
-                                              _jobOwnerData[job.postedBy]!['profilePicture'],
+                                              _jobOwnerData[job.postedBy]![
+                                                  'profilePicture'],
                                               fit: BoxFit.cover,
-                                              errorBuilder: (context, error, stackTrace) {
+                                              errorBuilder:
+                                                  (context, error, stackTrace) {
                                                 return Icon(
                                                   Icons.business,
-                                                  color: Colors.white.withOpacity(0.7),
+                                                  color: Colors.white
+                                                      .withOpacity(0.7),
                                                   size: 30,
                                                 );
                                               },
@@ -413,14 +422,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                           )
                                         : Icon(
                                             Icons.business,
-                                            color: Colors.white.withOpacity(0.7),
+                                            color:
+                                                Colors.white.withOpacity(0.7),
                                             size: 30,
                                           ),
                                   ),
                                   const SizedBox(width: 10),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           job.title,
@@ -452,10 +463,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                       }
                                     },
                                     child: Icon(
-                                      job.id != null && _favoriteStatus[job.id] == true
+                                      job.id != null &&
+                                              _favoriteStatus[job.id] == true
                                           ? Icons.favorite
                                           : Icons.favorite_border,
-                                      color: job.id != null && _favoriteStatus[job.id] == true
+                                      color: job.id != null &&
+                                              _favoriteStatus[job.id] == true
                                           ? Colors.red
                                           : null,
                                       size: 20,
@@ -515,15 +528,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildLocationScreen() {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Location Screen'),
-      ),
-      body: Center(child: const Text('Location Screen Content')),
-    );
-  }
-
   Future<void> _loadFavorites() async {
     try {
       final favoriteJobIds = await _favoritesService.getFavoriteJobIds();
@@ -553,73 +557,84 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     Widget selectedScreen = _getSelectedScreen();
-    
-    return Scaffold(
-      backgroundColor: const Color(0xFF98C9C5),
-      appBar: _selectedIndex == 1 ? AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, color: Colors.black),
-            onPressed: () {
-              Scaffold.of(context).openDrawer();
-            },
-          ),
-        ),
-        title: const Text(
-          'QuickHire',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        actions: [
-          NotificationIcon(
-            unreadCount: _unreadNotifications,
-            isLoading: _isLoadingNotifications,
-            onTap: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const NotificationScreen()),
-              );
-              // Refresh notification count after returning from notification screen
-              _loadNotificationCount();
-            },
-          ),
-          const SizedBox(width: 16),
-        ],
-      ) : null,
-      drawer: _buildDrawer(context),
-      body: selectedScreen,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
+
+    return WillPopScope(
+      onWillPop: () async {
+        if (_selectedIndex != 1) {
           setState(() {
-            _selectedIndex = index;
+            _selectedIndex = 1;
           });
-        },
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Community',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.work),
-            label: 'Jobs',
-          ),
-        ],
+          return false;
+        }
+        return true;
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF98C9C5),
+        appBar: _selectedIndex == 1
+            ? AppBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                leading: Builder(
+                  builder: (context) => IconButton(
+                    icon: const Icon(Icons.menu, color: Colors.black),
+                    onPressed: () {
+                      Scaffold.of(context).openDrawer();
+                    },
+                  ),
+                ),
+                title: const Text(
+                  'QuickHire',
+                  style: TextStyle(
+                      color: Colors.black, fontWeight: FontWeight.bold),
+                ),
+                centerTitle: true,
+                actions: [
+                  NotificationIcon(
+                    unreadCount: _unreadNotifications,
+                    isLoading: _isLoadingNotifications,
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const NotificationScreen()),
+                      );
+                      // Refresh notification count after returning from notification screen
+                      _loadNotificationCount();
+                    },
+                  ),
+                  const SizedBox(width: 16),
+                ],
+              )
+            : null,
+        drawer: _buildDrawer(context),
+        body: selectedScreen,
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          type: BottomNavigationBarType.fixed,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.people),
+              label: 'Community',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.work),
+              label: 'Jobs',
+            ),
+          ],
+        ),
+        floatingActionButton: _selectedIndex == 1
+            ? FloatingActionButton(
+                onPressed: _navigateToPostJob,
+                child: const Icon(Icons.add),
+                backgroundColor: Colors.black,
+              )
+            : null,
       ),
-      floatingActionButton: _selectedIndex == 1
-          ? FloatingActionButton(
-              onPressed: _navigateToPostJob,
-              child: const Icon(Icons.add),
-              backgroundColor: Colors.black,
-            )
-          : null,
     );
   }
 
@@ -672,7 +687,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pop(context); // Close the drawer
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const FavoritesScreen()),
+                  MaterialPageRoute(
+                      builder: (context) => const FavoritesScreen()),
                 );
               },
             ),
@@ -686,7 +702,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.pop(context); // Close the drawer
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                  MaterialPageRoute(
+                      builder: (context) => const ProfileScreen()),
                 );
               },
             ),
@@ -722,7 +739,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               onTap: () async {
                 Navigator.pop(context); // Close the drawer
-                
+
                 // Show confirmation dialog
                 showDialog(
                   context: context,
@@ -736,7 +753,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           onPressed: () {
                             Navigator.of(context).pop(); // Close the dialog
                           },
-                          child: const Text('Cancel', style: TextStyle(color: Colors.black)),
+                          child: const Text('Cancel',
+                              style: TextStyle(color: Colors.black)),
                         ),
                         TextButton(
                           onPressed: () async {
@@ -744,11 +762,13 @@ class _HomeScreenState extends State<HomeScreen> {
                             await _authService.logout();
                             // Navigate to login screen and clear all previous routes
                             Navigator.of(context).pushAndRemoveUntil(
-                              MaterialPageRoute(builder: (context) => const LoginScreen()),
+                              MaterialPageRoute(
+                                  builder: (context) => const LoginScreen()),
                               (route) => false,
                             );
                           },
-                          child: const Text('Logout', style: TextStyle(color: Colors.red)),
+                          child: const Text('Logout',
+                              style: TextStyle(color: Colors.red)),
                         ),
                       ],
                     );
@@ -801,11 +821,11 @@ class _SearchPageState extends State<_SearchPage> {
           final company = job.company.toLowerCase();
           final location = job.location.toLowerCase();
           final description = job.description.toLowerCase();
-          
-          return title.contains(query) || 
-                 company.contains(query) || 
-                 location.contains(query) ||
-                 description.contains(query);
+
+          return title.contains(query) ||
+              company.contains(query) ||
+              location.contains(query) ||
+              description.contains(query);
         }).toList();
       }
     });
@@ -878,7 +898,8 @@ class _SearchPageState extends State<_SearchPage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => JobDetailsScreen(job: job),
+                                builder: (context) =>
+                                    JobDetailsScreen(job: job),
                               ),
                             );
                           },
@@ -907,18 +928,25 @@ class _SearchPageState extends State<_SearchPage> {
                                     color: const Color(0xFF98C9C5),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: job.postedBy != null && 
-                                        widget.jobOwnerData.containsKey(job.postedBy) && 
-                                        widget.jobOwnerData[job.postedBy]?['profilePicture'] != null
+                                  child: job.postedBy != null &&
+                                          widget.jobOwnerData
+                                              .containsKey(job.postedBy) &&
+                                          widget.jobOwnerData[job.postedBy]
+                                                  ?['profilePicture'] !=
+                                              null
                                       ? ClipRRect(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
                                           child: Image.network(
-                                            widget.jobOwnerData[job.postedBy]['profilePicture'],
+                                            widget.jobOwnerData[job.postedBy]
+                                                ['profilePicture'],
                                             fit: BoxFit.cover,
-                                            errorBuilder: (context, error, stackTrace) {
+                                            errorBuilder:
+                                                (context, error, stackTrace) {
                                               return Icon(
                                                 Icons.business,
-                                                color: Colors.white.withOpacity(0.7),
+                                                color: Colors.white
+                                                    .withOpacity(0.7),
                                                 size: 30,
                                               );
                                             },
@@ -933,7 +961,8 @@ class _SearchPageState extends State<_SearchPage> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         job.title,
@@ -966,10 +995,14 @@ class _SearchPageState extends State<_SearchPage> {
                                     }
                                   },
                                   child: Icon(
-                                    job.id != null && widget.favoriteStatus[job.id] == true
+                                    job.id != null &&
+                                            widget.favoriteStatus[job.id] ==
+                                                true
                                         ? Icons.favorite
                                         : Icons.favorite_border,
-                                    color: job.id != null && widget.favoriteStatus[job.id] == true
+                                    color: job.id != null &&
+                                            widget.favoriteStatus[job.id] ==
+                                                true
                                         ? Colors.red
                                         : null,
                                     size: 20,
