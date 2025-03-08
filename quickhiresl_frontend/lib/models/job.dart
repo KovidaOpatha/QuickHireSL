@@ -1,3 +1,31 @@
+class Salary {
+  final int min;
+  final int max;
+  final String currency;
+
+  Salary({
+    required this.min,
+    required this.max,
+    this.currency = 'LKR',
+  });
+
+  factory Salary.fromJson(Map<String, dynamic> json) {
+    return Salary(
+      min: json['min'] ?? 0,
+      max: json['max'] ?? 0,
+      currency: json['currency'] ?? 'LKR',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'min': min,
+      'max': max,
+      'currency': currency,
+    };
+  }
+}
+
 class Job {
   final String? id;
   final String title;
@@ -5,7 +33,7 @@ class Job {
   final String location;
   final String description;
   final List<String> requirements;
-  final Map<String, dynamic> salary;
+  final Salary salary;
   final String employmentType;
   final String experienceLevel;
   final String? postedBy;
@@ -39,7 +67,7 @@ class Job {
           location: '',
           description: '',
           requirements: [],
-          salary: {'min': 0, 'max': 0, 'currency': 'LKR'},
+          salary: Salary(min: 0, max: 0),
           employmentType: '',
           experienceLevel: '',
           postedBy: '',
@@ -56,19 +84,20 @@ class Job {
         location: json['location'] ?? '',
         description: json['description'] ?? '',
         requirements: List<String>.from(json['requirements'] ?? []),
-        salary: Map<String, dynamic>.from(json['salary'] ?? {
-          'min': 0,
-          'max': 0,
-          'currency': 'LKR'
-        }),
+        salary: Salary.fromJson(
+            json['salary'] ?? {'min': 0, 'max': 0, 'currency': 'LKR'}),
         employmentType: json['employmentType'] ?? '',
         experienceLevel: json['experienceLevel'] ?? '',
         postedBy: json['postedBy'] is Map
             ? json['postedBy']['_id']?.toString()
             : json['postedBy']?.toString() ?? '',
         status: json['status'] ?? 'active',
-        createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
-        updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : DateTime.now(),
+        createdAt: json['createdAt'] != null
+            ? DateTime.parse(json['createdAt'])
+            : DateTime.now(),
+        updatedAt: json['updatedAt'] != null
+            ? DateTime.parse(json['updatedAt'])
+            : DateTime.now(),
       );
     } catch (e) {
       print('Error parsing Job from JSON: $e');
@@ -85,7 +114,7 @@ class Job {
       'location': location,
       'description': description,
       'requirements': requirements,
-      'salary': salary,
+      'salary': salary.toJson(),
       'employmentType': employmentType,
       'experienceLevel': experienceLevel,
       if (postedBy != null) 'postedBy': postedBy,

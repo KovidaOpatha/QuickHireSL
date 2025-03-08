@@ -50,7 +50,8 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
     }
 
     try {
-      final url = Uri.parse("http://localhost:3000/api/getUser/${widget.jobOwnerEmail}");
+      final url = Uri.parse(
+          "http://localhost:3000/api/getUser/${widget.jobOwnerEmail}");
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
@@ -234,7 +235,8 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: fullNameController,
-                      decoration: _getInputDecoration('Full Name', Icons.person),
+                      decoration:
+                          _getInputDecoration('Full Name', Icons.person),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your full name';
@@ -245,7 +247,8 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: addressController,
-                      decoration: _getInputDecoration('Address', Icons.location_on),
+                      decoration:
+                          _getInputDecoration('Address', Icons.location_on),
                       maxLines: 2,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -288,7 +291,8 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: messageController,
-                      decoration: _getInputDecoration('Why should we hire you?', Icons.message),
+                      decoration: _getInputDecoration(
+                          'Why should we hire you?', Icons.message),
                       maxLines: 5,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -316,7 +320,8 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
                                   height: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white),
                                   ),
                                 )
                               : const Text(
