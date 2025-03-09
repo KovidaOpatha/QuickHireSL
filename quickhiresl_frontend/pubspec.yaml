@@ -26,6 +26,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^2.0.0
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
@@ -36,3 +37,10 @@ flutter:
     - assets/apple.png
     - assets/facebook.png
     - assets/google.png
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/icon.png"
+  adaptive_icon_background: "#80CBC4" # The turquoise background color
+  adaptive_icon_foreground: "assets/icon/icon_foreground.png"
