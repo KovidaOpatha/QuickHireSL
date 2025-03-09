@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../config/api_config.dart';
 
-Future<dynamic> makeAuthenticatedRequest() async {
+Future<dynamic> makeAuthenticatedRequest(String endpoint) async {
   const storage = FlutterSecureStorage();
   final token = await storage.read(key: 'jwt_token');
   final response = await http.get(
-    Uri.parse('your-api-endpoint'),
+    Uri.parse('${ApiConfig.baseUrl}$endpoint'),
     headers: {
       'Authorization': 'Bearer $token',
       'Content-Type': 'application/json'

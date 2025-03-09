@@ -16,14 +16,7 @@ const authMiddleware = require('./middleware/auth.middleware');
 const app = express();
 
 // Middleware
-app.use(cors({
-    origin: [
-        'https://your-actual-frontend-domain.azurewebsites.net',  // Update this
-        'http://localhost:3000',
-        'http://localhost:5173'
-    ],
-    credentials: true
-}));
+app.use(cors());  // Allow all origins during development
 app.use(express.json());
 app.use(bodyParser.json());
 

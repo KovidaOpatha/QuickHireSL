@@ -1,10 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../config/config.dart';
+import '../config/api_config.dart';
 
 class AuthService {
-  final String baseUrl = Config.apiUrl;
   final storage = const FlutterSecureStorage();
 
   // Register user with optional profile image
@@ -22,7 +21,7 @@ class AuthService {
       }
 
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/register'),
+        Uri.parse(ApiConfig.register),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(body),
       );
@@ -82,9 +81,10 @@ class AuthService {
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       print('[Login] Attempting login for email: $email');
+      print('[Login] Using endpoint: ${ApiConfig.login}');
 
       final response = await http.post(
-        Uri.parse('$baseUrl/auth/login'),
+        Uri.parse(ApiConfig.login),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
@@ -107,7 +107,7 @@ class AuthService {
         await _saveToStorage('jwt_token', token);
         await _saveToStorage('user_id', userId);
         await _saveToStorage('email', email);
-        await _saveToStorage('password', password); // Store password
+        await _saveToStorage('password', password);
         if (role != null) {
           await _saveToStorage('user_role', role);
         }
@@ -130,9 +130,22 @@ class AuthService {
       };
     } catch (e) {
       print('[ERROR] Login error: $e');
+      
+      // Provide more user-friendly error messages
+      String errorMessage;
+      if (e.toString().contains('SocketException')) {
+        if (e.toString().contains('Failed host lookup')) {
+          errorMessage = 'Cannot connect to the server. Please check if the backend service is running and accessible.';
+        } else {
+          errorMessage = 'Network error. Please check your internet connection.';
+        }
+      } else {
+        errorMessage = 'An unexpected error occurred. Please try again later.';
+      }
+      
       return {
         'success': false,
-        'error': e.toString(),
+        'error': errorMessage,
       };
     }
   }
@@ -141,9 +154,7 @@ class AuthService {
     if (imagePath == null || imagePath.isEmpty) return '';
     // Remove any leading slashes and add the correct base URL
     final cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
-    // Extract the base server URL without the /api path
-    final serverUrl = Config.apiUrl.replaceAll('/api', '');
-    return '$serverUrl/$cleanPath';
+    return '${ApiConfig.baseUrl}/$cleanPath';
   }
 
   // Save data to storage
@@ -208,7 +219,7 @@ class AuthService {
       print('[UpdateRole] Details: $details');
 
       final response = await http.patch(
-        Uri.parse('$baseUrl/auth/role/$userId'),
+        Uri.parse(ApiConfig.updateRole + '/$userId'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'role': role,
@@ -256,7 +267,7 @@ class AuthService {
       }
 
       final response = await http.get(
-        Uri.parse('$baseUrl/users/$userId'),
+        Uri.parse(ApiConfig.getUserProfile + '/$userId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -302,7 +313,7 @@ class AuthService {
       }
 
       final response = await http.get(
-        Uri.parse('$baseUrl/auth/verify/$userId'),
+        Uri.parse(ApiConfig.verifyUserData + '/$userId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
