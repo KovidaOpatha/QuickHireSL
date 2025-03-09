@@ -23,18 +23,21 @@ jobs:
           pwd
           echo "Directory contents:"
           ls -la
-          echo "Backend directory contents:"
-          ls -la quickhiresl_backend_expressjs
+          cd ..
+          echo "Parent directory contents:"
+          ls -la
 
-      - name: npm install
-        working-directory: ${{ github.workspace }}/quickhiresl_backend_expressjs
+      - name: Install dependencies and start app
         run: |
+          cd quickhiresl_backend_expressjs
           echo "Installing dependencies in $(pwd)"
           npm install
+          echo "Starting application..."
+          node app.js
 
       - name: "Deploy to Azure Web App"
         uses: azure/webapps-deploy@v2
         with:
           app-name: "your-app-name" # Replace with your Azure Web App name
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: ${{ github.workspace }}/quickhiresl_backend_expressjs
+          package: quickhiresl_backend_expressjs
