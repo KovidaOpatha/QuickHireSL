@@ -51,6 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadNotificationCount();
     _loadFavorites();
     _setupNotificationRefresh();
+    _loadUserData();
   }
 
   void _setupNotificationRefresh() {
@@ -661,6 +662,22 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+
+Map<String, dynamic>? _userData;
+
+Future<void> _loadUserData() async {
+  try {
+    final response = await _userService.getUserProfile();
+    setState(() {
+      _userData = response['data'];
+      _isLoading = false;
+    });
+  } catch (e) {
+    print('[ERROR] Failed to load user data: $e');
+    setState(() => _isLoading = false);
+  }
+}
+
 Widget _buildDrawer(BuildContext context) {
   return Drawer(
     child: Container(
@@ -689,28 +706,60 @@ Widget _buildDrawer(BuildContext context) {
                 width: 3,
               ),
             ),
-            child: const CircleAvatar(
-              radius: 50,
-              backgroundColor: Colors.white,
-              child: Icon(Icons.person, size: 70, color: Colors.black54),
-            ),
+            child: _isLoading 
+              ? const CircularProgressIndicator() 
+              : CircleAvatar(
+                  radius: 50,
+                  backgroundColor: Colors.white,
+                  child: _userData?['profileImage'] != null && _userData!['profileImage'].isNotEmpty
+                    ? ClipOval(
+                        child: Image.network(
+                          _userData!['profileImage'],
+                          fit: BoxFit.cover,
+                          width: 100,
+                          height: 100,
+                          errorBuilder: (context, error, stackTrace) {
+                            print('[ERROR] Failed to load profile image: $error');
+                            return const Icon(Icons.person, size: 70, color: Colors.black54);
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          },
+                        ),
+                      )
+                    : const Icon(Icons.person, size: 70, color: Colors.black54),
+                ),
           ),
           
-          // App name and tagline
+          // User name and app name/tagline
           Padding(
             padding: const EdgeInsets.only(top: 20, bottom: 40),
             child: Column(
-              children: const [
-                Text(
-                  'QuickHire', // Your app name from original code
-                  style: TextStyle(
-                    color: Color.fromARGB(255, 0, 0, 0),
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+              children: [
+                // User name
+                if (!_isLoading && _userData != null)
+                  Text(
+                    _userData?['name'] ?? 'User',
+                    style: const TextStyle(
+                      color: Color.fromARGB(255, 0, 0, 0),
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                SizedBox(height: 4),
-                Text(
+                // const SizedBox(height: 12),
+                // const Text(
+                //   'QuickHire', // Your app name from original code
+                //   style: TextStyle(
+                //     color: Color.fromARGB(255, 0, 0, 0),
+                //     fontSize: 24,
+                //     fontWeight: FontWeight.bold,
+                //   ),
+                // ),
+                const SizedBox(height: 4),
+                const Text(
                   'Find your next opportunity', // Your tagline from original code
                   style: TextStyle(
                     color: Color.fromARGB(255, 0, 0, 0),
@@ -721,6 +770,7 @@ Widget _buildDrawer(BuildContext context) {
             ),
           ),
           
+          // Rest of your drawer menu items...
           // Favorites menu item
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -752,7 +802,7 @@ Widget _buildDrawer(BuildContext context) {
               },
             ),
           ),
-          
+
           // Profile menu item
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -784,7 +834,7 @@ Widget _buildDrawer(BuildContext context) {
               },
             ),
           ),
-          
+
           // Settings menu item
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -812,7 +862,7 @@ Widget _buildDrawer(BuildContext context) {
               },
             ),
           ),
-          
+
           // Help & Support menu item
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -840,7 +890,7 @@ Widget _buildDrawer(BuildContext context) {
               },
             ),
           ),
-          
+
           // Logout menu item
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -902,7 +952,7 @@ Widget _buildDrawer(BuildContext context) {
               },
             ),
           ),
-          
+
           // Spacer to push content to the top
           const Spacer(),
         ],
