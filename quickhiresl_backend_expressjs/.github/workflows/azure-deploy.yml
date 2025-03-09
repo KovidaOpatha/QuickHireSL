@@ -17,27 +17,32 @@ jobs:
         with:
           node-version: "18.x"
 
-      - name: Debug directory
+      - name: Debug directory structure
         run: |
-          echo "Current directory:"
+          echo "Current working directory:"
           pwd
+          echo "List all files including hidden:"
+          ls -la
+          echo "Full directory tree:"
+          tree -a
+
+      - name: Move to correct directory and install
+        run: |
+          # Check if we're already in the backend directory
+          if [ -f "package.json" ]; then
+            echo "Already in backend directory"
+          else
+            echo "Moving to backend directory"
+            cd $GITHUB_WORKSPACE/quickhiresl_backend_expressjs
+          fi
+          echo "Current directory: $(pwd)"
           echo "Directory contents:"
           ls -la
-          cd ..
-          echo "Parent directory contents:"
-          ls -la
-
-      - name: Install dependencies and start app
-        run: |
-          cd quickhiresl_backend_expressjs
-          echo "Installing dependencies in $(pwd)"
           npm install
-          echo "Starting application..."
-          node app.js
 
       - name: "Deploy to Azure Web App"
         uses: azure/webapps-deploy@v2
         with:
           app-name: "your-app-name" # Replace with your Azure Web App name
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: quickhiresl_backend_expressjs
+          package: $GITHUB_WORKSPACE/quickhiresl_backend_expressjs
