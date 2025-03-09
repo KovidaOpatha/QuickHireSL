@@ -25,9 +25,7 @@ jobs:
       - name: npm install
         run: |
           ls -la
-          cd ./quickhiresl_backend_expressjs
-          pwd
-          ls -la
+          # No need to cd since we're already in the backend directory
           npm install
 
       - name: "Deploy to Azure Web App"
@@ -35,4 +33,4 @@ jobs:
         with:
           app-name: "your-app-name" # Replace with your Azure Web App name
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: ./quickhiresl_backend_expressjs # Path relative to repository root
+          package: . # Deploy current directory
