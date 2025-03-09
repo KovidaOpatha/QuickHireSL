@@ -21,7 +21,8 @@ jobs:
         run: |
           cd quickhiresl_backend_expressjs
           echo "Installing dependencies in backend directory..."
-          npm install
+          npm install --no-audit --no-optional
+          echo "Dependencies installed successfully"
 
       - name: "Deploy to Azure Web App"
         uses: azure/webapps-deploy@v2
