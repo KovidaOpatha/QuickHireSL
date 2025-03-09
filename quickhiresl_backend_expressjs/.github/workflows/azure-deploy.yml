@@ -17,9 +17,17 @@ jobs:
         with:
           node-version: "18.x"
 
+      - name: Debug directory
+        run: |
+          pwd
+          ls -la
+
       - name: npm install
         run: |
-          cd quickhiresl_backend_expressjs
+          ls -la
+          cd ./quickhiresl_backend_expressjs
+          pwd
+          ls -la
           npm install
 
       - name: "Deploy to Azure Web App"
@@ -27,4 +35,4 @@ jobs:
         with:
           app-name: "your-app-name" # Replace with your Azure Web App name
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: quickhiresl_backend_expressjs # Remove the ./ prefix
+          package: ./quickhiresl_backend_expressjs # Path relative to repository root
