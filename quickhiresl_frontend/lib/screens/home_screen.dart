@@ -301,34 +301,58 @@ class _HomeScreenState extends State<HomeScreen> {
             'Available now',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
+
           const SizedBox(height: 10),
-          SizedBox(
+          Container(
+            width: double.infinity,
             height: 100,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: List.generate(5, (index) {
-                return Container(
-                  margin: const EdgeInsets.only(right: 10),
-                  width: 80,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: Colors.grey,
-                        child: Icon(Icons.person, color: Colors.white),
-                      ),
-                      SizedBox(height: 5),
-                      Text("⭐⭐⭐⭐⭐"),
-                    ],
-                  ),
-                );
-              }),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 5,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            alignment: Alignment.center,
+            child: const Text(
+              'Upcoming Feature',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Color.fromARGB(255, 0, 0, 0)),
             ),
           ),
+
+
+          // const SizedBox(height: 10),
+          // SizedBox(
+          //   height: 100,
+          //   child: ListView(
+          //     scrollDirection: Axis.horizontal,
+          //     children: List.generate(5, (index) {
+          //       return Container(
+          //         margin: const EdgeInsets.only(right: 10),
+          //         width: 80,
+          //         decoration: BoxDecoration(
+          //           color: Colors.white,
+          //           borderRadius: BorderRadius.circular(10),
+          //         ),
+          //         child: const Column(
+          //           mainAxisAlignment: MainAxisAlignment.center,
+          //           children: [
+          //             CircleAvatar(
+          //               backgroundColor: Colors.grey,
+          //               child: Icon(Icons.person, color: Colors.white),
+          //             ),
+          //             SizedBox(height: 5),
+          //             Text("⭐⭐⭐⭐⭐"),
+          //           ],
+          //         ),
+          //       );
+          //     }),
+          //   ),
+          // ),
           const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
