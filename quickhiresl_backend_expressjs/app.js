@@ -1,7 +1,7 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const dotenv = require('dotenv');
 const path = require('path');
 const bodyParser = require('body-parser');
 const authRoutes = require('./routes/auth.routes');
@@ -13,12 +13,17 @@ const notificationRoutes = require('./routes/notification.routes');
 const chatController = require('./controllers/chat.controller');
 const authMiddleware = require('./middleware/auth.middleware');
 
-dotenv.config();
-
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+    origin: [
+        'https://your-actual-frontend-domain.azurewebsites.net',  // Update this
+        'http://localhost:3000',
+        'http://localhost:5173'
+    ],
+    credentials: true
+}));
 app.use(express.json());
 app.use(bodyParser.json());
 
@@ -255,8 +260,8 @@ app.put("/api/chats/:id/reply/:replyIndex/react", async (req, res) => {
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('MongoDB Connected'))
-    .catch(err => console.log('MongoDB Connection Error:', err));
+    .then(() => console.log('Connected to MongoDB'))
+    .catch(err => console.error('MongoDB connection error:', err));
 
 // Global Error Handling for Unhandled Promise Rejections
 process.on('unhandledRejection', (err) => {
@@ -274,7 +279,9 @@ app.use((err, req, res, next) => {
     });
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+const port = process.env.PORT || 8080;
+app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
 });
+
+module.exports = app;
