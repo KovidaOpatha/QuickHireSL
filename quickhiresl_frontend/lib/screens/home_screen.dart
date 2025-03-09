@@ -302,28 +302,28 @@ class _HomeScreenState extends State<HomeScreen> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
 
-          const SizedBox(height: 10),
+         // Update the container for the "Available Soon" message
           Container(
-            width: double.infinity,
-            height: 100,
+            padding: EdgeInsets.all(16.0),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 5,
-                  spreadRadius: 2,
+              color: const Color.fromARGB(255, 255, 255, 255), // Softer pastel background color
+              borderRadius: BorderRadius.circular(8.0),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.access_time, color: Colors.blue), // Icon to represent waiting
+                SizedBox(width: 8.0), // Space between icon and text
+                Text(
+                  'Available Soon!',
+                  style: TextStyle(
+                    fontSize: 18.0,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
                 ),
               ],
             ),
-            alignment: Alignment.center,
-            child: const Text(
-              'Upcoming Feature',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Color.fromARGB(255, 0, 0, 0)),
-            ),
           ),
-
 
           // const SizedBox(height: 10),
           // SizedBox(
