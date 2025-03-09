@@ -637,50 +637,86 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDrawer(BuildContext context) {
-    return Drawer(
-      child: Container(
-        color: const Color(0xFF98C9C5),
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: const BoxDecoration(
-                color: Colors.black,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: const [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.person, size: 40, color: Colors.black),
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    'QuickHire',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    'Find your next opportunity',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
+Widget _buildDrawer(BuildContext context) {
+  return Drawer(
+    child: Container(
+      color: const Color(0xFF8CBBB3), // Teal/mint color from the image
+      child: Column(
+        children: [
+          // Back button at the top
+          Container(
+            alignment: Alignment.topLeft,
+            padding: const EdgeInsets.only(top: 40, left: 16),
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+              onPressed: () {
+                Navigator.pop(context); // Close drawer
+              },
+            ),
+          ),
+          
+          // Profile image with green border
+          Container(
+            margin: const EdgeInsets.only(top: 30),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: const Color(0xFF4CAF50), // Green border
+                width: 3,
               ),
             ),
-            ListTile(
-              leading: const Icon(Icons.favorite, color: Colors.red),
+            child: const CircleAvatar(
+              radius: 50,
+              backgroundColor: Colors.white,
+              child: Icon(Icons.person, size: 70, color: Colors.black54),
+            ),
+          ),
+          
+          // App name and tagline
+          Padding(
+            padding: const EdgeInsets.only(top: 20, bottom: 40),
+            child: Column(
+              children: const [
+                Text(
+                  'QuickHire', // Your app name from original code
+                  style: TextStyle(
+                    color: Color.fromARGB(255, 0, 0, 0),
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Find your next opportunity', // Your tagline from original code
+                  style: TextStyle(
+                    color: Color.fromARGB(255, 0, 0, 0),
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Favorites menu item
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white24,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: ListTile(
+              leading: const Icon(Icons.favorite, color: Color.fromARGB(255, 0, 0, 0)),
               title: const Text(
                 'Favorites',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  color: Color.fromARGB(255, 0, 0, 0),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              trailing: const Icon(
+                Icons.chevron_right,
+                color: Color.fromARGB(255, 0, 0, 0),
               ),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
@@ -691,11 +727,28 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.person, color: Colors.black),
+          ),
+          
+          // Profile menu item
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white24,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: ListTile(
+              leading: const Icon(Icons.person, color: Color.fromARGB(255, 0, 0, 0)),
               title: const Text(
                 'Profile',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  color: Color.fromARGB(255, 0, 0, 0),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              trailing: const Icon(
+                Icons.chevron_right,
+                color: Color.fromARGB(255, 0, 0, 0),
               ),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
@@ -706,35 +759,84 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
             ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.settings, color: Colors.black),
+          ),
+          
+          // Settings menu item
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white24,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: ListTile(
+              leading: const Icon(Icons.settings, color: Color.fromARGB(255, 0, 0, 0)),
               title: const Text(
                 'Settings',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  color: Color.fromARGB(255, 0, 0, 0),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              trailing: const Icon(
+                Icons.chevron_right,
+                color: Color.fromARGB(255, 0, 0, 0),
               ),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
                 // Navigate to settings screen
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.help, color: Colors.black),
+          ),
+          
+          // Help & Support menu item
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white24,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: ListTile(
+              leading: const Icon(Icons.help, color: Color.fromARGB(255, 0, 0, 0)),
               title: const Text(
                 'Help & Support',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  color: Color.fromARGB(255, 0, 0, 0),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              trailing: const Icon(
+                Icons.chevron_right,
+                color: Color.fromARGB(255, 0, 0, 0),
               ),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
                 // Navigate to help screen
               },
             ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.logout, color: Colors.black),
+          ),
+          
+          // Logout menu item
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white24,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: ListTile(
+              leading: const Icon(Icons.logout, color: Color.fromARGB(255, 0, 0, 0)),
               title: const Text(
                 'Logout',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  color: Color.fromARGB(255, 0, 0, 0),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              trailing: const Icon(
+                Icons.chevron_right,
+                color: Color.fromARGB(255, 0, 0, 0),
               ),
               onTap: () async {
                 Navigator.pop(context); // Close the drawer
@@ -775,11 +877,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
             ),
-          ],
-        ),
+          ),
+          
+          // Spacer to push content to the top
+          const Spacer(),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _SearchPage extends StatefulWidget {
