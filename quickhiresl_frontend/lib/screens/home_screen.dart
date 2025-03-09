@@ -51,6 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadNotificationCount();
     _loadFavorites();
     _setupNotificationRefresh();
+    _loadUserData();
   }
 
   void _setupNotificationRefresh() {
@@ -301,34 +302,58 @@ class _HomeScreenState extends State<HomeScreen> {
             'Available now',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 10),
-          SizedBox(
-            height: 100,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: List.generate(5, (index) {
-                return Container(
-                  margin: const EdgeInsets.only(right: 10),
-                  width: 80,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
+
+         // Update the container for the "Available Soon" message
+          Container(
+            padding: EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: const Color.fromARGB(255, 255, 255, 255), // Softer pastel background color
+              borderRadius: BorderRadius.circular(8.0),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.access_time, color: Colors.blue), // Icon to represent waiting
+                SizedBox(width: 8.0), // Space between icon and text
+                Text(
+                  'Available Soon!',
+                  style: TextStyle(
+                    fontSize: 18.0,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
                   ),
-                  child: const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: Colors.grey,
-                        child: Icon(Icons.person, color: Colors.white),
-                      ),
-                      SizedBox(height: 5),
-                      Text("⭐⭐⭐⭐⭐"),
-                    ],
-                  ),
-                );
-              }),
+                ),
+              ],
             ),
           ),
+
+          // const SizedBox(height: 10),
+          // SizedBox(
+          //   height: 100,
+          //   child: ListView(
+          //     scrollDirection: Axis.horizontal,
+          //     children: List.generate(5, (index) {
+          //       return Container(
+          //         margin: const EdgeInsets.only(right: 10),
+          //         width: 80,
+          //         decoration: BoxDecoration(
+          //           color: Colors.white,
+          //           borderRadius: BorderRadius.circular(10),
+          //         ),
+          //         child: const Column(
+          //           mainAxisAlignment: MainAxisAlignment.center,
+          //           children: [
+          //             CircleAvatar(
+          //               backgroundColor: Colors.grey,
+          //               child: Icon(Icons.person, color: Colors.white),
+          //             ),
+          //             SizedBox(height: 5),
+          //             Text("⭐⭐⭐⭐⭐"),
+          //           ],
+          //         ),
+          //       );
+          //     }),
+          //   ),
+          // ),
           const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -637,50 +662,135 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDrawer(BuildContext context) {
-    return Drawer(
-      child: Container(
-        color: const Color(0xFF98C9C5),
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              decoration: const BoxDecoration(
-                color: Colors.black,
+
+Map<String, dynamic>? _userData;
+
+Future<void> _loadUserData() async {
+  try {
+    final response = await _userService.getUserProfile();
+    setState(() {
+      _userData = response['data'];
+      _isLoading = false;
+    });
+  } catch (e) {
+    print('[ERROR] Failed to load user data: $e');
+    setState(() => _isLoading = false);
+  }
+}
+
+Widget _buildDrawer(BuildContext context) {
+  return Drawer(
+    child: Container(
+      color: const Color(0xFF8CBBB3), // Teal/mint color from the image
+      child: Column(
+        children: [
+          // Back button at the top
+          Container(
+            alignment: Alignment.topLeft,
+            padding: const EdgeInsets.only(top: 40, left: 16),
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+              onPressed: () {
+                Navigator.pop(context); // Close drawer
+              },
+            ),
+          ),
+          
+          // Profile image with green border
+          Container(
+            margin: const EdgeInsets.only(top: 30),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: const Color(0xFF4CAF50), // Green border
+                width: 3,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: const [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.person, size: 40, color: Colors.black),
-                  ),
-                  SizedBox(height: 10),
+            ),
+            child: _isLoading 
+              ? const CircularProgressIndicator() 
+              : CircleAvatar(
+                  radius: 50,
+                  backgroundColor: Colors.white,
+                  child: _userData?['profileImage'] != null && _userData!['profileImage'].isNotEmpty
+                    ? ClipOval(
+                        child: Image.network(
+                          _userData!['profileImage'],
+                          fit: BoxFit.cover,
+                          width: 100,
+                          height: 100,
+                          errorBuilder: (context, error, stackTrace) {
+                            print('[ERROR] Failed to load profile image: $error');
+                            return const Icon(Icons.person, size: 70, color: Colors.black54);
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          },
+                        ),
+                      )
+                    : const Icon(Icons.person, size: 70, color: Colors.black54),
+                ),
+          ),
+          
+          // User name and app name/tagline
+          Padding(
+            padding: const EdgeInsets.only(top: 20, bottom: 40),
+            child: Column(
+              children: [
+                // User name
+                if (!_isLoading && _userData != null)
                   Text(
-                    'QuickHire',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
+                    _userData?['name'] ?? 'User',
+                    style: const TextStyle(
+                      color: Color.fromARGB(255, 0, 0, 0),
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Text(
-                    'Find your next opportunity',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
+                // const SizedBox(height: 12),
+                // const Text(
+                //   'QuickHire', // Your app name from original code
+                //   style: TextStyle(
+                //     color: Color.fromARGB(255, 0, 0, 0),
+                //     fontSize: 24,
+                //     fontWeight: FontWeight.bold,
+                //   ),
+                // ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Find your next opportunity', // Your tagline from original code
+                  style: TextStyle(
+                    color: Color.fromARGB(255, 0, 0, 0),
+                    fontSize: 14,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            ListTile(
-              leading: const Icon(Icons.favorite, color: Colors.red),
+          ),
+          
+          // Rest of your drawer menu items...
+          // Favorites menu item
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white24,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: ListTile(
+              leading: const Icon(Icons.favorite, color: Color.fromARGB(255, 0, 0, 0)),
               title: const Text(
                 'Favorites',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  color: Color.fromARGB(255, 0, 0, 0),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              trailing: const Icon(
+                Icons.chevron_right,
+                color: Color.fromARGB(255, 0, 0, 0),
               ),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
@@ -691,11 +801,28 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.person, color: Colors.black),
+          ),
+
+          // Profile menu item
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white24,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: ListTile(
+              leading: const Icon(Icons.person, color: Color.fromARGB(255, 0, 0, 0)),
               title: const Text(
                 'Profile',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  color: Color.fromARGB(255, 0, 0, 0),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              trailing: const Icon(
+                Icons.chevron_right,
+                color: Color.fromARGB(255, 0, 0, 0),
               ),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
@@ -706,35 +833,84 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
             ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.settings, color: Colors.black),
+          ),
+
+          // Settings menu item
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white24,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: ListTile(
+              leading: const Icon(Icons.settings, color: Color.fromARGB(255, 0, 0, 0)),
               title: const Text(
                 'Settings',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  color: Color.fromARGB(255, 0, 0, 0),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              trailing: const Icon(
+                Icons.chevron_right,
+                color: Color.fromARGB(255, 0, 0, 0),
               ),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
                 // Navigate to settings screen
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.help, color: Colors.black),
+          ),
+
+          // Help & Support menu item
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white24,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: ListTile(
+              leading: const Icon(Icons.help, color: Color.fromARGB(255, 0, 0, 0)),
               title: const Text(
                 'Help & Support',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  color: Color.fromARGB(255, 0, 0, 0),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              trailing: const Icon(
+                Icons.chevron_right,
+                color: Color.fromARGB(255, 0, 0, 0),
               ),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
                 // Navigate to help screen
               },
             ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.logout, color: Colors.black),
+          ),
+
+          // Logout menu item
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white24,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: ListTile(
+              leading: const Icon(Icons.logout, color: Color.fromARGB(255, 0, 0, 0)),
               title: const Text(
                 'Logout',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  color: Color.fromARGB(255, 0, 0, 0),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              trailing: const Icon(
+                Icons.chevron_right,
+                color: Color.fromARGB(255, 0, 0, 0),
               ),
               onTap: () async {
                 Navigator.pop(context); // Close the drawer
@@ -775,11 +951,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
             ),
-          ],
-        ),
+          ),
+
+          // Spacer to push content to the top
+          const Spacer(),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _SearchPage extends StatefulWidget {
