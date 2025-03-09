@@ -21,23 +21,16 @@ jobs:
         run: |
           echo "Current working directory:"
           pwd
-          echo "List all files including hidden:"
+          echo "Repository contents:"
           ls -la
-          echo "Full directory tree:"
-          tree -a
 
-      - name: Move to correct directory and install
+      - name: Install dependencies
         run: |
-          # Check if we're already in the backend directory
-          if [ -f "package.json" ]; then
-            echo "Already in backend directory"
-          else
-            echo "Moving to backend directory"
-            cd $GITHUB_WORKSPACE/quickhiresl_backend_expressjs
-          fi
-          echo "Current directory: $(pwd)"
-          echo "Directory contents:"
+          echo "Moving to backend directory"
+          cd quickhiresl_backend_expressjs
+          echo "Backend directory contents:"
           ls -la
+          echo "Installing dependencies..."
           npm install
 
       - name: "Deploy to Azure Web App"
@@ -45,4 +38,4 @@ jobs:
         with:
           app-name: "your-app-name" # Replace with your Azure Web App name
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: $GITHUB_WORKSPACE/quickhiresl_backend_expressjs
+          package: quickhiresl_backend_expressjs
