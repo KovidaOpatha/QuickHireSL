@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:provider/provider.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
@@ -11,13 +13,26 @@ import 'screens/chooserole_screen.dart';
 import 'screens/studentregistration_screen.dart';
 import 'screens/jobownerregistration_screen.dart';
 import 'screens/applicant_details_screen.dart';
-import 'services/job_service.dart';
 import 'screens/community_screen.dart';
+import 'services/job_service.dart';
+import 'services/messaging_service.dart';
+import 'screens/conversations_screen.dart';
 
-void main() {
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => JobService(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => JobService()),
+        ChangeNotifierProvider(create: (_) => MessagingService()),
+      ],
       child: const MyApp(),
     ),
   );
@@ -43,20 +58,20 @@ class MyApp extends StatelessWidget {
               password: '',
             ),
         '/studentregistration': (context) => const StudentRegistrationScreen(
-              email: '', // These will be passed via arguments
+              email: '',
               password: '',
             ),
         '/jobownerregistration': (context) => const JobOwnerRegistrationScreen(
-              email: '', // These will be passed via arguments
+              email: '',
               password: '',
             ),
         '/home': (context) => const HomeScreen(),
         '/applications': (context) => const ApplicationsScreen(),
         '/profile': (context) => const ProfileScreen(),
         '/community': (context) => CommunityScreen(),
+        '/conversations': (context) => const ConversationsScreen(),
       },
       onGenerateRoute: (settings) {
-        // Handle any undefined routes here
         return MaterialPageRoute(
           builder: (context) => const LoginScreen(),
         );
