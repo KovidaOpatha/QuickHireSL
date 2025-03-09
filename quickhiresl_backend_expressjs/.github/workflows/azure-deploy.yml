@@ -19,13 +19,17 @@ jobs:
 
       - name: Debug directory
         run: |
+          echo "Current directory:"
           pwd
+          echo "Directory contents:"
           ls -la
+          echo "Backend directory contents:"
+          ls -la quickhiresl_backend_expressjs
 
       - name: npm install
+        working-directory: ${{ github.workspace }}/quickhiresl_backend_expressjs
         run: |
-          ls -la
-          # No need to cd since we're already in the backend directory
+          echo "Installing dependencies in $(pwd)"
           npm install
 
       - name: "Deploy to Azure Web App"
@@ -33,4 +37,4 @@ jobs:
         with:
           app-name: "your-app-name" # Replace with your Azure Web App name
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: . # Deploy current directory
+          package: ${{ github.workspace }}/quickhiresl_backend_expressjs
