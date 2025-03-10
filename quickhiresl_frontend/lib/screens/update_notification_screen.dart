@@ -14,8 +14,13 @@ class NotificationScreen extends StatelessWidget {
   }
 }
 
-class NotificationsPage extends StatelessWidget {
-  final List<Map<String, String>> notifications = [
+class NotificationsPage extends StatefulWidget {
+  @override
+  _NotificationsPageState createState() => _NotificationsPageState();
+}
+
+class _NotificationsPageState extends State<NotificationsPage> {
+  List<Map<String, String>> notifications = [
     {
       'logo': 'https://upload.wikimedia.org/wikipedia/en/3/3f/Softlogic_Glomark_logo.png',
       'title': 'Keells Super cashier'
@@ -38,18 +43,22 @@ class NotificationsPage extends StatelessWidget {
     },
   ];
 
+  void removeNotification(int index) {
+    setState(() {
+      notifications.removeAt(index);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF2C2F38), // Dark background color
+      backgroundColor: Color(0xFF2C2F38),
       appBar: AppBar(
         backgroundColor: Color(0xFF2C2F38),
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            // Add back navigation
-          },
+          onPressed: () {},
         ),
         title: Text(
           'Notifications',
@@ -60,16 +69,41 @@ class NotificationsPage extends StatelessWidget {
           ),
         ),
       ),
-      body: ListView.builder(
-        padding: EdgeInsets.all(16),
-        itemCount: notifications.length,
-        itemBuilder: (context, index) {
-          return NotificationCard(
-            logoUrl: notifications[index]['logo']!,
-            title: notifications[index]['title']!,
-          );
-        },
-      ),
+      body: notifications.isEmpty
+          ? Center(
+              child: Text(
+                'No notifications!',
+                style: TextStyle(color: Colors.white, fontSize: 18),
+              ),
+            )
+          : ListView.builder(
+              padding: EdgeInsets.all(16),
+              itemCount: notifications.length,
+              itemBuilder: (context, index) {
+                final notification = notifications[index];
+                return Dismissible(
+                  key: UniqueKey(),
+                  onDismissed: (direction) {
+                    removeNotification(index);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("Notification dismissed"),
+                      ),
+                    );
+                  },
+                  background: Container(
+                    color: Colors.red,
+                    alignment: Alignment.centerRight,
+                    padding: EdgeInsets.only(right: 20),
+                    child: Icon(Icons.delete, color: Colors.white),
+                  ),
+                  child: NotificationCard(
+                    logoUrl: notification['logo']!,
+                    title: notification['title']!,
+                  ),
+                );
+              },
+            ),
     );
   }
 }
@@ -119,9 +153,6 @@ class NotificationCard extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        onTap: () {
-          // Action on tap
-        },
       ),
     );
   }
