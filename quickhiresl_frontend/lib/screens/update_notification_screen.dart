@@ -24,27 +24,32 @@ class _NotificationsPageState extends State<NotificationsPage> {
     {
       'logo': 'https://upload.wikimedia.org/wikipedia/en/3/3f/Softlogic_Glomark_logo.png',
       'title': 'Keells Super cashier',
-      'isFavorite': false
+      'isFavorite': false,
+      'isMuted': false,
     },
     {
       'logo': 'https://seeklogo.com/images/K/keells-logo-92CC5B47D8-seeklogo.com.png',
       'title': 'Keells Super cashier',
-      'isFavorite': false
+      'isFavorite': false,
+      'isMuted': false,
     },
     {
       'logo': 'https://upload.wikimedia.org/wikipedia/en/3/3f/Softlogic_Glomark_logo.png',
       'title': 'Keells Super cashier',
-      'isFavorite': false
+      'isFavorite': false,
+      'isMuted': false,
     },
     {
       'logo': 'https://seeklogo.com/images/K/keells-logo-92CC5B47D8-seeklogo.com.png',
       'title': 'Keells Super cashier',
-      'isFavorite': false
+      'isFavorite': false,
+      'isMuted': false,
     },
     {
       'logo': 'https://upload.wikimedia.org/wikipedia/en/3/3f/Softlogic_Glomark_logo.png',
       'title': 'Keells Super cashier',
-      'isFavorite': false
+      'isFavorite': false,
+      'isMuted': false,
     },
   ];
 
@@ -57,6 +62,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
   void toggleFavorite(int index) {
     setState(() {
       notifications[index]['isFavorite'] = !notifications[index]['isFavorite'];
+    });
+  }
+
+  void toggleMute(int index) {
+    setState(() {
+      notifications[index]['isMuted'] = !notifications[index]['isMuted'];
     });
   }
 
@@ -112,7 +123,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     logoUrl: notification['logo'],
                     title: notification['title'],
                     isFavorite: notification['isFavorite'],
+                    isMuted: notification['isMuted'],
                     onFavoriteToggle: () => toggleFavorite(index),
+                    onMuteToggle: () => toggleMute(index),
                   ),
                 );
               },
@@ -125,57 +138,79 @@ class NotificationCard extends StatelessWidget {
   final String logoUrl;
   final String title;
   final bool isFavorite;
+  final bool isMuted;
   final VoidCallback onFavoriteToggle;
+  final VoidCallback onMuteToggle;
 
   NotificationCard({
     required this.logoUrl,
     required this.title,
     required this.isFavorite,
+    required this.isMuted,
     required this.onFavoriteToggle,
+    required this.onMuteToggle,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 6,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ListTile(
-        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        leading: Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: Colors.grey[200],
-            image: DecorationImage(
-              image: NetworkImage(logoUrl),
-              fit: BoxFit.contain,
+    return Opacity(
+      opacity: isMuted ? 0.5 : 1.0, // Dim card if muted
+      child: Container(
+        margin: EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 6,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ListTile(
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          leading: Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Colors.grey[200],
+              image: DecorationImage(
+                image: NetworkImage(logoUrl),
+                fit: BoxFit.contain,
+              ),
             ),
           ),
-        ),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+          title: Text(
+            title,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: isMuted ? Colors.grey : Colors.black, // Grey text if muted
+            ),
           ),
-        ),
-        trailing: IconButton(
-          icon: Icon(
-            isFavorite ? Icons.favorite : Icons.favorite_border,
-            color: isFavorite ? Colors.red : Colors.grey,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Favorite button
+              IconButton(
+                icon: Icon(
+                  isFavorite ? Icons.favorite : Icons.favorite_border,
+                  color: isFavorite ? Colors.red : Colors.grey,
+                ),
+                onPressed: onFavoriteToggle,
+              ),
+              // Mute/Unmute button
+              IconButton(
+                icon: Icon(
+                  isMuted ? Icons.notifications_off : Icons.notifications_active,
+                  color: isMuted ? Colors.grey : Colors.blue,
+                ),
+                onPressed: onMuteToggle,
+              ),
+            ],
           ),
-          onPressed: onFavoriteToggle,
         ),
       ),
     );
