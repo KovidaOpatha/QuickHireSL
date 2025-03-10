@@ -20,32 +20,43 @@ class NotificationsPage extends StatefulWidget {
 }
 
 class _NotificationsPageState extends State<NotificationsPage> {
-  List<Map<String, String>> notifications = [
+  List<Map<String, dynamic>> notifications = [
     {
       'logo': 'https://upload.wikimedia.org/wikipedia/en/3/3f/Softlogic_Glomark_logo.png',
-      'title': 'Keells Super cashier'
+      'title': 'Keells Super cashier',
+      'isFavorite': false
     },
     {
       'logo': 'https://seeklogo.com/images/K/keells-logo-92CC5B47D8-seeklogo.com.png',
-      'title': 'Keells Super cashier'
+      'title': 'Keells Super cashier',
+      'isFavorite': false
     },
     {
       'logo': 'https://upload.wikimedia.org/wikipedia/en/3/3f/Softlogic_Glomark_logo.png',
-      'title': 'Keells Super cashier'
+      'title': 'Keells Super cashier',
+      'isFavorite': false
     },
     {
       'logo': 'https://seeklogo.com/images/K/keells-logo-92CC5B47D8-seeklogo.com.png',
-      'title': 'Keells Super cashier'
+      'title': 'Keells Super cashier',
+      'isFavorite': false
     },
     {
       'logo': 'https://upload.wikimedia.org/wikipedia/en/3/3f/Softlogic_Glomark_logo.png',
-      'title': 'Keells Super cashier'
+      'title': 'Keells Super cashier',
+      'isFavorite': false
     },
   ];
 
   void removeNotification(int index) {
     setState(() {
       notifications.removeAt(index);
+    });
+  }
+
+  void toggleFavorite(int index) {
+    setState(() {
+      notifications[index]['isFavorite'] = !notifications[index]['isFavorite'];
     });
   }
 
@@ -87,7 +98,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     removeNotification(index);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text("Notification dismissed"),
+                        content: Text("Notification deleted"),
                       ),
                     );
                   },
@@ -98,8 +109,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     child: Icon(Icons.delete, color: Colors.white),
                   ),
                   child: NotificationCard(
-                    logoUrl: notification['logo']!,
-                    title: notification['title']!,
+                    logoUrl: notification['logo'],
+                    title: notification['title'],
+                    isFavorite: notification['isFavorite'],
+                    onFavoriteToggle: () => toggleFavorite(index),
                   ),
                 );
               },
@@ -111,10 +124,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
 class NotificationCard extends StatelessWidget {
   final String logoUrl;
   final String title;
+  final bool isFavorite;
+  final VoidCallback onFavoriteToggle;
 
   NotificationCard({
     required this.logoUrl,
     required this.title,
+    required this.isFavorite,
+    required this.onFavoriteToggle,
   });
 
   @override
@@ -133,7 +150,7 @@ class NotificationCard extends StatelessWidget {
         ],
       ),
       child: ListTile(
-        contentPadding: EdgeInsets.all(16),
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         leading: Container(
           width: 60,
           height: 60,
@@ -152,6 +169,13 @@ class NotificationCard extends StatelessWidget {
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
+        ),
+        trailing: IconButton(
+          icon: Icon(
+            isFavorite ? Icons.favorite : Icons.favorite_border,
+            color: isFavorite ? Colors.red : Colors.grey,
+          ),
+          onPressed: onFavoriteToggle,
         ),
       ),
     );
