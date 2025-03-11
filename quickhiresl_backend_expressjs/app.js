@@ -12,6 +12,7 @@ const applicationRoutes = require('./routes/application.routes');
 const notificationRoutes = require('./routes/notification.routes');
 const chatController = require('./controllers/chat.controller');
 const authMiddleware = require('./middleware/auth.middleware');
+const chatRoutes = require('./routes/chat.routes');
 
 dotenv.config();
 
