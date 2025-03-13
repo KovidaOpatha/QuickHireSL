@@ -7,6 +7,7 @@ import '../models/job.dart';
 import '../services/job_service.dart';
 import '../services/user_service.dart';
 import 'job_application_screen.dart';
+import 'job_chat_screen.dart';
 
 class JobDetailsScreen extends StatefulWidget {
   final Job job;
@@ -496,37 +497,84 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
 
                     // Apply button
                     Center(
-                      child: SizedBox(
-                        width: MediaQuery.of(context).size.width * 0.8,
-                        child: ElevatedButton(
-                          onPressed: _isApplying ? null : _applyForJob,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            elevation: 3,
-                          ),
-                          child: _isApplying
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white),
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Text(
-                                  'Apply Now',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                      child: Column(
+                        children: [
+                          SizedBox(
+                            width: MediaQuery.of(context).size.width * 0.8,
+                            child: ElevatedButton(
+                              onPressed: _isApplying ? null : _applyForJob,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.black,
+                                foregroundColor: Colors.white,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 15),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(30),
                                 ),
-                        ),
+                                elevation: 3,
+                              ),
+                              child: _isApplying
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                Colors.white),
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Apply Now',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: MediaQuery.of(context).size.width * 0.8,
+                            child: OutlinedButton.icon(
+                              icon: const Icon(Icons.chat_bubble_outline),
+                              label: const Text('Discuss Job'),
+                              onPressed: () {
+                                // Convert Job object to Map for the chat screen
+                                final Map<String, dynamic> jobMap = {
+                                  'id': widget.job.id,
+                                  'title': widget.job.title,
+                                  'company': widget.job.company,
+                                  'salary':
+                                      'LKR ${widget.job.salary.min} - ${widget.job.salary.max}',
+                                  'location': widget.job.location,
+                                  'type': widget.job.employmentType,
+                                  'postedBy': widget.job.postedBy
+                                };
+
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ChatScreen(
+                                      [widget.job],
+                                      job: jobMap,
+                                    ),
+                                  ),
+                                );
+                              },
+                              style: OutlinedButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 15),
+                                side:
+                                    const BorderSide(color: Color(0xFF98C9C5)),
+                                foregroundColor: const Color(0xFF98C9C5),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 20),

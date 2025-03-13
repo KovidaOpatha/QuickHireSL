@@ -5,6 +5,8 @@ import 'dart:convert';
 import '../models/job.dart';
 import './job_chat_screen.dart';
 import '../services/job_service.dart';
+import '../services/user_service.dart';
+import './home_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
   final Function(int)? onNavigateToTab;
@@ -16,7 +18,9 @@ class CommunityScreen extends StatefulWidget {
 
 class _CommunityScreenState extends State<CommunityScreen> {
   final JobService _jobService = JobService();
+  final UserService _userService = UserService();
   List<Job> jobs = [];
+  Map<String, Map<String, dynamic>> jobOwners = {};
   bool isLoading = false;
 
   @override
@@ -34,6 +38,13 @@ class _CommunityScreenState extends State<CommunityScreen> {
         jobs.sort((a, b) => (b.createdAt ?? DateTime.now())
             .compareTo(a.createdAt ?? DateTime.now()));
       });
+
+      // Fetch job owner data for each job
+      for (var job in jobs) {
+        if (job.postedBy != null && job.postedBy!.isNotEmpty) {
+          fetchJobOwnerData(job.postedBy!);
+        }
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -47,11 +58,54 @@ class _CommunityScreenState extends State<CommunityScreen> {
     }
   }
 
+  Future<void> fetchJobOwnerData(String userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${_userService.baseUrl}/users/$userId'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['profileImage'] != null) {
+          data['profilePicture'] =
+              _userService.getFullImageUrl(data['profileImage']);
+        }
+
+        if (mounted) {
+          setState(() {
+            jobOwners[userId] = data;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error fetching job owner data: $e');
+    }
+  }
+
   void navigateToJobChat(Job job) {
+    // Get job owner data if available
+    Map<String, dynamic>? ownerData =
+        job.postedBy != null ? jobOwners[job.postedBy] : null;
+
+    // Convert Job object to Map for the chat screen
+    final Map<String, dynamic> jobMap = {
+      'id': job.id,
+      'title': job.title,
+      'company': job.company,
+      'salary': 'LKR ${job.salary.min} - ${job.salary.max}',
+      'location': job.location,
+      'type': job.employmentType,
+      'postedBy': job.postedBy,
+      'profilePicture': ownerData?['profilePicture'] ?? ''
+    };
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => JobChatScreen(job: job),
+        builder: (context) => ChatScreen(
+          jobs,
+          job: jobMap,
+        ),
       ),
     );
   }
@@ -60,6 +114,15 @@ class _CommunityScreenState extends State<CommunityScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => HomeScreen()),
+            );
+          },
+        ),
         title: Text('Community'),
         backgroundColor: Theme.of(context).primaryColor,
       ),
@@ -97,6 +160,14 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       itemCount: jobs.length,
                       itemBuilder: (context, index) {
                         final job = jobs[index];
+                        final hasProfileImage = job.postedBy != null &&
+                            jobOwners[job.postedBy] != null &&
+                            jobOwners[job.postedBy]!['profilePicture'] !=
+                                null &&
+                            jobOwners[job.postedBy]!['profilePicture']
+                                .toString()
+                                .isNotEmpty;
+
                         return Card(
                           elevation: 2,
                           margin: EdgeInsets.symmetric(vertical: 8),
@@ -109,14 +180,27 @@ class _CommunityScreenState extends State<CommunityScreen> {
                                 children: [
                                   Row(
                                     children: [
-                                      CircleAvatar(
-                                        backgroundColor:
-                                            Theme.of(context).primaryColor,
-                                        child: Text(
-                                          job.company[0].toUpperCase(),
-                                          style: TextStyle(color: Colors.white),
-                                        ),
-                                      ),
+                                      hasProfileImage
+                                          ? CircleAvatar(
+                                              backgroundImage: NetworkImage(
+                                                jobOwners[job.postedBy]![
+                                                    'profilePicture'],
+                                              ),
+                                              backgroundColor: Theme.of(context)
+                                                  .primaryColor,
+                                              onBackgroundImageError: (_, __) {
+                                                // Fallback if image fails to load
+                                              },
+                                            )
+                                          : CircleAvatar(
+                                              backgroundColor: Theme.of(context)
+                                                  .primaryColor,
+                                              child: Text(
+                                                job.company[0].toUpperCase(),
+                                                style: TextStyle(
+                                                    color: Colors.white),
+                                              ),
+                                            ),
                                       SizedBox(width: 12),
                                       Expanded(
                                         child: Column(
@@ -139,7 +223,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
                                           ],
                                         ),
                                       ),
-                                      Icon(Icons.chat_bubble_outline),
+                                      IconButton(
+                                        icon: Icon(Icons.chat_bubble_outline),
+                                        onPressed: () => navigateToJobChat(job),
+                                      ),
                                     ],
                                   ),
                                   SizedBox(height: 12),
