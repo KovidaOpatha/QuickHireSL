@@ -336,4 +336,52 @@ class AuthService {
       };
     }
   }
+
+  // Update user preferences (like preferred locations)
+  Future<Map<String, dynamic>> updateUserPreferences(String userId, Map<String, dynamic> preferences) async {
+    try {
+      print('[UpdatePreferences] Updating preferences for user: $userId');
+      print('[UpdatePreferences] Preferences: $preferences');
+
+      final token = await getToken();
+      if (token == null) {
+        return {
+          'success': false,
+          'error': 'Authentication token not found',
+        };
+      }
+
+      final response = await http.patch(
+        Uri.parse('$baseUrl/users/$userId/preferences'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(preferences),
+      );
+
+      print('[UpdatePreferences] Response status: ${response.statusCode}');
+      print('[UpdatePreferences] Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return {
+          'success': true,
+          'message': responseData['message'] ?? 'Preferences updated successfully',
+        };
+      }
+
+      final responseData = response.body.isNotEmpty ? jsonDecode(response.body) : {};
+      return {
+        'success': false,
+        'error': responseData['message'] ?? 'Failed to update preferences',
+      };
+    } catch (e) {
+      print('[ERROR] Update preferences error: $e');
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
 }

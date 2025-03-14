@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'jobcategories_screen.dart';
+import 'location_selection_screen.dart';
 import '../services/auth_service.dart';
 
 class StudentRegistrationScreen extends StatefulWidget {
@@ -98,9 +99,10 @@ class _StudentRegistrationScreenState extends State<StudentRegistrationScreen> {
           
           if (verifyResult['success'] && verifyResult['verified'] == true) {
             if (!mounted) return;
+            // Navigate to location selection screen instead of job categories
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const JobCategoriesScreen()),
+              MaterialPageRoute(builder: (context) => LocationSelectionScreen(userId: userId)),
             );
           } else {
             // Data wasn't saved correctly
