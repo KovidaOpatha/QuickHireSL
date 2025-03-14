@@ -3,14 +3,15 @@ const User = require('../models/user.model');
 
 const authMiddleware = async (req, res, next) => {
     try {
-        // Expecting the token format: "Bearer <token>"
-        const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
-        if (!token) {
-            return res.status(401).json({ message: 'Authentication token missing' });
+        const authHeader = req.headers.authorization;
+
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ message: 'Authentication required' });
         }
 
+        const token = authHeader.split(' ')[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        
+
         // Find the user in the database to ensure they exist
         const user = await User.findById(decoded._id);
         if (!user) {
@@ -22,13 +23,18 @@ const authMiddleware = async (req, res, next) => {
             return res.status(403).json({ message: 'Only job owners can post jobs' });
         }
 
-        // Set the user object in req.user
+        // Set user information in the request
+        req.userId = decoded._id;
+        req.userEmail = decoded.email;
+        req.userRole = decoded.role;
         req.user = user;
         
         next();
     } catch (error) {
         console.error('Auth Middleware error:', error);
-        return res.status(401).json({ message: 'Authentication failed' });
+        return res.status(401).json({ 
+            message: error.name === 'TokenExpiredError' ? 'Token expired' : 'Authentication failed' 
+        });
     }
 };
 

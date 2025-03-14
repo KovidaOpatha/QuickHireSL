@@ -16,6 +16,7 @@ import 'jobs_screen.dart';
 import 'notification_screen.dart';
 import 'favorites_screen.dart';
 import 'login_screen.dart';
+import 'change_password_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -749,15 +750,6 @@ Widget _buildDrawer(BuildContext context) {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                // const SizedBox(height: 12),
-                // const Text(
-                //   'QuickHire', // Your app name from original code
-                //   style: TextStyle(
-                //     color: Color.fromARGB(255, 0, 0, 0),
-                //     fontSize: 24,
-                //     fontWeight: FontWeight.bold,
-                //   ),
-                // ),
                 const SizedBox(height: 4),
                 const Text(
                   'Find your next opportunity', // Your tagline from original code
@@ -770,7 +762,6 @@ Widget _buildDrawer(BuildContext context) {
             ),
           ),
           
-          // Rest of your drawer menu items...
           // Favorites menu item
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -858,7 +849,7 @@ Widget _buildDrawer(BuildContext context) {
               ),
               onTap: () {
                 Navigator.pop(context); // Close the drawer
-                // Navigate to settings screen
+                _showSettingsOptions(context);
               },
             ),
           ),
@@ -958,6 +949,78 @@ Widget _buildDrawer(BuildContext context) {
         ],
       ),
     ),
+  );
+}
+
+// Add this new method to HomeScreen class
+void _showSettingsOptions(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (BuildContext context) {
+      return Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text(
+                'Settings',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const Divider(),
+            
+            // Change Password Option
+            ListTile(
+              leading: const Icon(Icons.lock_outline),
+              title: const Text('Change Password'),
+              onTap: () {
+                Navigator.pop(context); // Close bottom sheet
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ChangePasswordScreen(),
+                  ),
+                );
+              },
+            ),
+            
+            // Notification Settings Option
+            ListTile(
+              leading: const Icon(Icons.notifications_outlined),
+              title: const Text('Notification Settings'),
+              onTap: () {
+                Navigator.pop(context); // Close bottom sheet
+                // Navigate to Notification Settings (you can implement this later)
+              },
+            ),
+            
+            // Account Settings Option
+            ListTile(
+              leading: const Icon(Icons.account_circle_outlined),
+              title: const Text('Account Settings'),
+              onTap: () {
+                Navigator.pop(context); // Close bottom sheet
+                // Navigate to Account Settings (you can implement this later)
+              },
+            ),
+            
+            const SizedBox(height: 16),
+          ],
+        ),
+      );
+    },
   );
 }
 }
