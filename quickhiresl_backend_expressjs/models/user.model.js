@@ -16,7 +16,8 @@ const userSchema = new mongoose.Schema({
         leavingAddress: { type: String, trim: true },
         dateOfBirth: { type: Date },
         mobileNumber: { type: String, trim: true },
-        nicNumber: { type: String, trim: true }
+        nicNumber: { type: String, trim: true },
+        preferredLocations: [{ type: String, trim: true }]
     },
     jobOwnerDetails: {
         shopName: { type: String, trim: true },

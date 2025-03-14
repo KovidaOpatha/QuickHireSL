@@ -9,4 +9,7 @@ router.get('/:userId', authMiddleware, userController.getUserProfile);
 // Update user profile - Protected route
 router.put('/:userId', authMiddleware, userController.updateUserProfile);
 
+// Update user preferences - Protected route
+router.patch('/:userId/preferences', authMiddleware, userController.updateUserPreferences);
+
 module.exports = router;

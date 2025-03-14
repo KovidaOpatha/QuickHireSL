@@ -137,3 +137,50 @@ exports.updateUserProfile = async (req, res) => {
         res.status(500).json({ message: 'Error updating user profile' });
     }
 };
+
+// Update user preferences
+exports.updateUserPreferences = async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const { preferredLocations } = req.body;
+        console.log('[UserController] Updating preferences for user:', userId);
+        console.log('[UserController] Preferred locations:', preferredLocations);
+
+        // Validate the request
+        if (!preferredLocations || !Array.isArray(preferredLocations)) {
+            return res.status(400).json({ 
+                message: 'Invalid request format. preferredLocations must be an array.' 
+            });
+        }
+
+        // Find the user
+        const user = await User.findById(userId);
+        if (!user) {
+            console.log('[UserController] User not found for preference update:', userId);
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Ensure studentDetails exists
+        if (!user.studentDetails) {
+            user.studentDetails = {};
+        }
+
+        // Update the preferred locations
+        user.studentDetails.preferredLocations = preferredLocations;
+
+        // Save the updated user
+        await user.save();
+
+        console.log('[UserController] User preferences updated successfully');
+        res.status(200).json({ 
+            message: 'Preferences updated successfully',
+            preferredLocations: user.studentDetails.preferredLocations
+        });
+    } catch (error) {
+        console.error('[UserController] Error updating preferences:', error);
+        res.status(500).json({ 
+            message: 'Error updating user preferences',
+            error: error.message
+        });
+    }
+};
