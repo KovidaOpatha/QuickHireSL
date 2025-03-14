@@ -259,7 +259,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const JobCategoriesScreen()),
+          MaterialPageRoute(builder: (context) => JobCategoriesScreen(userId: widget.userId)),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
