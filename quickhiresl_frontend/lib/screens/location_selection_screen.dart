@@ -81,48 +81,119 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
               ),
             ),
 
-            // Location Selection List
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8.0),
-                      child: Text(
-                        'Select multiple locations:',
+            // Selected Locations Count
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Selected: ${_selectedLocations.length}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (_selectedLocations.isNotEmpty)
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _selectedLocations.clear();
+                        });
+                      },
+                      child: const Text(
+                        'Clear All',
                         style: TextStyle(
-                          fontSize: 18,
+                          color: Colors.red,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-                    Expanded(
-                      child: ListView.builder(
-                        itemCount: _availableLocations.length,
-                        itemBuilder: (context, index) {
-                          final location = _availableLocations[index];
-                          return CheckboxListTile(
-                            title: Text(location),
-                            value: _selectedLocations.contains(location),
-                            onChanged: (bool? selected) {
-                              setState(() {
-                                if (selected == true) {
-                                  _selectedLocations.add(location);
-                                } else {
-                                  _selectedLocations.remove(location);
-                                }
-                              });
-                            },
-                            activeColor: Colors.black,
-                            checkColor: Colors.white,
-                            controlAffinity: ListTileControlAffinity.leading,
-                          );
-                        },
+                ],
+              ),
+            ),
+
+            // Location Selection Grid
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    childAspectRatio: 2.0,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: _availableLocations.length,
+                  itemBuilder: (context, index) {
+                    final location = _availableLocations[index];
+                    final isSelected = _selectedLocations.contains(location);
+                    
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          if (isSelected) {
+                            _selectedLocations.remove(location);
+                          } else {
+                            _selectedLocations.add(location);
+                          }
+                        });
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        decoration: BoxDecoration(
+                          color: isSelected ? const Color(0xFF98C9C5) : Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 2,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                          border: Border.all(
+                            color: isSelected ? const Color(0xFF98C9C5) : Colors.grey.shade300,
+                            width: 1,
+                          ),
+                        ),
+                        child: Stack(
+                          children: [
+                            Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(4.0),
+                                child: Text(
+                                  location,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                    color: isSelected ? Colors.black : Colors.black87,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            if (isSelected)
+                              Positioned(
+                                top: 4,
+                                right: 4,
+                                child: Container(
+                                  padding: const EdgeInsets.all(1),
+                                  decoration: const BoxDecoration(
+                                    color: Colors.black,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.check,
+                                    color: Colors.white,
+                                    size: 12,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
             ),
@@ -140,6 +211,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
+                    elevation: 3,
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator(
