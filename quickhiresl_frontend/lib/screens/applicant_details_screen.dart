@@ -31,8 +31,9 @@ class _ApplicantDetailsScreenState extends State<ApplicantDetailsScreen> {
       }
 
       final jobService = Provider.of<JobService>(context, listen: false);
-      await jobService.updateApplicationStatus(widget.application.id, status, token!);
-      
+      await jobService.updateApplicationStatus(
+          widget.application.id, status, token!);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -40,7 +41,8 @@ class _ApplicantDetailsScreenState extends State<ApplicantDetailsScreen> {
             backgroundColor: status == 'accepted' ? Colors.green : Colors.red,
           ),
         );
-        Navigator.pop(context, true); // Return true to indicate status was updated
+        Navigator.pop(
+            context, true); // Return true to indicate status was updated
       }
     } catch (e) {
       if (mounted) {
@@ -54,7 +56,9 @@ class _ApplicantDetailsScreenState extends State<ApplicantDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF98C9C5),
       appBar: AppBar(
+        backgroundColor: const Color(0xFF98C9C5),
         title: const Text('Applicant Details'),
       ),
       body: SingleChildScrollView(
@@ -63,6 +67,10 @@ class _ApplicantDetailsScreenState extends State<ApplicantDetailsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.0),
+                side: const BorderSide(color: Colors.black, width: 1.0),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
@@ -85,6 +93,10 @@ class _ApplicantDetailsScreenState extends State<ApplicantDetailsScreen> {
             ),
             const SizedBox(height: 16),
             Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.0),
+                side: const BorderSide(color: Colors.black, width: 1.0),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
@@ -119,7 +131,8 @@ class _ApplicantDetailsScreenState extends State<ApplicantDetailsScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            if (widget.application.status != 'accepted' && widget.application.status != 'declined')
+            if (widget.application.status != 'accepted' &&
+                widget.application.status != 'declined')
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
