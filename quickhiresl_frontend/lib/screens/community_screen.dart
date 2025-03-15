@@ -273,6 +273,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
             widget.onNavigateToTab!(2); // Navigate to post job tab
           }
         },
+        backgroundColor: Theme.of(context).primaryColor, // Use app's primary color
         child: Icon(Icons.add),
         tooltip: 'Post a Job',
       ),
