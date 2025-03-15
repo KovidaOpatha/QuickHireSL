@@ -23,6 +23,7 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
     'Boralesgamuwa',
     'Battaramulla',
     'Kaduwela',
+    'Athurugiriya'
     'Malabe',
     'Homagama',
     'Pannipitiya',
@@ -38,9 +39,33 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
     'Gampaha',
   ];
 
+  // Search functionality
+  String _searchQuery = '';
+  List<String> _filteredLocations = [];
+
   final Set<String> _selectedLocations = {};
   final AuthService _authService = AuthService();
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredLocations = List.from(_availableLocations);
+  }
+
+  void _filterLocations(String query) {
+    setState(() {
+      _searchQuery = query;
+      if (query.isEmpty) {
+        _filteredLocations = List.from(_availableLocations);
+      } else {
+        _filteredLocations = _availableLocations
+            .where((location) => 
+                location.toLowerCase().contains(query.toLowerCase()))
+            .toList();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,9 +106,36 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
               ),
             ),
 
+            // Search Bar
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: TextField(
+                onChanged: _filterLocations,
+                decoration: InputDecoration(
+                  hintText: 'Search locations...',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    borderSide: const BorderSide(color: Color(0xFF98C9C5), width: 2),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+
             // Selected Locations Count
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -113,89 +165,81 @@ class _LocationSelectionScreenState extends State<LocationSelectionScreen> {
               ),
             ),
 
-            // Location Selection Grid
+            // Location Selection List
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    childAspectRatio: 2.0,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
-                  itemCount: _availableLocations.length,
-                  itemBuilder: (context, index) {
-                    final location = _availableLocations[index];
-                    final isSelected = _selectedLocations.contains(location);
-                    
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          if (isSelected) {
-                            _selectedLocations.remove(location);
-                          } else {
-                            _selectedLocations.add(location);
-                          }
-                        });
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFF98C9C5) : Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 2,
-                              offset: const Offset(0, 1),
-                            ),
-                          ],
-                          border: Border.all(
-                            color: isSelected ? const Color(0xFF98C9C5) : Colors.grey.shade300,
-                            width: 1,
-                          ),
-                        ),
-                        child: Stack(
-                          children: [
-                            Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(4.0),
-                                child: Text(
-                                  location,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                    color: isSelected ? Colors.black : Colors.black87,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            if (isSelected)
-                              Positioned(
-                                top: 4,
-                                right: 4,
-                                child: Container(
-                                  padding: const EdgeInsets.all(1),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.black,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.check,
-                                    color: Colors.white,
-                                    size: 12,
-                                  ),
-                                ),
-                              ),
-                          ],
+              child: _filteredLocations.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No locations found',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey,
                         ),
                       ),
-                    );
-                  },
-                ),
-              ),
+                    )
+                  : ListView.builder(
+                      itemCount: _filteredLocations.length,
+                      itemBuilder: (context, index) {
+                        final location = _filteredLocations[index];
+                        final isSelected = _selectedLocations.contains(location);
+                        
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+                          child: Card(
+                            elevation: 1,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(
+                                color: isSelected 
+                                    ? const Color(0xFF98C9C5) 
+                                    : Colors.transparent,
+                                width: 2,
+                              ),
+                            ),
+                            child: InkWell(
+                              onTap: () {
+                                setState(() {
+                                  if (isSelected) {
+                                    _selectedLocations.remove(location);
+                                  } else {
+                                    _selectedLocations.add(location);
+                                  }
+                                });
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      location,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                      ),
+                                    ),
+                                    if (isSelected)
+                                      Container(
+                                        padding: const EdgeInsets.all(2),
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFF98C9C5),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.check,
+                                          color: Colors.white,
+                                          size: 18,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
             ),
 
             // Continue Button
