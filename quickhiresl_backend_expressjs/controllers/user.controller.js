@@ -142,9 +142,10 @@ exports.updateUserProfile = async (req, res) => {
 exports.updateUserPreferences = async (req, res) => {
     try {
         const userId = req.params.userId;
-        const { preferredLocations } = req.body;
+        const { preferredLocations, preferredJobs } = req.body;
         console.log('[UserController] Updating preferences for user:', userId);
         console.log('[UserController] Preferred locations:', preferredLocations);
+        console.log('[UserController] Preferred jobs:', preferredJobs);
 
         // Validate the request
         if (!preferredLocations || !Array.isArray(preferredLocations)) {
@@ -167,6 +168,12 @@ exports.updateUserPreferences = async (req, res) => {
 
         // Update the preferred locations
         user.studentDetails.preferredLocations = preferredLocations;
+        
+        // Update preferred jobs if provided
+        if (preferredJobs && Array.isArray(preferredJobs)) {
+            user.studentDetails.preferredJobs = preferredJobs;
+            console.log('[UserController] Updated preferred jobs:', preferredJobs);
+        }
 
         // Save the updated user
         await user.save();
@@ -174,7 +181,8 @@ exports.updateUserPreferences = async (req, res) => {
         console.log('[UserController] User preferences updated successfully');
         res.status(200).json({ 
             message: 'Preferences updated successfully',
-            preferredLocations: user.studentDetails.preferredLocations
+            preferredLocations: user.studentDetails.preferredLocations,
+            preferredJobs: user.studentDetails.preferredJobs
         });
     } catch (error) {
         console.error('[UserController] Error updating preferences:', error);
