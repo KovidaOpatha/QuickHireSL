@@ -15,6 +15,12 @@ class _PostJobScreenState extends State<PostJobScreen> {
   final _authService = AuthService();
   final List<String> _requirements = [];
   final _requirementController = TextEditingController();
+  final List<Map<String, dynamic>> _availableDates = [];
+
+  // Controllers for date selection
+  DateTime? _selectedDate;
+  bool _isFullDay = false;
+  final List<Map<String, String>> _selectedTimeSlots = [];
 
   String _title = '';
   String _company = '';
@@ -49,6 +55,225 @@ class _PostJobScreenState extends State<PostJobScreen> {
         _newRequirement = '';
       });
     }
+  }
+
+  // Show date picker to select a date
+  Future<void> _selectDate() async {
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 90)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Color(0xFF98C9C5),
+              onPrimary: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    
+    if (pickedDate != null) {
+      // Check if date already exists
+      final existingDateIndex = _availableDates.indexWhere(
+        (item) => _isSameDay(DateTime.parse(item['date']), pickedDate)
+      );
+      
+      if (existingDateIndex != -1) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('This date is already added')),
+          );
+        }
+        return;
+      }
+      
+      setState(() {
+        _selectedDate = pickedDate;
+        _isFullDay = false;
+        _selectedTimeSlots.clear();
+      });
+      
+      // Show bottom sheet for availability options
+      _showAvailabilityOptions();
+    }
+  }
+
+  // Show bottom sheet with availability options
+  void _showAvailabilityOptions() {
+    if (_selectedDate == null) return;
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 16,
+                right: 16,
+                top: 16,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Date: ${_formatDate(_selectedDate!)}',
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    SwitchListTile(
+                      title: const Text('Available Full Day'),
+                      value: _isFullDay,
+                      onChanged: (value) {
+                        setModalState(() {
+                          _isFullDay = value;
+                        });
+                      },
+                      activeColor: const Color(0xFF98C9C5),
+                    ),
+                    if (!_isFullDay) ...[  
+                      const SizedBox(height: 8),
+                      const Text('Time Slots:', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _selectedTimeSlots.length,
+                        itemBuilder: (context, index) {
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            child: ListTile(
+                              dense: true,
+                              title: Text('${_selectedTimeSlots[index]['startTime']} - ${_selectedTimeSlots[index]['endTime']}'),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () {
+                                  setModalState(() {
+                                    _selectedTimeSlots.removeAt(index);
+                                  });
+                                },
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 8),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.access_time),
+                        label: const Text('Add Time Slot'),
+                        onPressed: () async {
+                          final TimeOfDay? startTime = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.now(),
+                          );
+                          
+                          if (startTime != null) {
+                            final TimeOfDay? endTime = await showTimePicker(
+                              context: context,
+                              initialTime: TimeOfDay(hour: (startTime.hour + 1) % 24, minute: startTime.minute),
+                            );
+                            
+                            if (endTime != null) {
+                              setModalState(() {
+                                _selectedTimeSlots.add({
+                                  'startTime': _formatTimeOfDay(startTime),
+                                  'endTime': _formatTimeOfDay(endTime),
+                                });
+                              });
+                            }
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF98C9C5),
+                          foregroundColor: Colors.black,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (!_isFullDay && _selectedTimeSlots.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Please add at least one time slot or select full day')),
+                            );
+                            return;
+                          }
+                          
+                          setState(() {
+                            _availableDates.add({
+                              'date': _selectedDate!.toIso8601String(),
+                              'isFullDay': _isFullDay,
+                              'timeSlots': List<Map<String, String>>.from(_selectedTimeSlots),
+                            });
+                          });
+                          Navigator.pop(context);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: const Text('Add Date', style: TextStyle(fontSize: 16)),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Remove a date availability
+  void _removeDateAvailability(int index) {
+    setState(() {
+      _availableDates.removeAt(index);
+    });
+  }
+
+  // Format date for display
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  // Format TimeOfDay for storage
+  String _formatTimeOfDay(TimeOfDay timeOfDay) {
+    final hour = timeOfDay.hour.toString().padLeft(2, '0');
+    final minute = timeOfDay.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  // Check if two dates are the same day
+  bool _isSameDay(DateTime date1, DateTime date2) {
+    return date1.year == date2.year && 
+           date1.month == date2.month && 
+           date1.day == date2.day;
   }
 
   Future<void> _submitJob() async {
@@ -89,6 +314,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
             'max': _salaryMax,
           },
           'requirements': _requirements,
+          'availableDates': _availableDates,
         };
 
         final job = await _jobService.createJob(jobData, token);
@@ -281,6 +507,34 @@ class _PostJobScreenState extends State<PostJobScreen> {
                                 deleteIcon: const Icon(Icons.cancel, size: 18),
                                 onDeleted: () =>
                                     setState(() => _requirements.remove(req)),
+                              ))
+                          .toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _selectDate,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF98C9C5),
+                        foregroundColor: Colors.black,
+                      ),
+                      child: const Text('Add Date Availability'),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _availableDates
+                          .asMap()
+                          .entries
+                          .map((entry) => Chip(
+                                label: Text(
+                                  '${_formatDate(DateTime.parse(entry.value['date']))} - ${entry.value['isFullDay'] ? 'Full Day' : entry.value['timeSlots'].map((slot) => '${slot['startTime']} - ${slot['endTime']}').join(', ')}',
+                                ),
+                                backgroundColor:
+                                    const Color(0xFF98C9C5).withOpacity(0.2),
+                                deleteIcon: const Icon(Icons.cancel, size: 18),
+                                onDeleted: () =>
+                                    _removeDateAvailability(entry.key),
                               ))
                           .toList(),
                     ),
