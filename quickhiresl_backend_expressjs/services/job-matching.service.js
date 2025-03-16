@@ -146,33 +146,106 @@ const calculateAvailabilityScore = (userAvailability, jobDates) => {
         return 0;
     }
 
-    // Convert user availability to date strings for comparison
-    const userAvailableDates = userAvailability.map(item => {
-        const date = new Date(item.date);
-        return date.toISOString().split('T')[0]; // Format: YYYY-MM-DD
-    });
+    let totalScore = 0;
+    let matchCount = 0;
 
-    // Convert job dates to the same format
-    const formattedJobDates = jobDates.map(date => {
-        const jobDate = new Date(date);
-        return jobDate.toISOString().split('T')[0];
-    });
+    // Process each job date
+    for (const jobDateEntry of jobDates) {
+        const jobDate = new Date(jobDateEntry.date);
+        const jobDateStr = jobDate.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+        const jobIsFullDay = jobDateEntry.isFullDay;
+        const jobTimeSlots = jobDateEntry.timeSlots || [];
+        
+        // Find matching user availability date
+        const matchingUserDate = userAvailability.find(userDateEntry => {
+            const userDate = new Date(userDateEntry.date);
+            const userDateStr = userDate.toISOString().split('T')[0];
+            return userDateStr === jobDateStr;
+        });
 
-    // Count matching dates
-    let matchingDates = 0;
-    for (const jobDate of formattedJobDates) {
-        if (userAvailableDates.includes(jobDate)) {
-            matchingDates++;
+        if (matchingUserDate) {
+            const userIsFullDay = matchingUserDate.isFullDay;
+            const userTimeSlots = matchingUserDate.timeSlots || [];
+
+            // Case 1: Both are full day - perfect match
+            if (jobIsFullDay && userIsFullDay) {
+                totalScore += 100;
+                matchCount++;
+                continue;
+            }
+
+            // Case 2: Job is full day, user has specific time slots
+            if (jobIsFullDay && !userIsFullDay && userTimeSlots.length > 0) {
+                totalScore += 80; // Good but not perfect match
+                matchCount++;
+                continue;
+            }
+
+            // Case 3: User is full day, job has specific time slots
+            if (!jobIsFullDay && userIsFullDay && jobTimeSlots.length > 0) {
+                totalScore += 90; // Very good match
+                matchCount++;
+                continue;
+            }
+
+            // Case 4: Both have specific time slots - check for overlaps
+            if (!jobIsFullDay && !userIsFullDay && jobTimeSlots.length > 0 && userTimeSlots.length > 0) {
+                let timeSlotMatches = 0;
+                
+                for (const jobSlot of jobTimeSlots) {
+                    for (const userSlot of userTimeSlots) {
+                        // Check if time slots overlap
+                        if (doTimeSlotsOverlap(jobSlot, userSlot)) {
+                            timeSlotMatches++;
+                            break; // Found a match for this job slot
+                        }
+                    }
+                }
+                
+                if (timeSlotMatches > 0) {
+                    // Calculate percentage of job time slots that match
+                    const slotMatchPercentage = (timeSlotMatches / jobTimeSlots.length) * 100;
+                    totalScore += slotMatchPercentage;
+                    matchCount++;
+                }
+            }
         }
     }
 
-    if (matchingDates === 0) {
+    // If no matches found
+    if (matchCount === 0) {
         return 0;
     }
 
-    // Calculate percentage of job dates that match user availability
-    const matchPercentage = (matchingDates / formattedJobDates.length) * 100;
-    return Math.min(100, matchPercentage);
+    // Calculate average score across all job dates
+    return Math.min(100, totalScore / matchCount);
+};
+
+/**
+ * Check if two time slots overlap
+ * @param {Object} slot1 - First time slot with startTime and endTime
+ * @param {Object} slot2 - Second time slot with startTime and endTime
+ * @returns {Boolean} True if slots overlap
+ */
+const doTimeSlotsOverlap = (slot1, slot2) => {
+    // Convert time strings to minutes for easier comparison
+    const slot1Start = timeToMinutes(slot1.startTime);
+    const slot1End = timeToMinutes(slot1.endTime);
+    const slot2Start = timeToMinutes(slot2.startTime);
+    const slot2End = timeToMinutes(slot2.endTime);
+    
+    // Check for overlap
+    return (slot1Start < slot2End && slot1End > slot2Start);
+};
+
+/**
+ * Convert time string (HH:MM) to minutes
+ * @param {String} timeStr - Time in format HH:MM
+ * @returns {Number} Time in minutes
+ */
+const timeToMinutes = (timeStr) => {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return (hours * 60) + minutes;
 };
 
 /**

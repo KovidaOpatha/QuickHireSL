@@ -53,6 +53,20 @@ const jobSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
+    availableDates: [{
+        date: {
+            type: Date,
+            required: true
+        },
+        timeSlots: [{
+            startTime: { type: String, trim: true }, // Format: "HH:MM"
+            endTime: { type: String, trim: true }   // Format: "HH:MM"
+        }],
+        isFullDay: {
+            type: Boolean,
+            default: false
+        }
+    }],
     status: {
         type: String,
         enum: ['active', 'closed', 'draft'],
