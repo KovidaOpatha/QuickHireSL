@@ -36,11 +36,12 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     setState(() => isJobOwnerLoading = true);
 
     if (widget.job.postedBy == null || widget.job.postedBy!.isEmpty) {
-      print('No job owner ID available');
+      print('No job owner ID available for job: ${widget.job.id}');
       setState(() {
         isJobOwnerLoading = false;
         jobOwnerData = {
           'fullName': widget.job.company,
+          'profilePicture': null, // Explicitly set to null to avoid errors
         };
       });
       return;
@@ -49,7 +50,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     try {
       final token = await _storage.read(key: 'jwt_token');
 
-      print('Fetching job owner data for ID: ${widget.job.postedBy}');
+      print('Fetching job owner data for ID: ${widget.job.postedBy} (Job ID: ${widget.job.id})');
 
       final response = await http.get(
         Uri.parse('${_userService.baseUrl}/users/${widget.job.postedBy}'),
@@ -65,10 +66,13 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
         final data = json.decode(response.body);
         print('Job Owner Data: $data');
 
-        if (data['profileImage'] != null) {
+        if (data['profileImage'] != null && data['profileImage'].toString().isNotEmpty) {
           data['profilePicture'] =
               _userService.getFullImageUrl(data['profileImage']);
           print('Profile Picture URL: ${data['profilePicture']}');
+        } else {
+          print('No profile image found for user');
+          data['profilePicture'] = null;
         }
 
         setState(() {
@@ -82,6 +86,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
           isJobOwnerLoading = false;
           jobOwnerData = {
             'fullName': widget.job.company,
+            'profilePicture': null,
           };
         });
       }
@@ -91,6 +96,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
         isJobOwnerLoading = false;
         jobOwnerData = {
           'fullName': widget.job.company,
+          'profilePicture': null,
         };
       });
     }
@@ -211,6 +217,44 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     );
   }
 
+  Widget _buildDefaultCompanyBackground() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF98C9C5),
+            const Color(0xFF98C9C5).withOpacity(0.8),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.business,
+              size: 50,
+              color: Colors.white.withOpacity(0.7),
+            ),
+            const SizedBox(height: 10),
+            if (widget.job.company.isNotEmpty)
+              Text(
+                widget.job.company,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -236,46 +280,11 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                           jobOwnerData['profilePicture'],
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    const Color(0xFF98C9C5),
-                                    const Color(0xFF98C9C5).withOpacity(0.8),
-                                  ],
-                                ),
-                              ),
-                              child: Center(
-                                child: Icon(
-                                  Icons.business,
-                                  size: 50,
-                                  color: Colors.white.withOpacity(0.7),
-                                ),
-                              ),
-                            );
+                            print('Error loading profile image: $error');
+                            return _buildDefaultCompanyBackground();
                           },
                         )
-                      : Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                const Color(0xFF98C9C5),
-                                const Color(0xFF98C9C5).withOpacity(0.8),
-                              ],
-                            ),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              Icons.business,
-                              size: 50,
-                              color: Colors.white.withOpacity(0.7),
-                            ),
-                          ),
-                        ),
+                      : _buildDefaultCompanyBackground(),
 
                   // Overlay gradient for better text visibility
                   Container(

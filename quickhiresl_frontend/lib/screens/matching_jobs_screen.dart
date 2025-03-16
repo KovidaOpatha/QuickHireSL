@@ -195,6 +195,7 @@ class _MatchingJobsScreenState extends State<MatchingJobsScreen> {
       ),
       child: InkWell(
         onTap: () {
+          print('Job data: $job'); // Debug log to see the job data structure
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -204,13 +205,13 @@ class _MatchingJobsScreenState extends State<MatchingJobsScreen> {
                 company: job['company'] ?? '',
                 location: job['location'] ?? '',
                 description: job['description'] ?? '',
-                requirements: job['requirements'] ?? [],
+                requirements: List<String>.from(job['requirements'] ?? []),
                 salary: Salary(
                   min: job['salary'] != null && job['salary']['min'] != null ? job['salary']['min'] : 0,
                   max: job['salary'] != null && job['salary']['max'] != null ? job['salary']['max'] : 0,
                   currency: job['salary'] != null && job['salary']['currency'] != null ? job['salary']['currency'] : 'LKR',
                 ),
-                postedBy: job['postedBy'] ?? '',
+                postedBy: job['postedBy']?.toString() ?? '',
                 createdAt: job['postedDate'] != null ? DateTime.parse(job['postedDate']) : DateTime.now(),
                 employmentType: job['employmentType'] ?? '',
                 experienceLevel: job['experienceLevel'] ?? '',
