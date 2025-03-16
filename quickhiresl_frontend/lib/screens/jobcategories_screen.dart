@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
+import 'availability_screen.dart'; // Import the AvailabilityScreen
 import '../services/auth_service.dart';
 
 class JobCategoriesScreen extends StatefulWidget {
@@ -95,7 +96,7 @@ class _JobCategoriesScreenState extends State<JobCategoriesScreen> {
     });
   }
 
-  Future<void> _savePreferencesAndContinue() async {
+  Future<void> _saveJobPreferences() async {
     if (_selectedCategories.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select at least one job category')),
@@ -103,7 +104,9 @@ class _JobCategoriesScreenState extends State<JobCategoriesScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
       if (widget.userId != null) {
@@ -139,19 +142,28 @@ class _JobCategoriesScreenState extends State<JobCategoriesScreen> {
           setState(() => _isLoading = false);
           return;
         }
-      }
 
-      if (!mounted) return;
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-        (route) => false,
-      );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Job preferences saved successfully!')),
+        );
+        
+        // Navigate to the Availability Screen
+        if (!mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AvailabilityScreen(),
+          ),
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e')),
       );
-      setState(() => _isLoading = false);
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -372,7 +384,7 @@ class _JobCategoriesScreenState extends State<JobCategoriesScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _savePreferencesAndContinue,
+                  onPressed: _isLoading ? null : _saveJobPreferences,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
                     shape: RoundedRectangleBorder(
