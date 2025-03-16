@@ -17,6 +17,8 @@ import 'notification_screen.dart';
 import 'favorites_screen.dart';
 import 'login_screen.dart';
 import 'change_password_screen.dart';
+import 'matching_jobs_screen.dart';
+import 'availability_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -241,6 +243,8 @@ class _HomeScreenState extends State<HomeScreen> {
         return _buildHomeContent();
       case 2:
         return const JobsScreen();
+      case 3:
+        return const MatchingJobsScreen();
       default:
         return _buildHomeContent();
     }
@@ -448,8 +452,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           )
                                         : Icon(
                                             Icons.business,
-                                            color:
-                                                Colors.white.withOpacity(0.7),
+                                            color: Colors.white.withOpacity(0.7),
                                             size: 30,
                                           ),
                                   ),
@@ -650,6 +653,10 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icon(Icons.work),
               label: 'Jobs',
             ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.recommend),
+              label: 'For You',
+            ),
           ],
         ),
         floatingActionButton: _selectedIndex == 1
@@ -663,366 +670,365 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Map<String, dynamic>? _userData;
 
-Map<String, dynamic>? _userData;
-
-Future<void> _loadUserData() async {
-  try {
-    final response = await _userService.getUserProfile();
-    setState(() {
-      _userData = response['data'];
-      _isLoading = false;
-    });
-  } catch (e) {
-    print('[ERROR] Failed to load user data: $e');
-    setState(() => _isLoading = false);
+  Future<void> _loadUserData() async {
+    try {
+      final response = await _userService.getUserProfile();
+      setState(() {
+        _userData = response['data'];
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('[ERROR] Failed to load user data: $e');
+      setState(() => _isLoading = false);
+    }
   }
-}
 
-Widget _buildDrawer(BuildContext context) {
-  return Drawer(
-    child: Container(
-      color: const Color(0xFF8CBBB3), // Teal/mint color from the image
-      child: Column(
-        children: [
-          // Back button at the top
-          Container(
-            alignment: Alignment.topLeft,
-            padding: const EdgeInsets.only(top: 40, left: 16),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-              onPressed: () {
-                Navigator.pop(context); // Close drawer
-              },
-            ),
-          ),
-          
-          // Profile image with green border
-          Container(
-            margin: const EdgeInsets.only(top: 30),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: const Color(0xFF4CAF50), // Green border
-                width: 3,
+  Widget _buildDrawer(BuildContext context) {
+    return Drawer(
+      child: Container(
+        color: const Color(0xFF8CBBB3), // Teal/mint color from the image
+        child: Column(
+          children: [
+            // Back button at the top
+            Container(
+              alignment: Alignment.topLeft,
+              padding: const EdgeInsets.only(top: 40, left: 16),
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+                onPressed: () {
+                  Navigator.pop(context); // Close drawer
+                },
               ),
             ),
-            child: _isLoading 
-              ? const CircularProgressIndicator() 
-              : CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Colors.white,
-                  child: _userData?['profileImage'] != null && _userData!['profileImage'].isNotEmpty
-                    ? ClipOval(
-                        child: Image.network(
-                          _userData!['profileImage'],
-                          fit: BoxFit.cover,
-                          width: 100,
-                          height: 100,
-                          errorBuilder: (context, error, stackTrace) {
-                            print('[ERROR] Failed to load profile image: $error');
-                            return const Icon(Icons.person, size: 70, color: Colors.black54);
-                          },
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                          },
-                        ),
-                      )
-                    : const Icon(Icons.person, size: 70, color: Colors.black54),
+            
+            // Profile image with green border
+            Container(
+              margin: const EdgeInsets.only(top: 30),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: const Color(0xFF4CAF50), // Green border
+                  width: 3,
                 ),
-          ),
-          
-          // User name and app name/tagline
-          Padding(
-            padding: const EdgeInsets.only(top: 20, bottom: 40),
-            child: Column(
-              children: [
-                // User name
-                if (!_isLoading && _userData != null)
-                  Text(
-                    _userData?['name'] ?? 'User',
-                    style: const TextStyle(
+              ),
+              child: _isLoading 
+                ? const CircularProgressIndicator() 
+                : CircleAvatar(
+                    radius: 50,
+                    backgroundColor: Colors.white,
+                    child: _userData?['profileImage'] != null && _userData!['profileImage'].isNotEmpty
+                      ? ClipOval(
+                          child: Image.network(
+                            _userData!['profileImage'],
+                            fit: BoxFit.cover,
+                            width: 100,
+                            height: 100,
+                            errorBuilder: (context, error, stackTrace) {
+                              print('[ERROR] Failed to load profile image: $error');
+                              return const Icon(Icons.person, size: 70, color: Colors.black54);
+                            },
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            },
+                          ),
+                        )
+                      : const Icon(Icons.person, size: 70, color: Colors.black54),
+                  ),
+            ),
+            
+            // User name and app name/tagline
+            Padding(
+              padding: const EdgeInsets.only(top: 20, bottom: 40),
+              child: Column(
+                children: [
+                  // User name
+                  if (!_isLoading && _userData != null)
+                    Text(
+                      _userData?['name'] ?? 'User',
+                      style: const TextStyle(
+                        color: Color.fromARGB(255, 0, 0, 0),
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Find your next opportunity', // Your tagline from original code
+                    style: TextStyle(
                       color: Color.fromARGB(255, 0, 0, 0),
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
                     ),
                   ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Find your next opportunity', // Your tagline from original code
+                ],
+              ),
+            ),
+            
+            // Favorites menu item
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: ListTile(
+                leading: const Icon(Icons.favorite, color: Color.fromARGB(255, 0, 0, 0)),
+                title: const Text(
+                  'Favorites',
                   style: TextStyle(
                     color: Color.fromARGB(255, 0, 0, 0),
-                    fontSize: 14,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              ],
-            ),
-          ),
-          
-          // Favorites menu item
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white24,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: ListTile(
-              leading: const Icon(Icons.favorite, color: Color.fromARGB(255, 0, 0, 0)),
-              title: const Text(
-                'Favorites',
-                style: TextStyle(
+                trailing: const Icon(
+                  Icons.chevron_right,
                   color: Color.fromARGB(255, 0, 0, 0),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
                 ),
+                onTap: () {
+                  Navigator.pop(context); // Close the drawer
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const FavoritesScreen()),
+                  );
+                },
               ),
-              trailing: const Icon(
-                Icons.chevron_right,
-                color: Color.fromARGB(255, 0, 0, 0),
-              ),
-              onTap: () {
-                Navigator.pop(context); // Close the drawer
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const FavoritesScreen()),
-                );
-              },
             ),
-          ),
 
-          // Profile menu item
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white24,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: ListTile(
-              leading: const Icon(Icons.person, color: Color.fromARGB(255, 0, 0, 0)),
-              title: const Text(
-                'Profile',
-                style: TextStyle(
-                  color: Color.fromARGB(255, 0, 0, 0),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
+            // Profile menu item
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(10),
               ),
-              trailing: const Icon(
-                Icons.chevron_right,
-                color: Color.fromARGB(255, 0, 0, 0),
-              ),
-              onTap: () {
-                Navigator.pop(context); // Close the drawer
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const ProfileScreen()),
-                );
-              },
-            ),
-          ),
-
-          // Settings menu item
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white24,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: ListTile(
-              leading: const Icon(Icons.settings, color: Color.fromARGB(255, 0, 0, 0)),
-              title: const Text(
-                'Settings',
-                style: TextStyle(
-                  color: Color.fromARGB(255, 0, 0, 0),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              trailing: const Icon(
-                Icons.chevron_right,
-                color: Color.fromARGB(255, 0, 0, 0),
-              ),
-              onTap: () {
-                Navigator.pop(context); // Close the drawer
-                _showSettingsOptions(context);
-              },
-            ),
-          ),
-
-          // Help & Support menu item
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white24,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: ListTile(
-              leading: const Icon(Icons.help, color: Color.fromARGB(255, 0, 0, 0)),
-              title: const Text(
-                'Help & Support',
-                style: TextStyle(
-                  color: Color.fromARGB(255, 0, 0, 0),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              trailing: const Icon(
-                Icons.chevron_right,
-                color: Color.fromARGB(255, 0, 0, 0),
-              ),
-              onTap: () {
-                Navigator.pop(context); // Close the drawer
-                // Navigate to help screen
-              },
-            ),
-          ),
-
-          // Logout menu item
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white24,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: ListTile(
-              leading: const Icon(Icons.logout, color: Color.fromARGB(255, 0, 0, 0)),
-              title: const Text(
-                'Logout',
-                style: TextStyle(
-                  color: Color.fromARGB(255, 0, 0, 0),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              trailing: const Icon(
-                Icons.chevron_right,
-                color: Color.fromARGB(255, 0, 0, 0),
-              ),
-              onTap: () async {
-                Navigator.pop(context); // Close the drawer
-
-                // Show confirmation dialog
-                showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return AlertDialog(
-                      backgroundColor: Colors.white,
-                      title: const Text('Confirm Logout'),
-                      content: const Text('Are you sure you want to logout?'),
-                      actions: [
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(context).pop(); // Close the dialog
-                          },
-                          child: const Text('Cancel',
-                              style: TextStyle(color: Colors.black)),
-                        ),
-                        TextButton(
-                          onPressed: () async {
-                            Navigator.of(context).pop(); // Close the dialog
-                            await _authService.logout();
-                            // Navigate to login screen and clear all previous routes
-                            Navigator.of(context).pushAndRemoveUntil(
-                              MaterialPageRoute(
-                                  builder: (context) => const LoginScreen()),
-                              (route) => false,
-                            );
-                          },
-                          child: const Text('Logout',
-                              style: TextStyle(color: Colors.red)),
-                        ),
-                      ],
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-
-          // Spacer to push content to the top
-          const Spacer(),
-        ],
-      ),
-    ),
-  );
-}
-
-// Add this new method to HomeScreen class
-void _showSettingsOptions(BuildContext context) {
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Colors.transparent,
-    builder: (BuildContext context) {
-      return Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text(
-                'Settings',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const Divider(),
-            
-            // Change Password Option
-            ListTile(
-              leading: const Icon(Icons.lock_outline),
-              title: const Text('Change Password'),
-              onTap: () {
-                Navigator.pop(context); // Close bottom sheet
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ChangePasswordScreen(),
+              child: ListTile(
+                leading: const Icon(Icons.person, color: Color.fromARGB(255, 0, 0, 0)),
+                title: const Text(
+                  'Profile',
+                  style: TextStyle(
+                    color: Color.fromARGB(255, 0, 0, 0),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
                   ),
-                );
-              },
+                ),
+                trailing: const Icon(
+                  Icons.chevron_right,
+                  color: Color.fromARGB(255, 0, 0, 0),
+                ),
+                onTap: () {
+                  Navigator.pop(context); // Close the drawer
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const ProfileScreen()),
+                  );
+                },
+              ),
             ),
-            
-            // Notification Settings Option
-            ListTile(
-              leading: const Icon(Icons.notifications_outlined),
-              title: const Text('Notification Settings'),
-              onTap: () {
-                Navigator.pop(context); // Close bottom sheet
-                // Navigate to Notification Settings (you can implement this later)
-              },
+
+            // Settings menu item
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: ListTile(
+                leading: const Icon(Icons.settings, color: Color.fromARGB(255, 0, 0, 0)),
+                title: const Text(
+                  'Settings',
+                  style: TextStyle(
+                    color: Color.fromARGB(255, 0, 0, 0),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                trailing: const Icon(
+                  Icons.chevron_right,
+                  color: Color.fromARGB(255, 0, 0, 0),
+                ),
+                onTap: () {
+                  Navigator.pop(context); // Close the drawer
+                  _showSettingsOptions(context);
+                },
+              ),
             ),
-            
-            // Account Settings Option
-            ListTile(
-              leading: const Icon(Icons.account_circle_outlined),
-              title: const Text('Account Settings'),
-              onTap: () {
-                Navigator.pop(context); // Close bottom sheet
-                // Navigate to Account Settings (you can implement this later)
-              },
+
+            // Help & Support menu item
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: ListTile(
+                leading: const Icon(Icons.help, color: Color.fromARGB(255, 0, 0, 0)),
+                title: const Text(
+                  'Help & Support',
+                  style: TextStyle(
+                    color: Color.fromARGB(255, 0, 0, 0),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                trailing: const Icon(
+                  Icons.chevron_right,
+                  color: Color.fromARGB(255, 0, 0, 0),
+                ),
+                onTap: () {
+                  Navigator.pop(context); // Close the drawer
+                  // Navigate to help screen
+                },
+              ),
             ),
-            
-            const SizedBox(height: 16),
+
+            // Logout menu item
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: ListTile(
+                leading: const Icon(Icons.logout, color: Color.fromARGB(255, 0, 0, 0)),
+                title: const Text(
+                  'Logout',
+                  style: TextStyle(
+                    color: Color.fromARGB(255, 0, 0, 0),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                trailing: const Icon(
+                  Icons.chevron_right,
+                  color: Color.fromARGB(255, 0, 0, 0),
+                ),
+                onTap: () async {
+                  Navigator.pop(context); // Close the drawer
+
+                  // Show confirmation dialog
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        backgroundColor: Colors.white,
+                        title: const Text('Confirm Logout'),
+                        content: const Text('Are you sure you want to logout?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop(); // Close the dialog
+                            },
+                            child: const Text('Cancel',
+                                style: TextStyle(color: Colors.black)),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              Navigator.of(context).pop(); // Close the dialog
+                              await _authService.logout();
+                              // Navigate to login screen and clear all previous routes
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(
+                                    builder: (context) => const LoginScreen()),
+                                (route) => false,
+                              );
+                            },
+                            child: const Text('Logout',
+                                style: TextStyle(color: Colors.red)),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+
+            // Spacer to push content to the top
+            const Spacer(),
           ],
         ),
-      );
-    },
-  );
-}
+      ),
+    );
+  }
+
+  // Add this new method to HomeScreen class
+  void _showSettingsOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'Settings',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const Divider(),
+              
+              // Change Password Option
+              ListTile(
+                leading: const Icon(Icons.lock_outline),
+                title: const Text('Change Password'),
+                onTap: () {
+                  Navigator.pop(context); // Close bottom sheet
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ChangePasswordScreen(),
+                    ),
+                  );
+                },
+              ),
+              
+              // Notification Settings Option
+              ListTile(
+                leading: const Icon(Icons.notifications_outlined),
+                title: const Text('Notification Settings'),
+                onTap: () {
+                  Navigator.pop(context); // Close bottom sheet
+                  // Navigate to Notification Settings (you can implement this later)
+                },
+              ),
+              
+              // Account Settings Option
+              ListTile(
+                leading: const Icon(Icons.account_circle_outlined),
+                title: const Text('Account Settings'),
+                onTap: () {
+                  Navigator.pop(context); // Close bottom sheet
+                  // Navigate to Account Settings (you can implement this later)
+                },
+              ),
+              
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
 
 class _SearchPage extends StatefulWidget {
@@ -1043,22 +1049,43 @@ class _SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<_SearchPage> {
-  final TextEditingController _searchController = TextEditingController();
+  final JobService _jobService = JobService();
   List<Job> _filteredJobs = [];
+  bool _isLoading = false;
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    _filteredJobs = List.from(widget.jobs);
+    _loadJobs();
+  }
+
+  Future<void> _loadJobs() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final jobs = await _jobService.getJobs();
+      setState(() {
+        _filteredJobs = jobs;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   void _filterJobs(String query) {
     setState(() {
+      _searchQuery = query;
       if (query.isEmpty) {
-        _filteredJobs = List.from(widget.jobs);
+        _loadJobs();
       } else {
         query = query.toLowerCase();
-        _filteredJobs = widget.jobs.where((job) {
+        _filteredJobs = _filteredJobs.where((job) {
           final title = job.title.toLowerCase();
           final company = job.company.toLowerCase();
           final location = job.location.toLowerCase();
@@ -1097,165 +1124,104 @@ class _SearchPageState extends State<_SearchPage> {
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(15),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: TextField(
-                controller: _searchController,
                 onChanged: _filterJobs,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: "Search jobs, companies, or locations",
-                  prefixIcon: const Icon(Icons.search),
+                decoration: const InputDecoration(
+                  hintText: 'Search jobs, companies, or locations',
+                  prefixIcon: Icon(Icons.search),
                   border: InputBorder.none,
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            _searchController.clear();
-                            _filterJobs('');
-                          },
-                        )
-                      : null,
+                  contentPadding: EdgeInsets.symmetric(vertical: 15),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             Expanded(
-              child: _filteredJobs.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'No jobs found',
-                        style: TextStyle(color: Colors.black54, fontSize: 16),
-                      ),
-                    )
-                  : ListView.builder(
-                      itemCount: _filteredJobs.length,
-                      itemBuilder: (context, index) {
-                        final job = _filteredJobs[index];
-                        return GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    JobDetailsScreen(job: job),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(vertical: 8),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(15),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.2),
-                                  spreadRadius: 1,
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                // Profile picture
-                                Container(
-                                  width: 50,
-                                  height: 50,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF98C9C5),
-                                    borderRadius: BorderRadius.circular(8),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _filteredJobs.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'No jobs found',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: _filteredJobs.length,
+                          itemBuilder: (context, index) {
+                            final job = _filteredJobs[index];
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        JobDetailsScreen(job: job),
                                   ),
-                                  child: job.postedBy != null &&
-                                          widget.jobOwnerData
-                                              .containsKey(job.postedBy) &&
-                                          widget.jobOwnerData[job.postedBy]
-                                                  ?['profilePicture'] !=
-                                              null
-                                      ? ClipRRect(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                          child: Image.network(
-                                            widget.jobOwnerData[job.postedBy]
-                                                ['profilePicture'],
-                                            fit: BoxFit.cover,
-                                            errorBuilder:
-                                                (context, error, stackTrace) {
-                                              return Icon(
-                                                Icons.business,
-                                                color: Colors.white
-                                                    .withOpacity(0.7),
-                                                size: 30,
-                                              );
-                                            },
-                                          ),
-                                        )
-                                      : Icon(
-                                          Icons.business,
-                                          color: Colors.white.withOpacity(0.7),
-                                          size: 30,
-                                        ),
+                                );
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(10),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 5),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 10),
-                                Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        job.title,
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      Text(
-                                        '${job.company} • ${job.location}',
-                                        style: const TextStyle(
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                      Text(
-                                        'LKR ${job.salary.min} - ${job.salary.max}',
-                                        style: const TextStyle(
-                                          color: Colors.green,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              job.title,
+                                              style: const TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          IconButton(
+                                            icon: Icon(
+                                              Icons.favorite,
+                                              color: job.id != null &&
+                                                      widget.favoriteStatus[job.id] ==
+                                                          true
+                                                  ? Colors.red
+                                                  : null,
+                                              size: 20,
+                                            ),
+                                            onPressed: () {
+                                              if (job.id != null) {
+                                                widget.onToggleFavorite(job.id!);
+                                              }
+                                            },
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
                                 ),
-                                GestureDetector(
-                                  onTap: () {
-                                    if (job.id != null) {
-                                      widget.onToggleFavorite(job.id!);
-                                      setState(() {}); // Refresh UI
-                                    }
-                                  },
-                                  child: Icon(
-                                    job.id != null &&
-                                            widget.favoriteStatus[job.id] ==
-                                                true
-                                        ? Icons.favorite
-                                        : Icons.favorite_border,
-                                    color: job.id != null &&
-                                            widget.favoriteStatus[job.id] ==
-                                                true
-                                        ? Colors.red
-                                        : null,
-                                    size: 20,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                              ),
+                            );
+                          },
+                        ),
             ),
           ],
         ),

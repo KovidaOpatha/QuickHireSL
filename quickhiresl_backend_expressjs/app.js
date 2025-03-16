@@ -10,6 +10,7 @@ const indexRoutes = require('./routes/api');
 const jobRoutes = require('./routes/job.routes');
 const applicationRoutes = require('./routes/application.routes');
 const notificationRoutes = require('./routes/notification.routes');
+const jobMatchingRoutes = require('./routes/job-matching.routes');
 const chatController = require('./controllers/chat.controller');
 const authMiddleware = require('./middleware/auth.middleware');
 const chatRoutes = require('./routes/chat.routes');
@@ -38,6 +39,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/matching', jobMatchingRoutes);
 app.use('/api', chatRoutes);
 
 // Chat routes

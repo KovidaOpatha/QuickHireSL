@@ -18,7 +18,17 @@ const userSchema = new mongoose.Schema({
         mobileNumber: { type: String, trim: true },
         nicNumber: { type: String, trim: true },
         preferredLocations: [{ type: String, trim: true }],
-        preferredJobs: [{ type: String, trim: true }]
+        preferredJobs: [{ type: String, trim: true }],
+        availability: [{
+            date: { type: Date },
+            timeSlots: [{
+                startTime: { type: String, trim: true }, // Format: "HH:MM"
+                endTime: { type: String, trim: true },   // Format: "HH:MM"
+            }],
+            isFullDay: { type: Boolean, default: false },
+            createdAt: { type: Date, default: Date.now }
+        }],
+        skills: [{ type: String, trim: true }]
     },
     jobOwnerDetails: {
         shopName: { type: String, trim: true },
