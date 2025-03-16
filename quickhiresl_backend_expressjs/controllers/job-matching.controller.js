@@ -37,6 +37,11 @@ exports.getMatchingJobs = async (req, res) => {
             description: item.job.description,
             requiredSkills: item.job.requiredSkills,
             availableDates: item.job.availableDates,
+            postedBy: item.job.postedBy,
+            postedDate: item.job.createdAt,
+            employmentType: item.job.employmentType,
+            experienceLevel: item.job.experienceLevel,
+            requirements: item.job.requirements || [],
             matchScore: item.score,
             matchReasons: item.reasons,
             ...(options.includeDetails && { matchDetails: item.details })

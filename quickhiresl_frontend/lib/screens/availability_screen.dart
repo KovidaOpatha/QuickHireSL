@@ -248,6 +248,60 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
     return DateFormat('EEE, MMM d, yyyy').format(date);
   }
 
+  void _completeRegistration() async {
+    if (_userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('User not authenticated. Please log in again.')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      // Check if user has added at least one availability date
+      if (_availabilityDates.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please add at least one availability date before proceeding.')),
+        );
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      // Update user registration status
+      final response = await _authService.updateUserProfile(
+        _userId!,
+        {'registrationComplete': true},
+      );
+
+      setState(() => _isLoading = false);
+
+      if (response['success']) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registration completed successfully!')),
+        );
+
+        // Navigate to home screen or dashboard
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/home',
+          (route) => false,
+        );
+      } else {
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response['error'] ?? 'Failed to complete registration')),
+        );
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -566,6 +620,28 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                                   );
                                 },
                               ),
+                        
+                        // Add Complete Registration button at the bottom
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _completeRegistration,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text(
+                              'Complete Registration',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                       ],
                     ),
                   ),

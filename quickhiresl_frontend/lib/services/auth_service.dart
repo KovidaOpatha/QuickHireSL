@@ -384,4 +384,53 @@ class AuthService {
       };
     }
   }
+
+  // Update user profile data
+  Future<Map<String, dynamic>> updateUserProfile(String userId, Map<String, dynamic> profileData) async {
+    try {
+      print('[UpdateUserProfile] Updating profile for user: $userId');
+      print('[UpdateUserProfile] Profile data: $profileData');
+
+      final token = await getToken();
+      if (token == null) {
+        return {
+          'success': false,
+          'error': 'Authentication token not found',
+        };
+      }
+
+      final response = await http.put(
+        Uri.parse('$baseUrl/users/$userId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(profileData),
+      );
+
+      print('[UpdateUserProfile] Response status: ${response.statusCode}');
+      print('[UpdateUserProfile] Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        return {
+          'success': true,
+          'data': responseData['data'],
+          'message': responseData['message'] ?? 'Profile updated successfully',
+        };
+      }
+
+      final responseData = response.body.isNotEmpty ? jsonDecode(response.body) : {};
+      return {
+        'success': false,
+        'error': responseData['message'] ?? 'Failed to update profile',
+      };
+    } catch (e) {
+      print('[ERROR] Update profile error: $e');
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
 }
