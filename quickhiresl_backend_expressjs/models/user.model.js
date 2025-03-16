@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
     profileImage: { type: String, default: null },
     rating: { type: Number, default: 0, min: 0, max: 5 },
     completedJobs: { type: Number, default: 0 },
+    registrationComplete: { type: Boolean, default: false },
     notifications: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Notification'
