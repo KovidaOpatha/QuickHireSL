@@ -13,7 +13,6 @@ dependencies:
   cupertino_icons: ^1.0.2
   http: ^1.1.0
   flutter_secure_storage: ^9.0.0
-  table_calendar: ^3.0.9
   font_awesome_flutter: ^10.6.0
   image_picker: ^1.0.4
   http_parser: ^4.0.2

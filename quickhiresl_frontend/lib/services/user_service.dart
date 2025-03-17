@@ -62,4 +62,50 @@ class UserService {
       };
     }
   }
+
+  Future<Map<String, dynamic>> updateUserProfile(Map<String, dynamic> userData) async {
+    try {
+      final token = await storage.read(key: 'jwt_token');
+      final userId = await storage.read(key: 'user_id');
+
+      if (token == null || userId == null) {
+        throw Exception('Authentication required');
+      }
+
+      print('[UserService] Updating profile for user: $userId');
+      print('[UserService] Update data: $userData');
+      
+      final response = await http.patch(
+        Uri.parse('$baseUrl/users/$userId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode(userData),
+      );
+
+      print('[UserService] Response status: ${response.statusCode}');
+      print('[UserService] Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {
+          'success': true,
+          'data': data,
+        };
+      } else {
+        print('[ERROR] Failed to update user profile: ${response.body}');
+        return {
+          'success': false,
+          'error': 'Failed to update user profile',
+        };
+      }
+    } catch (e) {
+      print('[ERROR] User profile update error: $e');
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
 }
