@@ -116,7 +116,7 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
       }
 
       // Show the feedback dialog after confirming the completion
-      showFeedbackDialog(context);
+      showFeedbackDialog(context, isJobOwner: true);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -181,7 +181,7 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
                 );
 
                 // Show the feedback dialog after confirming the completion
-                showFeedbackDialog(context);
+                showFeedbackDialog(context, isJobOwner: true);
               } catch (e) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
