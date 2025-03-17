@@ -26,6 +26,61 @@ class Salary {
   }
 }
 
+class TimeSlot {
+  final String startTime;
+  final String endTime;
+
+  TimeSlot({
+    required this.startTime,
+    required this.endTime,
+  });
+
+  factory TimeSlot.fromJson(Map<String, dynamic> json) {
+    return TimeSlot(
+      startTime: json['startTime'] ?? '',
+      endTime: json['endTime'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'startTime': startTime,
+      'endTime': endTime,
+    };
+  }
+}
+
+class AvailableDate {
+  final DateTime date;
+  final bool isFullDay;
+  final List<TimeSlot> timeSlots;
+
+  AvailableDate({
+    required this.date,
+    required this.isFullDay,
+    required this.timeSlots,
+  });
+
+  factory AvailableDate.fromJson(Map<String, dynamic> json) {
+    return AvailableDate(
+      date: DateTime.parse(json['date'] ?? DateTime.now().toIso8601String()),
+      isFullDay: json['isFullDay'] ?? false,
+      timeSlots: (json['timeSlots'] as List<dynamic>?)
+              ?.map((slot) => TimeSlot.fromJson(slot))
+              .toList() ??
+          [],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'date': date.toIso8601String(),
+      'isFullDay': isFullDay,
+      'timeSlots': timeSlots.map((slot) => slot.toJson()).toList(),
+    };
+  }
+}
+
 class Job {
   final String? id;
   final String title;
@@ -40,6 +95,8 @@ class Job {
   final String status;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String category;
+  final List<AvailableDate> availableDates;
 
   Job({
     this.id,
@@ -55,6 +112,8 @@ class Job {
     this.status = 'active',
     this.createdAt,
     this.updatedAt,
+    this.category = '',
+    this.availableDates = const [],
   });
 
   factory Job.fromJson(Map<String, dynamic> json) {
@@ -74,7 +133,17 @@ class Job {
           status: 'active',
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
+          category: '',
+          availableDates: [],
         );
+      }
+
+      // Parse available dates if they exist
+      List<AvailableDate> availableDates = [];
+      if (json['availableDates'] != null) {
+        availableDates = (json['availableDates'] as List<dynamic>)
+            .map((dateData) => AvailableDate.fromJson(dateData))
+            .toList();
       }
 
       return Job(
@@ -98,6 +167,8 @@ class Job {
         updatedAt: json['updatedAt'] != null
             ? DateTime.parse(json['updatedAt'])
             : DateTime.now(),
+        category: json['category'] ?? '',
+        availableDates: availableDates,
       );
     } catch (e) {
       print('Error parsing Job from JSON: $e');
@@ -119,6 +190,8 @@ class Job {
       'experienceLevel': experienceLevel,
       if (postedBy != null) 'postedBy': postedBy,
       'status': status,
+      'category': category,
+      'availableDates': availableDates.map((date) => date.toJson()).toList(),
     };
   }
 
