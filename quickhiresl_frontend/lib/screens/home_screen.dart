@@ -19,6 +19,7 @@ import 'login_screen.dart';
 import 'change_password_screen.dart';
 import 'matching_jobs_screen.dart';
 import 'availability_screen.dart';
+import 'job_owner_dashboard.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -665,11 +666,10 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
         floatingActionButton: _selectedIndex == 1 && _userRole == 'jobowner'
-            ? FloatingActionButton.extended(
+            ? FloatingActionButton(
                 onPressed: _navigateToPostJob,
-                label: const Text('Post Job'),
-                icon: const Icon(Icons.add),
-                backgroundColor: const Color.fromARGB(255, 152, 201, 197),
+                backgroundColor: const Color.fromARGB(200, 152, 201, 197),
+                child: const Icon(Icons.add, color: Colors.white),
               )
             : null,
       ),
@@ -902,9 +902,104 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // Logout menu item
+            // Add Job Posting menu item for job owners
+            if (_userRole == 'jobowner')
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: ListTile(
+                  leading: const Icon(Icons.post_add, color: Color.fromARGB(255, 0, 0, 0)),
+                  title: const Text(
+                    'Post a Job',
+                    style: TextStyle(
+                      color: Color.fromARGB(255, 0, 0, 0),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right,
+                    color: Color.fromARGB(255, 0, 0, 0),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context); // Close the drawer
+                    _navigateToPostJob();
+                  },
+                ),
+              ),
+
+            // Job Owner Dashboard menu item for job owners
+            if (_userRole == 'jobowner')
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: ListTile(
+                  leading: const Icon(Icons.dashboard, color: Color.fromARGB(255, 0, 0, 0)),
+                  title: const Text(
+                    'Job Owner Dashboard',
+                    style: TextStyle(
+                      color: Color.fromARGB(255, 0, 0, 0),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right,
+                    color: Color.fromARGB(255, 0, 0, 0),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context); // Close the drawer
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const JobOwnerDashboard(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+            // View My Applications menu item for students
+            if (_userRole == 'student')
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: ListTile(
+                  leading: const Icon(Icons.work, color: Color.fromARGB(255, 0, 0, 0)),
+                  title: const Text(
+                    'View My Applications',
+                    style: TextStyle(
+                      color: Color.fromARGB(255, 0, 0, 0),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right,
+                    color: Color.fromARGB(255, 0, 0, 0),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context); // Close the drawer
+                    Navigator.pushNamed(context, '/applications');
+                  },
+                ),
+              ),
+
+            // Spacer to push logout to the bottom
+            const Spacer(),
+
+            // Logout menu item at the bottom
             Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               decoration: BoxDecoration(
                 color: Colors.white24,
                 borderRadius: BorderRadius.circular(10),
@@ -963,38 +1058,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
             ),
-
-            // Add Job Posting menu item for job owners
-            if (_userRole == 'jobowner')
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: ListTile(
-                  leading: const Icon(Icons.post_add, color: Color.fromARGB(255, 0, 0, 0)),
-                  title: const Text(
-                    'Post a Job',
-                    style: TextStyle(
-                      color: Color.fromARGB(255, 0, 0, 0),
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  trailing: const Icon(
-                    Icons.chevron_right,
-                    color: Color.fromARGB(255, 0, 0, 0),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context); // Close the drawer
-                    _navigateToPostJob();
-                  },
-                ),
-              ),
-
-            // Spacer to push content to the top
-            const Spacer(),
           ],
         ),
       ),
