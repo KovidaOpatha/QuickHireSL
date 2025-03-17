@@ -690,8 +690,10 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
   void _applyForJob() async {
     setState(() => _isApplying = true);
     try {
+      final token = await _storage.read(key: 'jwt_token');
       final email = await _storage.read(key: 'email');
-      if (email != null && mounted) {
+      
+      if (token != null && email != null && mounted) {
         final result = await Navigator.push(
           context,
           MaterialPageRoute(
@@ -715,8 +717,9 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Please login to apply for jobs'),
+              content: Text('Please login to apply for jobs. Go to Profile tab to login.'),
               backgroundColor: Colors.red,
+              duration: Duration(seconds: 5),
             ),
           );
         }

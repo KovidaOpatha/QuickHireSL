@@ -52,7 +52,7 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse('${Config.apiUrl}/api/users/profile-by-email/${widget.jobOwnerEmail}'),
+        Uri.parse('${Config.apiUrl}/getUser/${widget.jobOwnerEmail}'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -97,18 +97,22 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
 
     try {
       final storage = FlutterSecureStorage();
-      final token = await storage.read(key: 'token');
+      final token = await storage.read(key: 'jwt_token');
 
       if (token == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please login to apply')),
+          const SnackBar(
+            content: Text('Please login to apply. Go to Profile tab to login.'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 5),
+          ),
         );
         setState(() => isLoading = false);
         return;
       }
 
       final response = await http.post(
-        Uri.parse('${Config.apiUrl}/api/applications/apply'),
+        Uri.parse('${Config.apiUrl}/apply'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -116,15 +120,15 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
         body: json.encode({
           'fullName': fullNameController.text,
           'address': addressController.text,
-          'studentId': idController.text,
+          'id': idController.text,
           'nic': nicController.text,
           'message': messageController.text,
           'jobTitle': widget.jobTitle,
-          'jobOwnerEmail': widget.jobOwnerEmail,
+          'email': widget.email,
         }),
       );
 
-      if (response.statusCode == 201) {
+      if (response.statusCode == 200) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Application submitted successfully')),
@@ -132,11 +136,20 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
           Navigator.pop(context, true); // Return success
         }
       } else {
-        final errorData = json.decode(response.body);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(errorData['message'] ?? 'Failed to submit application')),
-          );
+        try {
+          final errorData = json.decode(response.body);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(errorData['message'] ?? 'Failed to submit application')),
+            );
+          }
+        } catch (e) {
+          print('Error parsing error response: $e');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to submit application. Status code: ${response.statusCode}')),
+            );
+          }
         }
       }
     } catch (e) {
