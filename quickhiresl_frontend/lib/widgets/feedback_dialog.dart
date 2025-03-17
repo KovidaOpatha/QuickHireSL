@@ -7,10 +7,11 @@ import '../config/config.dart';
 void showFeedbackDialog(BuildContext context,
     {bool returnToHome = false,
     String? applicationId,
-    Function? onFeedbackSubmitted}) {
+    Function? onFeedbackSubmitted,
+    bool isJobOwner = false}) {
   TextEditingController feedbackController = TextEditingController();
   int rating = 5;
-  final storage = const FlutterSecureStorage();
+  const storage = FlutterSecureStorage();
 
   showDialog(
     context: context,
@@ -61,7 +62,8 @@ void showFeedbackDialog(BuildContext context,
                 );
 
                 Navigator.of(context).pop(); // Close feedback dialog
-                showShareFeedbackDialog(context, feedbackController.text);
+                showShareFeedbackDialog(context, feedbackController.text,
+                    isJobOwner: isJobOwner);
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -156,7 +158,8 @@ void showFeedbackDialog(BuildContext context,
   );
 }
 
-void showShareFeedbackDialog(BuildContext context, String feedback) {
+void showShareFeedbackDialog(BuildContext context, String feedback,
+    {bool isJobOwner = false}) {
   showDialog(
     context: context,
     builder: (BuildContext context) {
@@ -173,9 +176,15 @@ void showShareFeedbackDialog(BuildContext context, String feedback) {
           ),
           TextButton(
             child: const Text('Yes'),
-            onPressed: () {
-              sendFeedbackToChats(context, feedback);
-              Navigator.of(context).pop();
+            onPressed: () async {
+              Navigator.pop(context);
+              await sendFeedbackToChats(context, feedback,
+                  isJobOwner: isJobOwner);
+              if (isJobOwner) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Feedback sent successfully!")),
+                );
+              }
             },
           ),
         ],
@@ -186,10 +195,10 @@ void showShareFeedbackDialog(BuildContext context, String feedback) {
 
 // Simple function to send feedback to chats - FIXED VERSION
 Future<void> sendFeedbackToChats(BuildContext context, String feedback,
-    {String? jobCategory}) async {
+    {String? jobCategory, bool isJobOwner = false}) async {
   try {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
-    final storage = const FlutterSecureStorage();
+    const storage = FlutterSecureStorage();
 
     // Get user credentials
     final token = await storage.read(key: 'jwt_token');
@@ -207,6 +216,24 @@ Future<void> sendFeedbackToChats(BuildContext context, String feedback,
 
     // Format the feedback message for both job chats and community
     final feedbackMessage = "📢 FEEDBACK: $feedback";
+
+    // If it's from a job owner, don't broadcast to the community
+    if (isJobOwner) {
+      print("DEBUG: Feedback is from job owner, not broadcasting to community");
+
+      // Show success message specific to job owner
+      Future.delayed(Duration.zero, () {
+        try {
+          scaffoldMessenger.showSnackBar(
+            const SnackBar(content: Text("Feedback sent successfully!")),
+          );
+        } catch (e) {
+          print("DEBUG: Error showing final snackbar: $e");
+        }
+      });
+
+      return;
+    }
 
     // SIMPLIFIED APPROACH: Just get all jobs and send to ALL of them
     final jobsResponse = await http.get(Uri.parse("${Config.apiUrl}/jobs"),
@@ -426,7 +453,8 @@ Future<void> sendFeedbackToChats(BuildContext context, String feedback,
     Future.delayed(Duration.zero, () {
       try {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Feedback shared with the community!")),
+          const SnackBar(
+              content: Text("An error occurred while sharing feedback")),
         );
       } catch (e) {
         print("DEBUG: Error showing error snackbar: $e");
