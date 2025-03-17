@@ -19,6 +19,7 @@ import 'login_screen.dart';
 import 'change_password_screen.dart';
 import 'matching_jobs_screen.dart';
 import 'availability_screen.dart';
+import 'job_owner_dashboard.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -43,6 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoadingNotifications = true;
   Map<String, dynamic> _jobOwnerData = {};
   Map<String, bool> _favoriteStatus = {};
+  String? _userRole;
 
   // Track the current index of BottomNavigationBar
   int _selectedIndex = 1;
@@ -55,6 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadFavorites();
     _setupNotificationRefresh();
     _loadUserData();
+    _getUserRole();
   }
 
   void _setupNotificationRefresh() {
@@ -244,7 +247,8 @@ class _HomeScreenState extends State<HomeScreen> {
       case 2:
         return const JobsScreen();
       case 3:
-        return const MatchingJobsScreen();
+        // Only show For You page to students
+        return _userRole == 'student' ? const MatchingJobsScreen() : _buildHomeContent();
       default:
         return _buildHomeContent();
     }
@@ -308,7 +312,7 @@ class _HomeScreenState extends State<HomeScreen> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
 
-         // Update the container for the "Available Soon" message
+          // Update the container for the "Available Soon" message
           Container(
             padding: EdgeInsets.all(16.0),
             decoration: BoxDecoration(
@@ -612,7 +616,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 title: Image.asset(
-                  'assets/quickhire_logo.png',  // Path to your logo
+                  'assets/quickhire_logo.png', // Path to your logo
                   height: 30,  
                 ),
                 centerTitle: true,
@@ -640,30 +644,32 @@ class _HomeScreenState extends State<HomeScreen> {
           currentIndex: _selectedIndex,
           onTap: _onItemTapped,
           type: BottomNavigationBarType.fixed,
-          items: const [
-            BottomNavigationBarItem(
+          items: [
+            const BottomNavigationBarItem(
               icon: Icon(Icons.people),
               label: 'Community',
             ),
-            BottomNavigationBarItem(
+            const BottomNavigationBarItem(
               icon: Icon(Icons.home),
               label: 'Home',
             ),
-            BottomNavigationBarItem(
+            const BottomNavigationBarItem(
               icon: Icon(Icons.work),
               label: 'Jobs',
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.recommend),
-              label: 'For You',
-            ),
+            // Only show For You tab to students
+            if (_userRole == 'student')
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.recommend),
+                label: 'For You',
+              ),
           ],
         ),
-        floatingActionButton: _selectedIndex == 1
+        floatingActionButton: _selectedIndex == 1 && _userRole == 'jobowner'
             ? FloatingActionButton(
                 onPressed: _navigateToPostJob,
-                child: const Icon(Icons.add),
-                backgroundColor: const Color.fromARGB(255, 152, 201, 197),
+                backgroundColor: const Color.fromARGB(200, 152, 201, 197),
+                child: const Icon(Icons.add, color: Colors.white),
               )
             : null,
       ),
@@ -683,6 +689,14 @@ class _HomeScreenState extends State<HomeScreen> {
       print('[ERROR] Failed to load user data: $e');
       setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _getUserRole() async {
+    final role = await _authService.getUserRole();
+    print('[DEBUG] User role retrieved: $role');
+    setState(() {
+      _userRole = role;
+    });
   }
 
   Widget _buildDrawer(BuildContext context) {
@@ -888,9 +902,104 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // Logout menu item
+            // Add Job Posting menu item for job owners
+            if (_userRole == 'jobowner')
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: ListTile(
+                  leading: const Icon(Icons.post_add, color: Color.fromARGB(255, 0, 0, 0)),
+                  title: const Text(
+                    'Post a Job',
+                    style: TextStyle(
+                      color: Color.fromARGB(255, 0, 0, 0),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right,
+                    color: Color.fromARGB(255, 0, 0, 0),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context); // Close the drawer
+                    _navigateToPostJob();
+                  },
+                ),
+              ),
+
+            // Job Owner Dashboard menu item for job owners
+            if (_userRole == 'jobowner')
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: ListTile(
+                  leading: const Icon(Icons.dashboard, color: Color.fromARGB(255, 0, 0, 0)),
+                  title: const Text(
+                    'Job Owner Dashboard',
+                    style: TextStyle(
+                      color: Color.fromARGB(255, 0, 0, 0),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right,
+                    color: Color.fromARGB(255, 0, 0, 0),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context); // Close the drawer
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const JobOwnerDashboard(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+            // View My Applications menu item for students
+            if (_userRole == 'student')
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: ListTile(
+                  leading: const Icon(Icons.work, color: Color.fromARGB(255, 0, 0, 0)),
+                  title: const Text(
+                    'View My Applications',
+                    style: TextStyle(
+                      color: Color.fromARGB(255, 0, 0, 0),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right,
+                    color: Color.fromARGB(255, 0, 0, 0),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context); // Close the drawer
+                    Navigator.pushNamed(context, '/applications');
+                  },
+                ),
+              ),
+
+            // Spacer to push logout to the bottom
+            const Spacer(),
+
+            // Logout menu item at the bottom
             Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               decoration: BoxDecoration(
                 color: Colors.white24,
                 borderRadius: BorderRadius.circular(10),
@@ -949,9 +1058,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
             ),
-
-            // Spacer to push content to the top
-            const Spacer(),
           ],
         ),
       ),

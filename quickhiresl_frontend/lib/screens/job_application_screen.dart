@@ -51,100 +51,99 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
     }
 
     try {
-      final url = Uri.parse(
-          "${Config.apiUrl}/getUser/${widget.jobOwnerEmail}");
-      final response = await http.get(url);
+      final response = await http.get(
+        Uri.parse('${Config.apiUrl}/api/users/profile-by-email/${widget.jobOwnerEmail}'),
+        headers: {'Content-Type': 'application/json'},
+      );
 
       if (response.statusCode == 200) {
-        setState(() {
-          jobOwnerData = json.decode(response.body);
-          isJobOwnerLoading = false;
-        });
+        final data = json.decode(response.body);
+        if (data['success']) {
+          setState(() {
+            jobOwnerData = data['data'];
+            isJobOwnerLoading = false;
+          });
+        } else {
+          setState(() => isJobOwnerLoading = false);
+        }
       } else {
-        setState(() {
-          isJobOwnerLoading = false;
-        });
+        setState(() => isJobOwnerLoading = false);
       }
     } catch (e) {
-      setState(() {
-        isJobOwnerLoading = false;
-      });
+      print('Error fetching job owner data: $e');
+      setState(() => isJobOwnerLoading = false);
     }
   }
 
   Future<void> _fetchUserData() async {
-    setState(() => isLoading = true);
-
-    final url = Uri.parse("${Config.apiUrl}/getUser/${widget.email}");
-
     try {
-      final response = await http.get(url);
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        setState(() {
-          fullNameController.text = data['fullName'] ?? "";
-          addressController.text = data['address'] ?? "";
-          idController.text = data['id'] ?? "";
-          nicController.text = data['nic'] ?? "";
-        });
-      } else {
-        print("Error fetching user data: ${response.statusCode}");
+      final storage = FlutterSecureStorage();
+      final email = await storage.read(key: 'email');
+      
+      if (email != null) {
+        fullNameController.text = email.split('@')[0]; // Default name from email
       }
     } catch (e) {
-      print("Error: $e");
-    } finally {
-      setState(() => isLoading = false);
+      print('Error fetching user data: $e');
     }
   }
 
   Future<void> _submitApplication() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     setState(() => isLoading = true);
 
-    final url = Uri.parse("${Config.apiUrl}/apply");
     try {
+      final storage = FlutterSecureStorage();
+      final token = await storage.read(key: 'token');
+
+      if (token == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please login to apply')),
+        );
+        setState(() => isLoading = false);
+        return;
+      }
+
       final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
+        Uri.parse('${Config.apiUrl}/api/applications/apply'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
         body: json.encode({
           'fullName': fullNameController.text,
           'address': addressController.text,
-          'id': idController.text,
+          'studentId': idController.text,
           'nic': nicController.text,
           'message': messageController.text,
           'jobTitle': widget.jobTitle,
-          'email': widget.email,
+          'jobOwnerEmail': widget.jobOwnerEmail,
         }),
       );
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 201) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Application submitted successfully!'),
-              backgroundColor: Colors.green,
-            ),
+            const SnackBar(content: Text('Application submitted successfully')),
           );
-          Navigator.pop(context, true);
+          Navigator.pop(context, true); // Return success
         }
       } else {
+        final errorData = json.decode(response.body);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to submit application. Please try again.'),
-              backgroundColor: Colors.red,
-            ),
+            SnackBar(content: Text(errorData['message'] ?? 'Failed to submit application')),
           );
         }
       }
     } catch (e) {
+      print('Error submitting application: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          const SnackBar(content: Text('An error occurred. Please try again.')),
         );
       }
     } finally {
@@ -261,10 +260,11 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: idController,
-                      decoration: _getInputDecoration('ID', Icons.badge),
+                      decoration: _getInputDecoration(
+                          'Student ID', Icons.badge),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your ID';
+                          return 'Please enter your student ID';
                         }
                         return null;
                       },
@@ -272,22 +272,14 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: nicController,
-                      decoration: _getInputDecoration('NIC', Icons.credit_card),
+                      decoration: _getInputDecoration(
+                          'NIC Number', Icons.credit_card),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your NIC';
+                          return 'Please enter your NIC number';
                         }
                         return null;
                       },
-                    ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Cover Letter',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
@@ -310,21 +302,13 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
                         child: ElevatedButton(
                           onPressed: isLoading ? null : _submitApplication,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
+                            backgroundColor: const Color(0xFF98C9C5),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
                           child: isLoading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white),
-                                  ),
-                                )
+                              ? const CircularProgressIndicator(color: Colors.white)
                               : const Text(
                                   'Submit Application',
                                   style: TextStyle(
@@ -339,6 +323,69 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
                   ],
                 ),
               ),
+              
+              // Job owner information section
+              if (!isJobOwnerLoading && jobOwnerData.isNotEmpty)
+                Container(
+                  margin: const EdgeInsets.only(top: 20),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Job Posted By',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 30,
+                            backgroundColor: const Color(0xFF98C9C5),
+                            backgroundImage: jobOwnerData['profileImage'] != null
+                                ? NetworkImage(jobOwnerData['profileImage'])
+                                : null,
+                            child: jobOwnerData['profileImage'] == null
+                                ? const Icon(Icons.person, size: 30, color: Colors.white)
+                                : null,
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  jobOwnerData['name'] ?? 'Unknown',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  jobOwnerData['email'] ?? '',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
         ),

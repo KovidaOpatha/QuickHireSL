@@ -4,6 +4,7 @@ import '../services/user_service.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
 import 'job_owner_dashboard.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -57,6 +58,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _checkAndUpdateRole() async {
+    final storage = FlutterSecureStorage();
+    final currentRole = await storage.read(key: 'user_role');
+    print('[DEBUG] Current user role: $currentRole');
+    
+    // Set role to job_owner for testing
+    await storage.write(key: 'user_role', value: 'job_owner');
+    print('[DEBUG] Updated user role to: job_owner');
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Role updated to job_owner. Please restart the app.')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,6 +87,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: _handleSignOut,
+          ),
+          IconButton(
+            icon: const Icon(Icons.bug_report, color: Colors.white),
+            onPressed: _checkAndUpdateRole,
           ),
         ],
       ),
@@ -155,79 +174,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                   ),
-                  
-                  // Show appropriate button based on user role
-                  const SizedBox(height: 24),
-                  if (_userData?['role'] == 'jobowner') ...[
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 16),
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const JobOwnerDashboard(),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF98C9C5),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Icon(Icons.dashboard, color: Colors.black),
-                            SizedBox(width: 8),
-                            Text(
-                              'Job Owner Dashboard',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ] else ...[
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 16),
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/applications');
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF98C9C5),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: const [
-                            Icon(Icons.work, color: Colors.black),
-                            SizedBox(width: 8),
-                            Text(
-                              'View My Applications',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
                   
                   // Calendar
                   const SizedBox(height: 24),
