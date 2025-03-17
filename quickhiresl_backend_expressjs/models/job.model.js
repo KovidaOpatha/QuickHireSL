@@ -20,6 +20,11 @@ const jobSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    category: {
+        type: String,
+        required: true,
+        trim: true
+    },
     requirements: [{
         type: String,
         required: true

@@ -28,10 +28,45 @@ class _PostJobScreenState extends State<PostJobScreen> {
   String _description = '';
   String _employmentType = 'Full-time';
   String _experienceLevel = 'Entry';
+  String _category = '';
   double _salaryMin = 0;
   double _salaryMax = 0;
   String _newRequirement = '';
   bool _isLoading = false;
+
+  // All available job categories (same as in JobCategoriesScreen)
+  final List<String> _allCategories = [
+    "Supermarket Cashier",
+    "Shelf Stacker",
+    "Customer Assistant",
+    "Promotional Staff",
+    "Fast Food Crew",
+    "Pharmacy Sales Assistant",
+    "Waiter/Waitress",
+    "Hotel Banquet Staff",
+    "Call Center Agent",
+    "Petrol Station Attendant",
+    "Clothing Store Assistant",
+    "Mobile Shop Assistant",
+    "Cinema Ticket Staff",
+    "Event Assistant",
+    "Delivery Rider",
+    "Parking Attendant",
+    "Security Assistant",
+    "Cleaning Staff",
+    "Warehouse Packer",
+    "Street Food Helper",
+    "Florist Assistant",
+    "Receptionist",
+    "Gym Receptionist",
+    "Bakery Sales Assistant",
+    "Call Operator",
+    "Data Entry Staff",
+    "Ice Cream Shop Staff",
+    "Printing Shop Assistant",
+    "Petrol Shed Cashier",
+    "Tutor (Online/In-person)",
+  ];
 
   final List<String> _employmentTypes = [
     'Full-time',
@@ -287,6 +322,13 @@ class _PostJobScreenState extends State<PostJobScreen> {
         return;
       }
 
+      if (_category.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a job category')),
+        );
+        return;
+      }
+
       setState(() => _isLoading = true);
 
       try {
@@ -309,6 +351,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
           'description': _description,
           'employmentType': _employmentType,
           'experienceLevel': _experienceLevel,
+          'category': _category,
           'salary': {
             'min': _salaryMin,
             'max': _salaryMax,
@@ -423,6 +466,36 @@ class _PostJobScreenState extends State<PostJobScreen> {
                           ? 'Please enter a description'
                           : null,
                       onSaved: (value) => _description = value ?? '',
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(
+                        labelText: 'Job Category',
+                        border: OutlineInputBorder(),
+                      ),
+                      value: _category.isNotEmpty ? _category : null,
+                      hint: const Text('Select a job category'),
+                      isExpanded: true,
+                      items: _allCategories
+                          .map((category) => DropdownMenuItem(
+                                value: category,
+                                child: Text(category),
+                              ))
+                          .toList(),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please select a job category';
+                        }
+                        return null;
+                      },
+                      onChanged: (value) {
+                        setState(() {
+                          _category = value!;
+                        });
+                      },
+                      onSaved: (value) {
+                        _category = value!;
+                      },
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(

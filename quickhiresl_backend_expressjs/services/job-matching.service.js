@@ -5,7 +5,6 @@
  * - Location preferences
  * - Job category preferences
  * - Availability dates
- * - Skills
  */
 
 const User = require('../models/user.model');
@@ -29,9 +28,9 @@ const calculateMatchScore = (user, job) => {
     // Get student details
     const studentDetails = user.studentDetails || {};
     
-    // 1. Location matching (30% weight)
+    // 1. Location matching (35% weight)
     const locationScore = calculateLocationScore(studentDetails.preferredLocations || [], job.location);
-    score += locationScore * 0.3;
+    score += locationScore * 0.35;
     matchDetails.locationScore = locationScore;
     
     if (locationScore > 70) {
@@ -40,35 +39,24 @@ const calculateMatchScore = (user, job) => {
         reasons.push('Location is close to your preferred areas');
     }
 
-    // 2. Job category matching (25% weight)
+    // 2. Job category matching (35% weight)
     const categoryScore = calculateCategoryScore(studentDetails.preferredJobs || [], job.category);
-    score += categoryScore * 0.25;
+    score += categoryScore * 0.35;
     matchDetails.categoryScore = categoryScore;
     
     if (categoryScore > 70) {
         reasons.push('Job category matches your preferences');
     }
 
-    // 3. Availability matching (25% weight)
+    // 3. Availability matching (30% weight)
     const availabilityScore = calculateAvailabilityScore(studentDetails.availability || [], job.availableDates || []);
-    score += availabilityScore * 0.25;
+    score += availabilityScore * 0.3;
     matchDetails.availabilityScore = availabilityScore;
     
     if (availabilityScore > 70) {
         reasons.push('Job dates match your availability');
     } else if (availabilityScore > 30) {
         reasons.push('Some job dates match your availability');
-    }
-
-    // 4. Skills matching (20% weight)
-    const skillsScore = calculateSkillsScore(studentDetails.skills || [], job.requiredSkills || []);
-    score += skillsScore * 0.2;
-    matchDetails.skillsScore = skillsScore;
-    
-    if (skillsScore > 70) {
-        reasons.push('Your skills match the job requirements');
-    } else if (skillsScore > 30) {
-        reasons.push('You have some of the required skills');
     }
 
     // Round the final score
@@ -246,40 +234,6 @@ const doTimeSlotsOverlap = (slot1, slot2) => {
 const timeToMinutes = (timeStr) => {
     const [hours, minutes] = timeStr.split(':').map(Number);
     return (hours * 60) + minutes;
-};
-
-/**
- * Calculate skills match score
- * @param {Array} userSkills - User's skills
- * @param {Array} requiredSkills - Job required skills
- * @returns {Number} Score from 0-100
- */
-const calculateSkillsScore = (userSkills, requiredSkills) => {
-    if (!userSkills || !userSkills.length || !requiredSkills || !requiredSkills.length) {
-        return 0;
-    }
-
-    // Normalize skills (lowercase for comparison)
-    const normalizedUserSkills = userSkills.map(skill => skill.toLowerCase());
-    const normalizedRequiredSkills = requiredSkills.map(skill => skill.toLowerCase());
-
-    // Count matching skills
-    let matchingSkills = 0;
-    for (const skill of normalizedRequiredSkills) {
-        if (normalizedUserSkills.some(userSkill => 
-            userSkill === skill || userSkill.includes(skill) || skill.includes(userSkill)
-        )) {
-            matchingSkills++;
-        }
-    }
-
-    if (matchingSkills === 0) {
-        return 0;
-    }
-
-    // Calculate percentage of required skills that match user skills
-    const matchPercentage = (matchingSkills / normalizedRequiredSkills.length) * 100;
-    return Math.min(100, matchPercentage);
 };
 
 /**
