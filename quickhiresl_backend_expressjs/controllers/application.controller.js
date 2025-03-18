@@ -1,5 +1,8 @@
 const Application = require('../models/application.model');
 const Job = require('../models/job.model');
+const User = require('../models/user.model');
+const { createApplicationNotification, createApplicationStatusNotification } = require('./notification.controller');
+
 
 console.log('Loading application controller...');
 
@@ -23,6 +26,12 @@ const applicationController = {
                 return res.status(400).json({ message: 'Job owner not found' });
             }
 
+            // Get the applicant's full details including studentDetails
+            const applicant = await User.findById(req.user._id);
+            if (!applicant || !applicant.studentDetails || !applicant.studentDetails.fullName) {
+                return res.status(400).json({ message: 'Applicant details not found' });
+            }
+
             const application = new Application({
                 job: jobId,
                 applicant: req.user._id, // From auth middleware
@@ -31,6 +40,14 @@ const applicationController = {
             });
 
             await application.save();
+
+            // Create notification with the correct applicant name
+            await createApplicationNotification(
+                application,
+                { fullName: applicant.studentDetails.fullName },
+                job
+            );
+
             res.status(201).json(application);
         } catch (error) {
             console.error('Error creating application:', error);
