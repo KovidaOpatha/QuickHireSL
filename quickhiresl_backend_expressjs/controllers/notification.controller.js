@@ -79,3 +79,31 @@ exports.createJobNotification = async (jobData, jobOwnerId) => {
         throw error;
     }
 };
+
+// Create notification for job application
+exports.createApplicationNotification = async (applicationData, applicantData, jobData) => {
+    try {
+        // Only create notification for job owner
+        const notification = {
+            recipient: jobData.postedBy,
+            type: 'application_received',
+            title: 'New Job Application',
+            message: `${applicantData.fullName || 'Unknown Applicant'} has applied for your job: ${jobData.title}`,
+            relatedJob: jobData._id
+        };
+        
+        // Insert notification
+        const createdNotification = await Notification.create(notification);
+        
+        // Update job owner's notification array
+        await User.findByIdAndUpdate(
+            jobData.postedBy,
+            { $push: { notifications: createdNotification._id } }
+        );
+        
+        return createdNotification;
+    } catch (error) {
+        console.error('Error creating application notification:', error);
+        throw error;
+    }
+};
