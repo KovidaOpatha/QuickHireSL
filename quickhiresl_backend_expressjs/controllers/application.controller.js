@@ -3,7 +3,6 @@ const Job = require('../models/job.model');
 const User = require('../models/user.model');
 const { createApplicationNotification, createApplicationStatusNotification } = require('./notification.controller');
 
-
 console.log('Loading application controller...');
 
 const applicationController = {
@@ -140,8 +139,17 @@ const applicationController = {
                 return res.status(403).json({ message: 'Only job owner can update application status' });
             }
 
+            // Save the old status for comparison
+            const oldStatus = application.status;
+
+            // Update the status
             application.status = status;
-            await application.save();
+            await application.save();  
+
+            // If status has changed, create a notification
+            if (oldStatus !== status) {
+                await createApplicationStatusNotification(application, application.job, status);
+            } 
 
             res.json({
                 success: true,
@@ -218,6 +226,17 @@ const applicationController = {
             };
 
             await application.save();
+
+            // Create notification for the other party
+            const recipientId = isJobOwner ? application.applicant._id : application.jobOwner._id;
+            const notificationRecipient = isJobOwner ? application.applicant : application.jobOwner;
+            
+             // Create a notification for the recipient
+             await createApplicationStatusNotification(
+                { ...application.toObject(), applicant: recipientId },
+                application.job,
+                'completion_requested'
+            );
 
             res.json({
                 success: true,
