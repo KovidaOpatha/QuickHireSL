@@ -223,6 +223,81 @@ class JobService extends ChangeNotifier {
     }
   }
 
+  // Get completed jobs for a job owner
+  Future<List<Application>> getCompletedJobs(String token) async {
+    try {
+      // Use the existing endpoint and filter completed applications client-side
+      final response = await http.get(
+        Uri.parse('${Config.apiUrl}/applications/owner'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      print('Job owner applications response: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+
+        if (responseData.containsKey('data')) {
+          final List<dynamic> applicationsJson = responseData['data'];
+
+          // Filter only completed applications
+          final List<Application> allApplications = applicationsJson
+              .map((json) => Application.fromJson(json))
+              .toList();
+
+          return allApplications
+              .where((app) => app.status == 'completed')
+              .toList();
+        } else {
+          throw Exception('Invalid response format: missing data field');
+        }
+      } else {
+        throw Exception(
+            'Failed to load completed jobs: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error in getCompletedJobs: $e');
+      rethrow;
+    }
+  }
+
+  // Get all previous jobs for a job owner (both active and completed)
+  Future<List<Job>> getPreviousJobs(String token) async {
+    try {
+      // Get all jobs posted by the current user
+      final response = await http.get(
+        Uri.parse('${Config.apiUrl}/jobs?postedBy=me'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      print('Previous jobs response: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+
+        if (responseData['success'] == true && responseData['data'] != null) {
+          final List<dynamic> jobsJson = responseData['data'];
+          return jobsJson.map((json) => Job.fromJson(json)).toList();
+        } else {
+          throw Exception('Invalid response format');
+        }
+      } else {
+        throw Exception('Failed to load previous jobs: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error in getPreviousJobs: $e');
+      rethrow;
+    }
+  }
+
   Future<void> updateApplicationStatus(
       String applicationId, String status, String token) async {
     try {
@@ -247,6 +322,37 @@ class JobService extends ChangeNotifier {
       }
     } catch (e) {
       print('[ERROR] Failed to update application status: $e');
+      rethrow;
+    }
+  }
+
+  // Submit rating for a job
+  Future<void> submitJobRating(String applicationId, int rating,
+      String feedback, String targetUserId, String token) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${Config.apiUrl}/feedback'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({
+          'rating': rating,
+          'feedback': feedback,
+          'applicationId': applicationId,
+          'targetUserId': targetUserId,
+        }),
+      );
+
+      print('Rating submission response: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      if (response.statusCode != 201 && response.statusCode != 200) {
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Failed to submit rating');
+      }
+    } catch (e) {
+      print('Error in submitJobRating: $e');
       rethrow;
     }
   }
