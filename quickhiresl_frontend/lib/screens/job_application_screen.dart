@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/config.dart';
+import '../widgets/rating_display.dart';
 
 class JobApplicationScreen extends StatefulWidget {
   final String jobTitle;
@@ -32,7 +33,8 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
   bool isLoading = false;
   Map<String, dynamic> jobOwnerData = {};
   bool isJobOwnerLoading = false;
-  final _storage = FlutterSecureStorage();
+  Map<String, dynamic> userData = {};
+  bool isUserLoading = false;
 
   @override
   void initState() {
@@ -59,11 +61,9 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        // The API doesn't return a 'success' field, it directly returns the user data
-        // So we just check if the data contains expected fields
-        if (data != null && data['email'] != null) {
+        if (data['success']) {
           setState(() {
-            jobOwnerData = data;
+            jobOwnerData = data['data'];
             isJobOwnerLoading = false;
           });
         } else {
@@ -79,14 +79,57 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
   }
 
   Future<void> _fetchUserData() async {
+    setState(() => isUserLoading = true);
+
     try {
-      final email = await _storage.read(key: 'email');
-      
+      final storage = FlutterSecureStorage();
+      final email = await storage.read(key: 'email');
+      final token = await storage.read(key: 'jwt_token');
+
       if (email != null) {
-        fullNameController.text = email.split('@')[0]; // Default name from email
+        fullNameController.text =
+            email.split('@')[0]; // Default name from email
+
+        // Fetch complete user profile
+        if (token != null) {
+          final response = await http.get(
+            Uri.parse('${Config.apiUrl}/getUser/$email'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+          );
+
+          if (response.statusCode == 200) {
+            final data = json.decode(response.body);
+            if (data['success']) {
+              setState(() {
+                userData = data['data'];
+
+                // Pre-fill form fields if data is available
+                if (userData['firstName'] != null &&
+                    userData['lastName'] != null) {
+                  fullNameController.text =
+                      '${userData['firstName']} ${userData['lastName']}';
+                }
+                if (userData['address'] != null) {
+                  addressController.text = userData['address'];
+                }
+                if (userData['studentId'] != null) {
+                  idController.text = userData['studentId'];
+                }
+                if (userData['nic'] != null) {
+                  nicController.text = userData['nic'];
+                }
+              });
+            }
+          }
+        }
       }
     } catch (e) {
       print('Error fetching user data: $e');
+    } finally {
+      setState(() => isUserLoading = false);
     }
   }
 
@@ -98,7 +141,8 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
     setState(() => isLoading = true);
 
     try {
-      final token = await _storage.read(key: 'jwt_token');
+      final storage = FlutterSecureStorage();
+      final token = await storage.read(key: 'jwt_token');
 
       if (token == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -112,70 +156,24 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
         return;
       }
 
-      // First, get the job ID using the job title
-      final jobResponse = await http.get(
-        Uri.parse('${Config.apiUrl}/jobs?search=${Uri.encodeComponent(widget.jobTitle)}'),
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      print('Job search response: ${jobResponse.statusCode}');
-      print('Job search body: ${jobResponse.body}');
-
-      if (jobResponse.statusCode != 200) {
-        throw Exception('Failed to find job: ${jobResponse.body}');
-      }
-
-      final jobsData = json.decode(jobResponse.body);
-      
-      // The jobs endpoint returns { success: true, count: X, data: [...] }
-      if (jobsData == null || !jobsData.containsKey('success') || !jobsData['success']) {
-        throw Exception('Invalid response format from jobs API');
-      }
-
-      final jobsList = jobsData['data'];
-      if (jobsList == null || jobsList.isEmpty) {
-        throw Exception('No jobs found matching the title: ${widget.jobTitle}');
-      }
-
-      // Find the exact job by title
-      String? jobId;
-      for (var job in jobsList) {
-        if (job['title'] == widget.jobTitle) {
-          jobId = job['_id'];
-          break;
-        }
-      }
-
-      // If no exact match, use the first job
-      if (jobId == null && jobsList.isNotEmpty) {
-        jobId = jobsList[0]['_id'];
-      }
-
-      if (jobId == null) {
-        throw Exception('Could not extract job ID from response');
-      }
-
-      print('Found job ID: $jobId');
-
-      // Now submit the application using the correct endpoint and data format
       final response = await http.post(
-        Uri.parse('${Config.apiUrl}/applications'),
+        Uri.parse('${Config.apiUrl}/apply'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
         body: json.encode({
-          'jobId': jobId,
-          'coverLetter': messageController.text,
+          'fullName': fullNameController.text,
+          'address': addressController.text,
+          'id': idController.text,
+          'nic': nicController.text,
+          'message': messageController.text,
+          'jobTitle': widget.jobTitle,
+          'email': widget.email,
         }),
       );
 
-      print('Application submission response: ${response.statusCode}');
-      print('Application submission body: ${response.body}');
-
-      if (response.statusCode == 201) {
+      if (response.statusCode == 200) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Application submitted successfully')),
@@ -187,14 +185,18 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
           final errorData = json.decode(response.body);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(errorData['message'] ?? 'Failed to submit application')),
+              SnackBar(
+                  content: Text(
+                      errorData['message'] ?? 'Failed to submit application')),
             );
           }
         } catch (e) {
           print('Error parsing error response: $e');
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Failed to submit application. Status code: ${response.statusCode}')),
+              SnackBar(
+                  content: Text(
+                      'Failed to submit application. Status code: ${response.statusCode}')),
             );
           }
         }
@@ -203,7 +205,7 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
       print('Error submitting application: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
+          const SnackBar(content: Text('An error occurred. Please try again.')),
         );
       }
     } finally {
@@ -320,8 +322,8 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: idController,
-                      decoration: _getInputDecoration(
-                          'Student ID', Icons.badge),
+                      decoration:
+                          _getInputDecoration('Student ID', Icons.badge),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your student ID';
@@ -332,8 +334,8 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: nicController,
-                      decoration: _getInputDecoration(
-                          'NIC Number', Icons.credit_card),
+                      decoration:
+                          _getInputDecoration('NIC Number', Icons.credit_card),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your NIC number';
@@ -341,6 +343,82 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
                         return null;
                       },
                     ),
+
+                    // User Rating Section
+                    const SizedBox(height: 24),
+                    const Divider(),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.star_rate_rounded,
+                          color: Color(0xFF98C9C5),
+                          size: 28,
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Your Rating',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (isUserLoading)
+                          const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFF98C9C5),
+                            ),
+                          )
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (!isUserLoading)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.grey[300]!),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                RatingDisplay(
+                                  rating: (userData['rating'] ?? 0).toDouble(),
+                                  size: 24,
+                                  showText: false,
+                                  showValue: true,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              "Based on feedback from ${userData['completedJobs'] ?? 0} completed jobs",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              "Your rating will be visible to the job owner when reviewing your application.",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: messageController,
@@ -368,7 +446,8 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
                             ),
                           ),
                           child: isLoading
-                              ? const CircularProgressIndicator(color: Colors.white)
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white)
                               : const Text(
                                   'Submit Application',
                                   style: TextStyle(
@@ -383,7 +462,7 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
                   ],
                 ),
               ),
-              
+
               // Job owner information section
               if (!isJobOwnerLoading && jobOwnerData.isNotEmpty)
                 Container(
@@ -410,11 +489,13 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
                           CircleAvatar(
                             radius: 30,
                             backgroundColor: const Color(0xFF98C9C5),
-                            backgroundImage: jobOwnerData['profileImage'] != null
-                                ? NetworkImage(jobOwnerData['profileImage'])
-                                : null,
+                            backgroundImage:
+                                jobOwnerData['profileImage'] != null
+                                    ? NetworkImage(jobOwnerData['profileImage'])
+                                    : null,
                             child: jobOwnerData['profileImage'] == null
-                                ? const Icon(Icons.person, size: 30, color: Colors.white)
+                                ? const Icon(Icons.person,
+                                    size: 30, color: Colors.white)
                                 : null,
                           ),
                           const SizedBox(width: 16),
