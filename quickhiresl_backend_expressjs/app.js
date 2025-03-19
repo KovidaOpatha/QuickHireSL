@@ -48,28 +48,78 @@ app.post('/api/jobs/:jobId/chat', authMiddleware, chatController.addMessage);
 
 // Feedback Schema & Model
 const FeedbackSchema = new mongoose.Schema({
-    rating: { type: Number, required: true },
+    rating: { type: Number, required: true, min: 1, max: 5 },
     feedback: { type: String, required: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    targetUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    applicationId: { type: String },
     date: { type: Date, default: Date.now }
 });
 
 const Feedback = mongoose.model("Feedback", FeedbackSchema);
 
 // Feedback Routes
-app.post("/api/feedback", async (req, res) => {
+app.post("/api/feedback", authMiddleware, async (req, res) => {
     try {
         console.log("Received Feedback Data:", req.body);
-        const { rating, feedback } = req.body;
+        const { rating, feedback, applicationId, targetUserId } = req.body;
+        const userId = req.user._id;
 
-        if (!rating || !feedback) {
+        if (!rating || !feedback || !targetUserId) {
             return res.status(400).json({ message: "Missing required fields" });
         }
 
-        const newFeedback = new Feedback({ rating, feedback });
+        // Create and save the new feedback
+        const newFeedback = new Feedback({ 
+            rating, 
+            feedback, 
+            userId, 
+            targetUserId, 
+            applicationId 
+        });
         await newFeedback.save();
 
-        console.log("Feedback Saved Successfully");
-        res.status(201).json({ message: "Feedback submitted successfully" });
+        // Update the target user's rating
+        const User = mongoose.model('User');
+        
+        try {
+            // Get all ratings for the target user
+            const allFeedbacks = await Feedback.find({ targetUserId });
+            
+            // Calculate the average rating
+            const totalRating = allFeedbacks.reduce((sum, feedback) => sum + feedback.rating, 0);
+            const averageRating = allFeedbacks.length > 0 ? Math.round(totalRating / allFeedbacks.length) : 0;
+            
+            console.log(`Updating user ${targetUserId} with new rating: ${averageRating}`);
+            console.log(`Based on ${allFeedbacks.length} feedbacks with total rating: ${totalRating}`);
+            
+            // Update the user's rating in the database
+            const updateResult = await User.findByIdAndUpdate(
+                targetUserId, 
+                { 
+                    rating: averageRating,
+                    $inc: { completedJobs: 1 } 
+                },
+                { new: true }
+            );
+            
+            console.log("User update result:", updateResult ? "Success" : "Failed");
+            if (updateResult) {
+                console.log(`Updated user rating to ${updateResult.rating} and completed jobs to ${updateResult.completedJobs}`);
+            }
+            
+            res.status(201).json({ 
+                message: "Feedback submitted successfully",
+                rating: averageRating
+            });
+        } catch (updateError) {
+            console.error("Error updating user rating:", updateError);
+            // Still return success for the feedback submission even if rating update fails
+            res.status(201).json({ 
+                message: "Feedback submitted, but rating update failed",
+                error: updateError.message
+            });
+        }
     } catch (err) {
         console.error("Error Saving Feedback:", err);
         res.status(500).json({ message: "Server error", error: err.message });
