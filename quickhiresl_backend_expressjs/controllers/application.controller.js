@@ -1,5 +1,7 @@
 const Application = require('../models/application.model');
 const Job = require('../models/job.model');
+const User = require('../models/user.model');
+const { createApplicationNotification, createApplicationStatusNotification } = require('./notification.controller');
 
 console.log('Loading application controller...');
 
@@ -23,6 +25,12 @@ const applicationController = {
                 return res.status(400).json({ message: 'Job owner not found' });
             }
 
+            // Get the applicant's full details including studentDetails
+            const applicant = await User.findById(req.user._id);
+            if (!applicant || !applicant.studentDetails || !applicant.studentDetails.fullName) {
+                return res.status(400).json({ message: 'Applicant details not found' });
+            }
+
             const application = new Application({
                 job: jobId,
                 applicant: req.user._id, // From auth middleware
@@ -31,6 +39,14 @@ const applicationController = {
             });
 
             await application.save();
+
+            // Create notification with the correct applicant name
+            await createApplicationNotification(
+                application,
+                { fullName: applicant.studentDetails.fullName },
+                job
+            );
+
             res.status(201).json(application);
         } catch (error) {
             console.error('Error creating application:', error);
@@ -123,8 +139,17 @@ const applicationController = {
                 return res.status(403).json({ message: 'Only job owner can update application status' });
             }
 
+            // Save the old status for comparison
+            const oldStatus = application.status;
+
+            // Update the status
             application.status = status;
-            await application.save();
+            await application.save();  
+
+            // If status has changed, create a notification
+            if (oldStatus !== status) {
+                await createApplicationStatusNotification(application, application.job, status);
+            } 
 
             res.json({
                 success: true,
@@ -201,6 +226,17 @@ const applicationController = {
             };
 
             await application.save();
+
+            // Create notification for the other party
+            const recipientId = isJobOwner ? application.applicant._id : application.jobOwner._id;
+            const notificationRecipient = isJobOwner ? application.applicant : application.jobOwner;
+            
+             // Create a notification for the recipient
+             await createApplicationStatusNotification(
+                { ...application.toObject(), applicant: recipientId },
+                application.job,
+                'completion_requested'
+            );
 
             res.json({
                 success: true,

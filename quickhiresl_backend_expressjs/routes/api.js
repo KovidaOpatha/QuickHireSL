@@ -5,6 +5,8 @@ const Application = require('../models/application.model');
 const Job = require('../models/job.model');
 const User = require('../models/user.model');
 const mongoose = require('mongoose');
+const { createApplicationNotification } = require('../controllers/notification.controller');
+
 
 router.get('/', (req, res) => {
     res.json({ message: 'API is working' });
@@ -81,6 +83,10 @@ router.post('/apply', async (req, res) => {
             // Update the job with the new application
             job.applications.push(application._id);
             await job.save({ session });
+
+            // Create notification for job owner
+            await createApplicationNotification(application, applicant, job);
+
 
             // Commit the transaction
             await session.commitTransaction();
