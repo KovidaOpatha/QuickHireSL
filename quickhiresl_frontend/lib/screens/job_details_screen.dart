@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import '../models/job.dart';
 import '../services/job_service.dart';
 import '../services/user_service.dart';
+import '../widgets/rating_display.dart';
 import 'job_application_screen.dart';
 import 'job_chat_screen.dart';
 
@@ -31,7 +32,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     final today = DateTime(now.year, now.month, now.day);
     final tomorrow = today.add(const Duration(days: 1));
     final dateToCheck = DateTime(date.year, date.month, date.day);
-    
+
     if (dateToCheck == today) {
       return 'Today';
     } else if (dateToCheck == tomorrow) {
@@ -126,7 +127,8 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     try {
       final token = await _storage.read(key: 'jwt_token');
 
-      print('Fetching job owner data for ID: ${widget.job.postedBy} (Job ID: ${widget.job.id})');
+      print(
+          'Fetching job owner data for ID: ${widget.job.postedBy} (Job ID: ${widget.job.id})');
 
       final response = await http.get(
         Uri.parse('${_userService.baseUrl}/users/${widget.job.postedBy}'),
@@ -142,7 +144,8 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
         final data = json.decode(response.body);
         print('Job Owner Data: $data');
 
-        if (data['profileImage'] != null && data['profileImage'].toString().isNotEmpty) {
+        if (data['profileImage'] != null &&
+            data['profileImage'].toString().isNotEmpty) {
           data['profilePicture'] =
               _userService.getFullImageUrl(data['profileImage']);
           print('Profile Picture URL: ${data['profilePicture']}');
@@ -330,6 +333,19 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     );
   }
 
+  // Helper method to safely parse rating values
+  double _parseRating(dynamic rating) {
+    if (rating == null) return 0.0;
+    if (rating is int) return rating.toDouble();
+    if (rating is double) return rating;
+    try {
+      return double.parse(rating.toString());
+    } catch (e) {
+      print('Error parsing rating: $e');
+      return 0.0;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -422,7 +438,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
               ),
             ),
           ),
-          
+
           // Job details content
           SliverToBoxAdapter(
             child: Padding(
@@ -453,7 +469,8 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                             _buildDetailItem(
                               icon: Icons.attach_money,
                               title: 'Salary',
-                              value: 'LKR ${widget.job.salary.min} - ${widget.job.salary.max}',
+                              value:
+                                  'LKR ${widget.job.salary.min} - ${widget.job.salary.max}',
                               iconColor: Colors.green,
                             ),
                             _buildDetailItem(
@@ -470,11 +487,11 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                             ),
                           ],
                         ),
-                        
+
                         const SizedBox(height: 20),
                         const Divider(),
                         const SizedBox(height: 10),
-                        
+
                         // Location and Category
                         Row(
                           children: [
@@ -491,12 +508,108 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                               child: _buildInfoItem(
                                 icon: Icons.category,
                                 title: 'Category',
-                                value: widget.job.category.isNotEmpty ? widget.job.category : 'Not specified',
+                                value: widget.job.category.isNotEmpty
+                                    ? widget.job.category
+                                    : 'Not specified',
                                 iconColor: Colors.purple,
                               ),
                             ),
                           ],
                         ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // Job Owner Information
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(15),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.1),
+                          blurRadius: 10,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Job Owner',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        if (isJobOwnerLoading)
+                          const Center(child: CircularProgressIndicator())
+                        else if (jobOwnerData.isNotEmpty)
+                          Row(
+                            children: [
+                              // Job Owner Avatar
+                              CircleAvatar(
+                                radius: 30,
+                                backgroundColor: Colors.grey[300],
+                                backgroundImage:
+                                    jobOwnerData['profilePicture'] != null &&
+                                            jobOwnerData['profilePicture']
+                                                .toString()
+                                                .isNotEmpty
+                                        ? NetworkImage(
+                                            jobOwnerData['profilePicture'])
+                                        : null,
+                                child: jobOwnerData['profilePicture'] == null ||
+                                        jobOwnerData['profilePicture']
+                                            .toString()
+                                            .isEmpty
+                                    ? const Icon(Icons.person,
+                                        size: 30, color: Colors.grey)
+                                    : null,
+                              ),
+                              const SizedBox(width: 16),
+                              // Job Owner Details
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "${jobOwnerData['firstName'] ?? ''} ${jobOwnerData['lastName'] ?? ''}",
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    // Rating display
+                                    RatingDisplay(
+                                      rating:
+                                          _parseRating(jobOwnerData['rating']),
+                                      size: 20,
+                                      showText: false,
+                                      compact: true,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      "Completed ${jobOwnerData['completedJobs'] ?? 0} jobs",
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          )
+                        else
+                          const Text("Job owner information not available"),
                       ],
                     ),
                   ),
@@ -542,7 +655,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                   ),
 
                   // Requirements
-                  if (widget.job.requirements.isNotEmpty) ...[  
+                  if (widget.job.requirements.isNotEmpty) ...[
                     const SizedBox(height: 20),
                     Container(
                       padding: const EdgeInsets.all(20),
@@ -578,7 +691,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                   ],
 
                   // Available Dates
-                  if (widget.job.availableDates.isNotEmpty) ...[  
+                  if (widget.job.availableDates.isNotEmpty) ...[
                     const SizedBox(height: 20),
                     Container(
                       padding: const EdgeInsets.all(20),
@@ -633,8 +746,8 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white),
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
                           : const Text(
@@ -647,9 +760,9 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                             ),
                     ),
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Discuss button
                   SizedBox(
                     width: double.infinity,
@@ -665,7 +778,8 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: const [
-                          Icon(Icons.chat_bubble_outline, color: Color(0xFF98C9C5)),
+                          Icon(Icons.chat_bubble_outline,
+                              color: Color(0xFF98C9C5)),
                           SizedBox(width: 8),
                           Text(
                             'Discuss Job',
@@ -692,9 +806,8 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     try {
       final token = await _storage.read(key: 'jwt_token');
       final email = await _storage.read(key: 'email');
-      
+
       if (token != null && email != null && mounted) {
-        // Navigate to the application screen which now uses the correct endpoint
         final result = await Navigator.push(
           context,
           MaterialPageRoute(
@@ -718,7 +831,8 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Please login to apply for jobs. Go to Profile tab to login.'),
+              content: Text(
+                  'Please login to apply for jobs. Go to Profile tab to login.'),
               backgroundColor: Colors.red,
               duration: Duration(seconds: 5),
             ),
