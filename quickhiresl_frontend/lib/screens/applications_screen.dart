@@ -188,10 +188,31 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
 
   // Method to handle feedback submission
   void _handleFeedbackSubmission(String applicationId) {
-    setState(() {
-      _feedbackProvidedApplications.add(applicationId);
-    });
-    _saveFeedbackStatus();
+    // Find the application to get target user ID
+    final application =
+        _applications.firstWhere((app) => app.id == applicationId);
+    final targetUserId = application.job.postedBy;
+
+    if (targetUserId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Unable to identify job owner for feedback')),
+      );
+      return;
+    }
+
+    // Show the feedback dialog
+    showFeedbackDialog(
+      context,
+      applicationId: applicationId,
+      targetUserId: targetUserId,
+      onFeedbackSubmitted: () {
+        setState(() {
+          _feedbackProvidedApplications.add(applicationId);
+        });
+        _saveFeedbackStatus();
+      },
+    );
   }
 
   @override
