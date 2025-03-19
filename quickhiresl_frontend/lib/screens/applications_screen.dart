@@ -3,6 +3,7 @@ import '../services/job_service.dart';
 import '../models/application.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../widgets/feedback_dialog.dart';
+import '../widgets/rating_display.dart';
 
 class ApplicationsScreen extends StatefulWidget {
   const ApplicationsScreen({Key? key}) : super(key: key);
@@ -221,7 +222,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                       setState(() => _selectedFilter = 'all');
                     },
                     backgroundColor: Colors.white,
-                    selectedColor: const Color(0xFF98C9C5).withOpacity(0.5),
+                    selectedColor: Colors.black.withOpacity(0.1),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                       side: const BorderSide(color: Colors.black, width: 1),
@@ -235,7 +236,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                       setState(() => _selectedFilter = 'pending');
                     },
                     backgroundColor: Colors.white,
-                    selectedColor: const Color(0xFF98C9C5).withOpacity(0.5),
+                    selectedColor: Colors.black.withOpacity(0.1),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                       side: const BorderSide(color: Colors.black, width: 1),
@@ -249,7 +250,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                       setState(() => _selectedFilter = 'accepted');
                     },
                     backgroundColor: Colors.white,
-                    selectedColor: const Color(0xFF98C9C5).withOpacity(0.5),
+                    selectedColor: Colors.black.withOpacity(0.1),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                       side: const BorderSide(color: Colors.black, width: 1),
@@ -263,7 +264,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                       setState(() => _selectedFilter = 'rejected');
                     },
                     backgroundColor: Colors.white,
-                    selectedColor: const Color(0xFF98C9C5).withOpacity(0.5),
+                    selectedColor: Colors.black.withOpacity(0.1),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                       side: const BorderSide(color: Colors.black, width: 1),
@@ -277,7 +278,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                       setState(() => _selectedFilter = 'completion_requested');
                     },
                     backgroundColor: Colors.white,
-                    selectedColor: const Color(0xFF98C9C5).withOpacity(0.5),
+                    selectedColor: Colors.black.withOpacity(0.1),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                       side: const BorderSide(color: Colors.black, width: 1),
@@ -291,7 +292,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                       setState(() => _selectedFilter = 'completed');
                     },
                     backgroundColor: Colors.white,
-                    selectedColor: const Color(0xFF98C9C5).withOpacity(0.5),
+                    selectedColor: Colors.black.withOpacity(0.1),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                       side: const BorderSide(color: Colors.black, width: 1),
@@ -321,22 +322,118 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                             borderRadius: BorderRadius.circular(15),
                             border: Border.all(color: Colors.black, width: 1),
                           ),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.all(16.0),
-                            title: Text(
-                              application.job.title,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                              ),
-                            ),
-                            subtitle: Column(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                Text(
+                                  application.job.title,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                ),
                                 const SizedBox(height: 8),
                                 Text(
                                   application.job.company,
                                   style: const TextStyle(fontSize: 16),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[100],
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          border: Border.all(
+                                              color: Colors.grey[300]!),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              "Job Owner",
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black54,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              application.jobOwner.name,
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 4),
+                                            RatingDisplay(
+                                              rating: _parseRating(
+                                                  application.jobOwner.rating),
+                                              size: 16,
+                                              showText: false,
+                                              showValue: true,
+                                              compact: true,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[100],
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          border: Border.all(
+                                              color: Colors.grey[300]!),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              "Applicant",
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black54,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              application.applicant.name,
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 4),
+                                            RatingDisplay(
+                                              rating: _parseRating(
+                                                  application.applicant.rating),
+                                              size: 16,
+                                              showText: false,
+                                              showValue: true,
+                                              compact: true,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 const SizedBox(height: 8),
                                 Container(
@@ -397,8 +494,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                                         Container(
                                           padding: const EdgeInsets.all(12),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFF98C9C5)
-                                                .withOpacity(0.2),
+                                            color: Colors.grey[200],
                                             borderRadius:
                                                 BorderRadius.circular(10),
                                             border: Border.all(
@@ -459,7 +555,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          const Row(
+                                          Row(
                                             children: [
                                               Icon(Icons.check_circle,
                                                   color: Colors.green),
@@ -491,70 +587,50 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                                           if (!feedbackProvided)
                                             Align(
                                               alignment: Alignment.centerLeft,
-                                              child: Container(
-                                                decoration: BoxDecoration(
-                                                  gradient:
-                                                      const LinearGradient(
-                                                    colors: [
-                                                      Color(0xFF0C8E45),
-                                                      Color(0xFF076D32),
+                                              child: InkWell(
+                                                onTap: () =>
+                                                    _handleFeedbackSubmission(
+                                                        application.id),
+                                                child: Container(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 16,
+                                                      vertical: 10),
+                                                  decoration: BoxDecoration(
+                                                    gradient:
+                                                        const LinearGradient(
+                                                      colors: [
+                                                        Color(0xFF0C8E45),
+                                                        Color(0xFF076D32),
+                                                      ],
+                                                      begin: Alignment.topLeft,
+                                                      end:
+                                                          Alignment.bottomRight,
+                                                    ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12),
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: Colors.black
+                                                            .withOpacity(0.3),
+                                                        spreadRadius: 1,
+                                                        blurRadius: 5,
+                                                        offset:
+                                                            const Offset(0, 3),
+                                                      ),
                                                     ],
-                                                    begin: Alignment.topLeft,
-                                                    end: Alignment.bottomRight,
-                                                  ),
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                  boxShadow: [
-                                                    BoxShadow(
-                                                      color: Colors.black
-                                                          .withOpacity(0.3),
-                                                      spreadRadius: 1,
-                                                      blurRadius: 5,
-                                                      offset:
-                                                          const Offset(0, 3),
-                                                    ),
-                                                  ],
-                                                ),
-                                                child: ElevatedButton(
-                                                  onPressed: () {
-                                                    showFeedbackDialog(context,
-                                                        applicationId:
-                                                            application.id,
-                                                        onFeedbackSubmitted:
-                                                            () {
-                                                      _handleFeedbackSubmission(
-                                                          application.id);
-                                                    });
-                                                  },
-                                                  style:
-                                                      ElevatedButton.styleFrom(
-                                                    foregroundColor:
-                                                        Colors.white,
-                                                    backgroundColor:
-                                                        Colors.transparent,
-                                                    shadowColor:
-                                                        Colors.transparent,
-                                                    elevation: 0,
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                        horizontal: 18,
-                                                        vertical: 12),
-                                                    shape:
-                                                        RoundedRectangleBorder(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              12),
-                                                    ),
                                                   ),
                                                   child: Row(
                                                     mainAxisSize:
                                                         MainAxisSize.min,
                                                     children: [
-                                                      const Icon(
-                                                        Icons.rate_review,
+                                                      Icon(
+                                                        Icons.star,
                                                         color: Colors.white,
+                                                        size: 20,
                                                       ),
-                                                      const SizedBox(width: 8),
+                                                      SizedBox(width: 8),
                                                       Text(
                                                         'Enter Feedback',
                                                         style: TextStyle(
@@ -566,13 +642,10 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                                                           shadows: [
                                                             Shadow(
                                                               blurRadius: 3.0,
-                                                              color: Colors
-                                                                  .black
-                                                                  .withOpacity(
-                                                                      0.3),
+                                                              color: Color(
+                                                                  0x4D000000),
                                                               offset:
-                                                                  const Offset(
-                                                                      0, 1),
+                                                                  Offset(0, 1),
                                                             ),
                                                           ],
                                                         ),
@@ -613,13 +686,13 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                                                   mainAxisSize:
                                                       MainAxisSize.min,
                                                   children: [
-                                                    const Icon(
+                                                    Icon(
                                                       Icons.check_circle,
                                                       color: Colors.grey,
                                                       size: 20,
                                                     ),
-                                                    const SizedBox(width: 8),
-                                                    const Text(
+                                                    SizedBox(width: 8),
+                                                    Text(
                                                       'Feedback Submitted',
                                                       style: TextStyle(
                                                         color: Colors.grey,
@@ -657,12 +730,23 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
         return Colors.green;
       case 'rejected':
         return Colors.red;
-      case 'completion_requested':
-        return Colors.blue;
       case 'completed':
-        return Colors.purple;
+        return Colors.blue;
       default:
         return Colors.grey;
+    }
+  }
+
+  // Helper method to safely parse rating values
+  double _parseRating(dynamic rating) {
+    if (rating == null) return 0.0;
+    if (rating is int) return rating.toDouble();
+    if (rating is double) return rating;
+    try {
+      return double.parse(rating.toString());
+    } catch (e) {
+      print('Error parsing rating: $e');
+      return 0.0;
     }
   }
 }
