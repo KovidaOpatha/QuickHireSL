@@ -694,6 +694,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
       final email = await _storage.read(key: 'email');
       
       if (token != null && email != null && mounted) {
+        // Navigate to the application screen which now uses the correct endpoint
         final result = await Navigator.push(
           context,
           MaterialPageRoute(

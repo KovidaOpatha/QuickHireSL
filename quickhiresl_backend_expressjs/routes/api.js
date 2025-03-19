@@ -81,12 +81,17 @@ router.post('/apply', async (req, res) => {
             await application.save({ session });
 
             // Update the job with the new application
+            job.applications = job.applications || [];
             job.applications.push(application._id);
             await job.save({ session });
 
-            // Create notification for job owner
-            await createApplicationNotification(application, applicant, job);
-
+            try {
+                // Create notification for job owner - wrap in try/catch to prevent transaction failure
+                await createApplicationNotification(application, applicant, job);
+            } catch (notificationError) {
+                console.error('[API] Error creating notification:', notificationError);
+                // Continue with the transaction even if notification creation fails
+            }
 
             // Commit the transaction
             await session.commitTransaction();
@@ -106,6 +111,7 @@ router.post('/apply', async (req, res) => {
             });
         } catch (error) {
             // If an error occurs, abort the transaction
+            console.error('[API] Transaction error:', error);
             await session.abortTransaction();
             session.endSession();
             throw error;

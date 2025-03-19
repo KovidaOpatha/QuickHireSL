@@ -83,12 +83,27 @@ exports.createJobNotification = async (jobData, jobOwnerId) => {
 // Create notification for job application
 exports.createApplicationNotification = async (applicationData, applicantData, jobData) => {
     try {
+        // Validate input data
+        if (!jobData || !jobData.postedBy) {
+            console.error('Invalid job data for notification:', jobData);
+            return null;
+        }
+
+        if (!applicantData) {
+            console.error('Invalid applicant data for notification');
+            return null;
+        }
+
+        const applicantName = applicantData.fullName || 
+                             (applicantData.studentDetails && applicantData.studentDetails.fullName) || 
+                             'Unknown Applicant';
+
         // Only create notification for job owner
         const notification = {
             recipient: jobData.postedBy,
             type: 'application_received',
             title: 'New Job Application',
-            message: `${applicantData.fullName || 'Unknown Applicant'} has applied for your job: ${jobData.title}`,
+            message: `${applicantName} has applied for your job: ${jobData.title || 'Unknown Job'}`,
             relatedJob: jobData._id
         };
         
@@ -104,7 +119,8 @@ exports.createApplicationNotification = async (applicationData, applicantData, j
         return createdNotification;
     } catch (error) {
         console.error('Error creating application notification:', error);
-        throw error;
+        // Don't throw the error, just return null to prevent transaction failure
+        return null;
     }
 };  
 
@@ -161,4 +177,3 @@ exports.createApplicationStatusNotification = async (applicationData, jobData, n
         throw error;
     }
 };
-

@@ -32,6 +32,7 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
   bool isLoading = false;
   Map<String, dynamic> jobOwnerData = {};
   bool isJobOwnerLoading = false;
+  final _storage = FlutterSecureStorage();
 
   @override
   void initState() {
@@ -58,9 +59,11 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        if (data['success']) {
+        // The API doesn't return a 'success' field, it directly returns the user data
+        // So we just check if the data contains expected fields
+        if (data != null && data['email'] != null) {
           setState(() {
-            jobOwnerData = data['data'];
+            jobOwnerData = data;
             isJobOwnerLoading = false;
           });
         } else {
@@ -77,8 +80,7 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
 
   Future<void> _fetchUserData() async {
     try {
-      final storage = FlutterSecureStorage();
-      final email = await storage.read(key: 'email');
+      final email = await _storage.read(key: 'email');
       
       if (email != null) {
         fullNameController.text = email.split('@')[0]; // Default name from email
@@ -96,8 +98,7 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
     setState(() => isLoading = true);
 
     try {
-      final storage = FlutterSecureStorage();
-      final token = await storage.read(key: 'jwt_token');
+      final token = await _storage.read(key: 'jwt_token');
 
       if (token == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -111,24 +112,70 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
         return;
       }
 
+      // First, get the job ID using the job title
+      final jobResponse = await http.get(
+        Uri.parse('${Config.apiUrl}/jobs?search=${Uri.encodeComponent(widget.jobTitle)}'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('Job search response: ${jobResponse.statusCode}');
+      print('Job search body: ${jobResponse.body}');
+
+      if (jobResponse.statusCode != 200) {
+        throw Exception('Failed to find job: ${jobResponse.body}');
+      }
+
+      final jobsData = json.decode(jobResponse.body);
+      
+      // The jobs endpoint returns { success: true, count: X, data: [...] }
+      if (jobsData == null || !jobsData.containsKey('success') || !jobsData['success']) {
+        throw Exception('Invalid response format from jobs API');
+      }
+
+      final jobsList = jobsData['data'];
+      if (jobsList == null || jobsList.isEmpty) {
+        throw Exception('No jobs found matching the title: ${widget.jobTitle}');
+      }
+
+      // Find the exact job by title
+      String? jobId;
+      for (var job in jobsList) {
+        if (job['title'] == widget.jobTitle) {
+          jobId = job['_id'];
+          break;
+        }
+      }
+
+      // If no exact match, use the first job
+      if (jobId == null && jobsList.isNotEmpty) {
+        jobId = jobsList[0]['_id'];
+      }
+
+      if (jobId == null) {
+        throw Exception('Could not extract job ID from response');
+      }
+
+      print('Found job ID: $jobId');
+
+      // Now submit the application using the correct endpoint and data format
       final response = await http.post(
-        Uri.parse('${Config.apiUrl}/apply'),
+        Uri.parse('${Config.apiUrl}/applications'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
         body: json.encode({
-          'fullName': fullNameController.text,
-          'address': addressController.text,
-          'id': idController.text,
-          'nic': nicController.text,
-          'message': messageController.text,
-          'jobTitle': widget.jobTitle,
-          'email': widget.email,
+          'jobId': jobId,
+          'coverLetter': messageController.text,
         }),
       );
 
-      if (response.statusCode == 200) {
+      print('Application submission response: ${response.statusCode}');
+      print('Application submission body: ${response.body}');
+
+      if (response.statusCode == 201) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Application submitted successfully')),
@@ -156,7 +203,7 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
       print('Error submitting application: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('An error occurred. Please try again.')),
+          SnackBar(content: Text('Error: ${e.toString()}')),
         );
       }
     } finally {
