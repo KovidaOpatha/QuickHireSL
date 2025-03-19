@@ -25,7 +25,9 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
   final _storage = const FlutterSecureStorage();
   bool _isApplying = false;
   Map<String, dynamic> jobOwnerData = {};
-  bool isJobOwnerLoading = false;
+  bool isJobOwnerLoading = true;
+  int _ownerRating = 0;
+  int _completedJobs = 0;
 
   String _formatDate(DateTime date) {
     final now = DateTime.now();
@@ -157,6 +159,8 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
         setState(() {
           jobOwnerData = data;
           isJobOwnerLoading = false;
+          _ownerRating = data['rating'] ?? 0;
+          _completedJobs = data['completedJobs'] ?? 0;
         });
       } else {
         print(
@@ -539,13 +543,41 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Job Owner',
                           style: TextStyle(
-                            fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            color: Colors.grey[800],
+                            fontSize: 16,
                           ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            // Star rating display
+                            Row(
+                              children: List.generate(5, (index) {
+                                return Icon(
+                                  index < _ownerRating
+                                      ? Icons.star
+                                      : Icons.star_border,
+                                  color: Colors.amber,
+                                  size: 20,
+                                );
+                              }),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              _ownerRating > 0
+                                  ? '$_ownerRating.0'
+                                  : 'No ratings',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.amber[700],
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 12),
                         if (isJobOwnerLoading)
@@ -597,7 +629,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      "Completed ${jobOwnerData['completedJobs'] ?? 0} jobs",
+                                      "Completed ${_completedJobs} jobs",
                                       style: TextStyle(
                                         fontSize: 14,
                                         color: Colors.grey[600],
