@@ -7,6 +7,7 @@ import '../config/config.dart';
 void showFeedbackDialog(BuildContext context,
     {bool returnToHome = false,
     String? applicationId,
+    String? targetUserId,
     Function? onFeedbackSubmitted,
     bool isJobOwner = false}) {
   TextEditingController feedbackController = TextEditingController();
@@ -37,6 +38,14 @@ void showFeedbackDialog(BuildContext context,
                 return;
               }
 
+              if (targetUserId == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Target user not specified")),
+                );
+                Navigator.of(context).pop();
+                return;
+              }
+
               final response = await http.post(
                 Uri.parse("${Config.apiUrl}/feedback"),
                 headers: {
@@ -46,11 +55,15 @@ void showFeedbackDialog(BuildContext context,
                 body: jsonEncode({
                   "rating": rating,
                   "feedback": feedbackController.text,
-                  "applicationId": applicationId
+                  "applicationId": applicationId,
+                  "targetUserId": targetUserId
                 }),
               );
 
-              if (response.statusCode == 201) {
+              print("Feedback submission response: ${response.statusCode}");
+              print("Response body: ${response.body}");
+
+              if (response.statusCode == 201 || response.statusCode == 200) {
                 if (onFeedbackSubmitted != null) {
                   onFeedbackSubmitted();
                 }
@@ -58,24 +71,32 @@ void showFeedbackDialog(BuildContext context,
                 // Show success message
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                      content: Text("Feedback submitted successfully!")),
+                    content: Text("Feedback submitted successfully!"),
+                    backgroundColor: Colors.green,
+                  ),
                 );
 
                 Navigator.of(context).pop(); // Close feedback dialog
                 showShareFeedbackDialog(context, feedbackController.text,
                     isJobOwner: isJobOwner);
               } else {
+                print("Error submitting feedback: ${response.body}");
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                      content:
-                          Text("Error submitting feedback: ${response.body}")),
+                    content:
+                        Text("Error submitting feedback. Please try again."),
+                    backgroundColor: Colors.red,
+                  ),
                 );
               }
             } catch (error) {
+              print("Exception during feedback submission: $error");
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                    content:
-                        Text("Failed to submit feedback: ${error.toString()}")),
+                  content: Text(
+                      "Failed to submit feedback. Please check your connection."),
+                  backgroundColor: Colors.red,
+                ),
               );
             }
 
@@ -104,6 +125,7 @@ void showFeedbackDialog(BuildContext context,
                       icon: Icon(
                         index < rating ? Icons.star : Icons.star_border,
                         color: Colors.amber,
+                        size: 30,
                       ),
                       onPressed: () {
                         setState(() {
@@ -113,6 +135,14 @@ void showFeedbackDialog(BuildContext context,
                     );
                   }),
                 ),
+                Text(
+                  _getRatingText(rating),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.amber,
+                  ),
+                ),
+                const SizedBox(height: 10),
                 TextField(
                   controller: feedbackController,
                   maxLines: 3,
@@ -156,6 +186,23 @@ void showFeedbackDialog(BuildContext context,
       );
     },
   );
+}
+
+String _getRatingText(int rating) {
+  switch (rating) {
+    case 1:
+      return "Poor";
+    case 2:
+      return "Fair";
+    case 3:
+      return "Good";
+    case 4:
+      return "Very Good";
+    case 5:
+      return "Excellent";
+    default:
+      return "";
+  }
 }
 
 void showShareFeedbackDialog(BuildContext context, String feedback,
