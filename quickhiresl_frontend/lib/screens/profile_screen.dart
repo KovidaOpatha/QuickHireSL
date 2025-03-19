@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/user_service.dart';
 import '../services/auth_service.dart';
+import '../widgets/rating_display.dart';
 import 'login_screen.dart';
 import 'job_owner_dashboard.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -51,7 +52,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       print('[ERROR] Failed to sign out: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to sign out. Please try again.')),
+          const SnackBar(
+              content: Text('Failed to sign out. Please try again.')),
         );
       }
     }
@@ -61,26 +63,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final storage = FlutterSecureStorage();
     final currentRole = await storage.read(key: 'user_role');
     print('[DEBUG] Current user role: $currentRole');
-    
+
     // Set role to job_owner for testing
     await storage.write(key: 'user_role', value: 'job_owner');
     print('[DEBUG] Updated user role to: job_owner');
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Role updated to job_owner. Please restart the app.')),
+      SnackBar(
+          content: Text('Role updated to job_owner. Please restart the app.')),
     );
   }
 
   Future<void> _updateProfile(String name, String phone, String bio) async {
     setState(() => _isLoading = true);
-    
+
     try {
       final response = await _userService.updateUserProfile({
         'name': name,
         'phone': phone,
         'bio': bio,
       });
-      
+
       if (response['success']) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -92,7 +95,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(response['error'] ?? 'Failed to update profile')),
+            SnackBar(
+                content: Text(response['error'] ?? 'Failed to update profile')),
           );
         }
       }
@@ -111,8 +115,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showEditProfileDialog() {
-    final nameController = TextEditingController(text: _userData?['name'] ?? '');
-    final phoneController = TextEditingController(text: _userData?['phone'] ?? '');
+    final nameController =
+        TextEditingController(text: _userData?['name'] ?? '');
+    final phoneController =
+        TextEditingController(text: _userData?['phone'] ?? '');
     final bioController = TextEditingController(text: _userData?['bio'] ?? '');
 
     showDialog(
@@ -139,7 +145,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 controller: nameController,
                 decoration: InputDecoration(
                   labelText: 'Name',
-                  labelStyle: TextStyle(color: const Color.fromARGB(221, 0, 0, 0)),
+                  labelStyle:
+                      TextStyle(color: const Color.fromARGB(221, 0, 0, 0)),
                   focusedBorder: UnderlineInputBorder(
                     borderSide: BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
                   ),
@@ -204,12 +211,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  double _parseRating(dynamic rating) {
+    if (rating is int) {
+      return rating.toDouble();
+    } else if (rating is double) {
+      return rating;
+    } else {
+      return 0;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF98C9C5),// Deep blue color
+        backgroundColor: const Color(0xFF98C9C5), // Deep blue color
         title: const Text(
           'Profile',
           style: TextStyle(color: Color.fromARGB(255, 0, 0, 0)),
@@ -239,44 +256,80 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // Profile Image
-                    Center(
-                      child: Container(
-                        width: 120,
-                        height: 120,
-                        margin: const EdgeInsets.only(top: 8, bottom: 16),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: const Color(0xFF4CAF50),
-                            width: 3,
-                          ),
-                        ),
-                        child: CircleAvatar(
-                          backgroundColor: Colors.grey[200],
-                          child: _userData?['profileImage'] != null && _userData!['profileImage'].isNotEmpty
-                              ? ClipOval(
-                                  child: Image.network(
-                                    _userData!['profileImage'],
-                                    fit: BoxFit.cover,
-                                    width: 120,
-                                    height: 120,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      print('[ERROR] Failed to load profile image: $error');
-                                      return const Icon(Icons.person, size: 50, color: Colors.grey);
-                                    },
-                                    loadingBuilder: (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return const Center(
-                                        child: CircularProgressIndicator(),
-                                      );
-                                    },
-                                  ),
-                                )
-                              : const Icon(Icons.person, size: 50, color: Colors.grey),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      child: Center(
+                        child: Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 60,
+                              backgroundColor: Colors.grey[300],
+                              backgroundImage:
+                                  _userData?['profileImage'] != null &&
+                                          _userData!['profileImage'].isNotEmpty
+                                      ? NetworkImage(
+                                          _userData!['profileImage'],
+                                        )
+                                      : null,
+                              child: _userData?['profileImage'] == null ||
+                                      _userData!['profileImage'].isEmpty
+                                  ? const Icon(Icons.person,
+                                      size: 60, color: Colors.grey)
+                                  : null,
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.grey[300]!),
+                                ),
+                                child: const Icon(Icons.camera_alt,
+                                    size: 20, color: Colors.grey),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    
+
+                    // User Rating
+                    if (_userData != null)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Column(
+                          children: [
+                            const Text(
+                              "Rating",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            RatingDisplay(
+                              rating: _parseRating(_userData?['rating']),
+                              size: 24,
+                              showText: true,
+                              showValue: true,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              "Based on feedback from ${_userData?['completedJobs'] ?? 0} completed jobs",
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.black54,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
                     // Name
                     Text(
                       _userData?['name'] ?? 'Loading...',
@@ -286,7 +339,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         color: Colors.black,
                       ),
                     ),
-                    
+
                     // Email
                     Text(
                       _userData?['email'] ?? 'Loading...',
@@ -295,21 +348,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         fontSize: 16,
                       ),
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Edit Profile Button
-                    TextButton.icon(
+                    ElevatedButton.icon(
                       onPressed: _showEditProfileDialog,
-                      icon: const Icon(Icons.edit, size: 16, color: const Color(0xFF98C9C5)),
-                      label: const Text('Edit Profile', style: TextStyle(color: const Color(0xFF98C9C5))),
-                      style: TextButton.styleFrom(
+                      icon: const Icon(Icons.edit,
+                          size: 16, color: const Color(0xFF98C9C5)),
+                      label: const Text('Edit Profile',
+                          style: TextStyle(color: const Color(0xFF98C9C5))),
+                      style: ElevatedButton.styleFrom(
                         foregroundColor: const Color.fromARGB(255, 0, 0, 0),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // About Me Section
                     Container(
                       width: double.infinity,
@@ -317,7 +372,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.2)),
+                        border: Border.all(
+                            color: const Color.fromARGB(255, 0, 0, 0)
+                                .withOpacity(0.2)),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.05),
@@ -331,7 +388,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.person_outline, color: const Color(0xFF98C9C5), size: 20),
+                              const Icon(Icons.person_outline,
+                                  color: const Color(0xFF98C9C5), size: 20),
                               const SizedBox(width: 8),
                               const Text(
                                 'About Me',
@@ -347,11 +405,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Container(
                             width: double.infinity,
                             height: 1,
-                            color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.1),
+                            color: const Color.fromARGB(255, 0, 0, 0)
+                                .withOpacity(0.1),
                             margin: const EdgeInsets.symmetric(vertical: 8),
                           ),
                           Text(
-                            _userData?['bio'] ?? 'No bio provided yet. Tap "Edit Profile" to add a bio.',
+                            _userData?['bio'] ??
+                                'No bio provided yet. Tap "Edit Profile" to add a bio.',
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.black87,
@@ -360,9 +420,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ],
                       ),
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Stats Section
                     Container(
                       width: double.infinity,
@@ -370,7 +430,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       decoration: BoxDecoration(
                         color: const Color(0xFF98C9C5).withOpacity(0.05),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.2)),
+                        border: Border.all(
+                            color: const Color.fromARGB(255, 0, 0, 0)
+                                .withOpacity(0.2)),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.05),
@@ -384,7 +446,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.bar_chart, color: const Color(0xFF98C9C5), size: 20),
+                              const Icon(Icons.bar_chart,
+                                  color: const Color(0xFF98C9C5), size: 20),
                               const SizedBox(width: 8),
                               const Text(
                                 'Activity Statistics',
@@ -399,24 +462,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Container(
                             width: double.infinity,
                             height: 1,
-                            color: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.1),
+                            color: const Color.fromARGB(255, 255, 255, 255)
+                                .withOpacity(0.1),
                             margin: const EdgeInsets.symmetric(vertical: 8),
                           ),
                           const SizedBox(height: 8),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceAround,
                             children: [
-                              _buildStatColumn('Rating', _userData?['rating']?.toString() ?? '0'),
-                              _buildStatColumn('Jobs', _userData?['jobsCount']?.toString() ?? '0'),
-                              _buildStatColumn('Experience', _userData?['experience']?.toString() ?? '0'),
+                              _buildStatColumn('Rating',
+                                  _userData?['rating']?.toString() ?? '0'),
+                              _buildStatColumn('Jobs',
+                                  _userData?['jobsCount']?.toString() ?? '0'),
+                              _buildStatColumn('Experience',
+                                  _userData?['experience']?.toString() ?? '0'),
                             ],
                           ),
                         ],
                       ),
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // User Information Section
                     Container(
                       width: double.infinity,
@@ -424,7 +491,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.2)),
+                        border: Border.all(
+                            color: const Color.fromARGB(255, 0, 0, 0)
+                                .withOpacity(0.2)),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.05),
@@ -438,7 +507,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.info_outline, color: const Color(0xFF98C9C5), size: 20),
+                              const Icon(Icons.info_outline,
+                                  color: const Color(0xFF98C9C5), size: 20),
                               const SizedBox(width: 8),
                               const Text(
                                 'User Information',
@@ -453,14 +523,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Container(
                             width: double.infinity,
                             height: 1,
-                            color: const Color.fromARGB(255, 0, 0, 0).withOpacity(0.1),
+                            color: const Color.fromARGB(255, 0, 0, 0)
+                                .withOpacity(0.1),
                             margin: const EdgeInsets.symmetric(vertical: 8),
                           ),
                           const SizedBox(height: 8),
                           _buildInfoRow('ID', _userData?['userId'] ?? 'N/A'),
-                          _buildInfoRow('Phone', _userData?['phone'] ?? 'Not provided'),
+                          _buildInfoRow(
+                              'Phone', _userData?['phone'] ?? 'Not provided'),
                           _buildInfoRow('Role', _userData?['role'] ?? 'User'),
-                          _buildInfoRow('Joined', 'January 2023'), // Replace with actual join date
+                          _buildInfoRow('Joined',
+                              'January 2023'), // Replace with actual join date
                         ],
                       ),
                     ),

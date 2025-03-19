@@ -116,7 +116,14 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
       }
 
       // Show the feedback dialog after confirming the completion
-      showFeedbackDialog(context, isJobOwner: true);
+      final application =
+          _applications.firstWhere((element) => element.id == applicationId);
+      showFeedbackDialog(
+        context,
+        isJobOwner: true,
+        applicationId: applicationId,
+        targetUserId: application.applicant.id,
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -181,7 +188,12 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
                 );
 
                 // Show the feedback dialog after confirming the completion
-                showFeedbackDialog(context, isJobOwner: true);
+                showFeedbackDialog(
+                  context,
+                  isJobOwner: true,
+                  applicationId: application.id,
+                  targetUserId: application.applicant.id,
+                );
               } catch (e) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
