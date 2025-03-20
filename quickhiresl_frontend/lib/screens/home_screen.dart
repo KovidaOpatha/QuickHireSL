@@ -52,12 +52,14 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadJobs();
-    _loadNotificationCount();
-    _loadFavorites();
-    _setupNotificationRefresh();
-    _loadUserData();
-    _getUserRole();
+    _getUserRole().then((_) {
+      // Load other data after role is confirmed
+      _loadJobs();
+      _loadNotificationCount();
+      _loadFavorites();
+      _setupNotificationRefresh();
+      _loadUserData();
+    });
   }
 
   void _setupNotificationRefresh() {
@@ -692,11 +694,23 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _getUserRole() async {
-    final role = await _authService.getUserRole();
-    print('[DEBUG] User role retrieved: $role');
-    setState(() {
-      _userRole = role;
-    });
+    try {
+      final role = await _authService.getUserRole();
+      print('[DEBUG] User role retrieved: $role');
+      
+      if (mounted) {
+        setState(() {
+          _userRole = role;
+          print('[DEBUG] User role set in state: $_userRole');
+        });
+      }
+      
+      // Force a check on the secure storage to verify the role is saved
+      final storedRole = await _authService.getUserRole();
+      print('[DEBUG] Double-checking stored role: $storedRole');
+    } catch (e) {
+      print('[ERROR] Failed to get user role: $e');
+    }
   }
 
   Widget _buildDrawer(BuildContext context) {
