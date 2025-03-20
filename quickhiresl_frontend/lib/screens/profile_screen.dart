@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import '../services/user_service.dart';
 import '../services/auth_service.dart';
 import '../widgets/rating_display.dart';
@@ -221,6 +222,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  // Helper method to get the correct image provider
+  ImageProvider? _getProfileImage() {
+    if (_userData == null || 
+        _userData!['profileImage'] == null || 
+        _userData!['profileImage'].isEmpty) {
+      return null;
+    }
+    
+    final imageUrl = _userData!['profileImage'];
+    
+    if (imageUrl.startsWith('data:image')) {
+      // Handle data URL
+      try {
+        final base64String = imageUrl.split(',').last;
+        return MemoryImage(base64Decode(base64String));
+      } catch (e) {
+        print('Error decoding base64 image: $e');
+        return null;
+      }
+    } else {
+      // Handle network image
+      return NetworkImage(imageUrl);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -264,13 +290,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             CircleAvatar(
                               radius: 60,
                               backgroundColor: Colors.grey[300],
-                              backgroundImage:
-                                  _userData?['profileImage'] != null &&
-                                          _userData!['profileImage'].isNotEmpty
-                                      ? NetworkImage(
-                                          _userData!['profileImage'],
-                                        )
-                                      : null,
+                              backgroundImage: _getProfileImage(),
                               child: _userData?['profileImage'] == null ||
                                       _userData!['profileImage'].isEmpty
                                   ? const Icon(Icons.person,

@@ -9,6 +9,12 @@ class UserService {
 
   String getFullImageUrl(String? imagePath) {
     if (imagePath == null || imagePath.isEmpty) return '';
+    
+    // If it's already a full URL (Cloudinary or data URL), return it as is
+    if (imagePath.startsWith('http') || imagePath.startsWith('https') || imagePath.startsWith('data:')) {
+      return imagePath;
+    }
+    
     // Remove any leading slashes and add the correct base URL
     final cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
     // Extract the base server URL without the /api path
