@@ -186,27 +186,76 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
     );
   }
 
-  // Method to handle feedback submission
-  void _handleFeedbackSubmission(String applicationId) {
-    // Find the application to get target user ID
-    final application =
-        _applications.firstWhere((app) => app.id == applicationId);
-    final targetUserId = application.job.postedBy;
+  // Handle feedback submission for the given application
+  void _handleFeedbackSubmission(String applicationId) async {
+    print("DEBUG: Handling feedback submission for application $applicationId");
 
-    if (targetUserId == null) {
+    // Get the current user's ID for the feedback
+    final storage = const FlutterSecureStorage();
+    final currentUserId = await storage.read(key: 'user_id');
+
+    if (currentUserId == null) {
+      print("DEBUG: Current user ID is null, cannot submit feedback");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Unable to identify job owner for feedback')),
+            content: Text('Unable to identify current user for feedback')),
+      );
+      return;
+    }
+
+    // Find the application in our list
+    Application? application;
+    try {
+      application = _applications.firstWhere(
+        (app) => app.id == applicationId,
+      );
+    } catch (e) {
+      print("DEBUG: Could not find application with ID $applicationId: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to find application data')),
+      );
+      return;
+    }
+
+    // After the try-catch block, we know application is not null
+    // Define application variables
+    String targetUserId;
+    bool isJobOwner = false;
+
+    if (currentUserId == application.applicant.id) {
+      // Current user is the applicant, target is the job owner
+      targetUserId = application.jobOwner.id;
+      isJobOwner = false;
+      print(
+          "DEBUG: Current user is applicant, target is employer: $targetUserId");
+    } else {
+      // Current user is the job owner, target is the applicant
+      targetUserId = application.applicant.id;
+      isJobOwner = true;
+      print(
+          "DEBUG: Current user is employer, target is applicant: $targetUserId");
+    }
+
+    if (targetUserId.isEmpty) {
+      print("DEBUG: Target user ID is empty");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Unable to identify recipient for feedback')),
       );
       return;
     }
 
     // Show the feedback dialog
+    print(
+        "DEBUG: Showing feedback dialog for application $applicationId and target $targetUserId");
     showFeedbackDialog(
       context,
       applicationId: applicationId,
       targetUserId: targetUserId,
+      isJobOwner: isJobOwner,
       onFeedbackSubmitted: () {
+        print(
+            "DEBUG: Feedback submitted successfully for application $applicationId");
         setState(() {
           _feedbackProvidedApplications.add(applicationId);
         });
@@ -608,122 +657,139 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                                           if (!feedbackProvided)
                                             Align(
                                               alignment: Alignment.centerLeft,
-                                              child: InkWell(
-                                                onTap: () =>
-                                                    _handleFeedbackSubmission(
-                                                        application.id),
-                                                child: Container(
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                      horizontal: 16,
-                                                      vertical: 10),
-                                                  decoration: BoxDecoration(
-                                                    gradient:
-                                                        const LinearGradient(
-                                                      colors: [
-                                                        Color(0xFF0C8E45),
-                                                        Color(0xFF076D32),
-                                                      ],
-                                                      begin: Alignment.topLeft,
-                                                      end:
-                                                          Alignment.bottomRight,
-                                                    ),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            12),
-                                                    boxShadow: [
-                                                      BoxShadow(
-                                                        color: Colors.black
-                                                            .withOpacity(0.3),
-                                                        spreadRadius: 1,
-                                                        blurRadius: 5,
-                                                        offset:
-                                                            const Offset(0, 3),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      Icon(
-                                                        Icons.star,
-                                                        color: Colors.white,
-                                                        size: 20,
-                                                      ),
-                                                      SizedBox(width: 8),
-                                                      Text(
-                                                        'Enter Feedback',
-                                                        style: TextStyle(
-                                                          color: Colors.white,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          fontSize: 16,
-                                                          letterSpacing: 0.5,
-                                                          shadows: [
-                                                            Shadow(
-                                                              blurRadius: 3.0,
-                                                              color: Color(
-                                                                  0x4D000000),
-                                                              offset:
-                                                                  Offset(0, 1),
-                                                            ),
+                                              child: Row(
+                                                children: [
+                                                  InkWell(
+                                                    onTap: () =>
+                                                        _handleFeedbackSubmission(
+                                                            application.id),
+                                                    child: Container(
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 16,
+                                                          vertical: 10),
+                                                      decoration: BoxDecoration(
+                                                        gradient:
+                                                            const LinearGradient(
+                                                          colors: [
+                                                            Color(0xFF0C8E45),
+                                                            Color(0xFF076D32),
                                                           ],
+                                                          begin:
+                                                              Alignment.topLeft,
+                                                          end: Alignment
+                                                              .bottomRight,
                                                         ),
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(12),
+                                                        boxShadow: [
+                                                          BoxShadow(
+                                                            color: Colors.black
+                                                                .withOpacity(
+                                                                    0.3),
+                                                            spreadRadius: 1,
+                                                            blurRadius: 5,
+                                                            offset:
+                                                                const Offset(
+                                                                    0, 3),
+                                                          ),
+                                                        ],
                                                       ),
-                                                    ],
+                                                      child: Row(
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          Icon(
+                                                            Icons.star,
+                                                            color: Colors.white,
+                                                            size: 20,
+                                                          ),
+                                                          SizedBox(width: 8),
+                                                          Text(
+                                                            'Enter Feedback',
+                                                            style: TextStyle(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              fontSize: 16,
+                                                              letterSpacing:
+                                                                  0.5,
+                                                              shadows: [
+                                                                Shadow(
+                                                                  blurRadius:
+                                                                      3.0,
+                                                                  color: Color(
+                                                                      0x4D000000),
+                                                                  offset:
+                                                                      Offset(
+                                                                          0, 1),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
                                                   ),
-                                                ),
+                                                ],
                                               ),
                                             )
                                           else
                                             Align(
                                               alignment: Alignment.centerLeft,
-                                              child: Container(
-                                                padding:
-                                                    const EdgeInsets.symmetric(
+                                              child: Row(
+                                                children: [
+                                                  Container(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
                                                         horizontal: 16,
                                                         vertical: 10),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.grey[200],
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                  border: Border.all(
-                                                      color:
-                                                          Colors.grey.shade400,
-                                                      width: 1),
-                                                  boxShadow: [
-                                                    BoxShadow(
-                                                      color: Colors.black
-                                                          .withOpacity(0.1),
-                                                      spreadRadius: 1,
-                                                      blurRadius: 3,
-                                                      offset:
-                                                          const Offset(0, 1),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.grey[200],
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
+                                                      border: Border.all(
+                                                          color: Colors
+                                                              .grey.shade400,
+                                                          width: 1),
+                                                      boxShadow: [
+                                                        BoxShadow(
+                                                          color: Colors.black
+                                                              .withOpacity(0.1),
+                                                          spreadRadius: 1,
+                                                          blurRadius: 3,
+                                                          offset: const Offset(
+                                                              0, 1),
+                                                        ),
+                                                      ],
                                                     ),
-                                                  ],
-                                                ),
-                                                child: Row(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    Icon(
-                                                      Icons.check_circle,
-                                                      color: Colors.grey,
-                                                      size: 20,
+                                                    child: Row(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        Icon(
+                                                          Icons.check_circle,
+                                                          color: Colors.grey,
+                                                          size: 20,
+                                                        ),
+                                                        SizedBox(width: 8),
+                                                        Text(
+                                                          'Feedback Submitted',
+                                                          style: TextStyle(
+                                                            color: Colors.grey,
+                                                            fontWeight:
+                                                                FontWeight.w500,
+                                                            fontSize: 14,
+                                                          ),
+                                                        ),
+                                                      ],
                                                     ),
-                                                    SizedBox(width: 8),
-                                                    Text(
-                                                      'Feedback Submitted',
-                                                      style: TextStyle(
-                                                        color: Colors.grey,
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                        fontSize: 14,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
+                                                  ),
+                                                ],
                                               ),
                                             ),
                                         ],

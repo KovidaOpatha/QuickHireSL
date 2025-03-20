@@ -7,9 +7,9 @@ import '../models/job.dart';
 import '../services/job_service.dart';
 import '../services/user_service.dart';
 import '../widgets/rating_display.dart';
+import '../widgets/feedback_view_dialog.dart';
 import 'job_application_screen.dart';
 import 'job_chat_screen.dart';
-import './direct_message_screen.dart';
 
 class JobDetailsScreen extends StatefulWidget {
   final Job job;
@@ -713,6 +713,31 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                     ),
                   ),
 
+                  const SizedBox(height: 12),
+
+                  // View Feedback Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        showFeedbackViewDialog(
+                          context,
+                          userId: widget.job.postedBy,
+                        );
+                      },
+                      icon: const Icon(Icons.visibility),
+                      label: const Text('View Feedback'),
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white,
+                        backgroundColor: Colors.blue,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ),
+
                   const SizedBox(height: 20),
 
                   // Job description
@@ -861,35 +886,6 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                   ),
 
                   const SizedBox(height: 16),
-                  
-                  // Connect Owner button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: OutlinedButton(
-                      onPressed: _navigateToDirectMessage,
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFF98C9C5)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(Icons.message_outlined, color: Color(0xFF98C9C5)),
-                          SizedBox(width: 8),
-                          Text(
-                            'Connect Owner',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Color(0xFF98C9C5),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
 
                   // Delete button (only visible for job owner)
                   if (_isJobOwner) ...[
@@ -1005,31 +1001,6 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
         builder: (context) => ChatScreen(
           [widget.job],
           job: jobMap,
-        ),
-      ),
-    );
-  }
-
-  void _navigateToDirectMessage() {
-    if (widget.job.postedBy == null || widget.job.postedBy!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cannot connect with job owner at this time')),
-      );
-      return;
-    }
-
-    print('Navigating to direct message with job owner: ${widget.job.postedBy}');
-    print('Job owner data: $jobOwnerData');
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => DirectMessageScreen(
-          receiverId: widget.job.postedBy!,
-          receiverName: jobOwnerData['name'] ?? jobOwnerData['fullName'] ?? 'Job Owner',
-          receiverAvatar: jobOwnerData['profilePicture'],
-          jobId: widget.job.id,
-          jobTitle: widget.job.title,
         ),
       ),
     );

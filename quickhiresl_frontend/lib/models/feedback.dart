@@ -21,17 +21,27 @@ class Feedback {
 
   factory Feedback.fromJson(Map<String, dynamic> json) {
     return Feedback(
-      id: json['_id'],
-      rating: json['rating'],
+      id: json['_id'] ?? json['id'],
+      rating: json['rating'] is int
+          ? json['rating']
+          : int.tryParse(json['rating'].toString()) ?? 5,
       feedback: json['feedback'],
-      applicationId: json['applicationId'],
-      fromUser:
-          json['fromUser'] != null ? User.fromJson(json['fromUser']) : null,
-      targetUser:
-          json['targetUser'] != null ? User.fromJson(json['targetUser']) : null,
+      applicationId: json['applicationId'] ?? json['application'] ?? 'unknown',
+      fromUser: json['fromUser'] != null
+          ? User.fromJson(json['fromUser'])
+          : json['from'] != null
+              ? User.fromJson(json['from'])
+              : null,
+      targetUser: json['targetUser'] != null
+          ? User.fromJson(json['targetUser'])
+          : json['to'] != null
+              ? User.fromJson(json['to'])
+              : null,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
-          : DateTime.now(),
+          : json['created_at'] != null
+              ? DateTime.parse(json['created_at'])
+              : DateTime.now(),
     );
   }
 

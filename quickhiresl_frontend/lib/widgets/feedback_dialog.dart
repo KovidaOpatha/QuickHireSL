@@ -29,7 +29,7 @@ void showFeedbackDialog(BuildContext context,
             try {
               final token = await storage.read(key: 'jwt_token');
 
-              if (token == null) {
+              if (token == null || token.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                       content: Text("Please login to submit feedback")),
@@ -38,7 +38,7 @@ void showFeedbackDialog(BuildContext context,
                 return;
               }
 
-              if (targetUserId == null) {
+              if (targetUserId == null || targetUserId.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text("Target user not specified")),
                 );
@@ -46,6 +46,22 @@ void showFeedbackDialog(BuildContext context,
                 return;
               }
 
+              if (applicationId == null || applicationId.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Application ID not specified")),
+                );
+                Navigator.of(context).pop();
+                return;
+              }
+
+              // Log the feedback information for debugging
+              print("Submitting feedback to API:");
+              print("- To User: $targetUserId");
+              print("- Rating: $rating");
+              print("- Comment: ${feedbackController.text}");
+              print("- Application ID: $applicationId");
+
+              // Make the actual API call
               final response = await http.post(
                 Uri.parse("${Config.apiUrl}/feedback"),
                 headers: {
@@ -60,13 +76,11 @@ void showFeedbackDialog(BuildContext context,
                 }),
               );
 
-              print("Feedback submission response: ${response.statusCode}");
-              print("Response body: ${response.body}");
+              print("API Response: ${response.statusCode} - ${response.body}");
 
               if (response.statusCode == 201 || response.statusCode == 200) {
-                if (onFeedbackSubmitted != null) {
-                  onFeedbackSubmitted();
-                }
+                // Call the callback if provided
+                onFeedbackSubmitted?.call();
 
                 // Show success message
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -76,19 +90,26 @@ void showFeedbackDialog(BuildContext context,
                   ),
                 );
 
-                Navigator.of(context).pop(); // Close feedback dialog
-                showShareFeedbackDialog(context, feedbackController.text,
-                    isJobOwner: isJobOwner);
+                // Close the dialog
+                Navigator.of(context).pop();
+
+                // Ask if user wants to share feedback to community chat
+                _showShareToCommunityDialog(context, feedbackController.text,
+                    applicationId, isJobOwner);
               } else {
-                print("Error submitting feedback: ${response.body}");
+                // Show error message
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content:
-                        Text("Error submitting feedback. Please try again."),
+                    content: Text(
+                        "Failed to submit feedback: ${jsonDecode(response.body)['message'] ?? 'Unknown error'}"),
                     backgroundColor: Colors.red,
                   ),
                 );
               }
+
+              setState(() {
+                isSubmitting = false;
+              });
             } catch (error) {
               print("Exception during feedback submission: $error");
               ScaffoldMessenger.of(context).showSnackBar(
@@ -106,25 +127,18 @@ void showFeedbackDialog(BuildContext context,
           }
 
           return AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
+            title: const Text('Submit Feedback'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text("We need your feedback",
-                    style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                const SizedBox(height: 10),
-                const Text("How would you rate your experience?"),
-                const SizedBox(height: 10),
+                const Text('Please rate your experience:'),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(5, (index) {
                     return IconButton(
                       icon: Icon(
                         index < rating ? Icons.star : Icons.star_border,
-                        color: Colors.amber,
+                        color: index < rating ? Colors.amber : Colors.grey,
                         size: 30,
                       ),
                       onPressed: () {
@@ -135,106 +149,46 @@ void showFeedbackDialog(BuildContext context,
                     );
                   }),
                 ),
-                Text(
-                  _getRatingText(rating),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.amber,
-                  ),
-                ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 16),
                 TextField(
                   controller: feedbackController,
+                  decoration: const InputDecoration(
+                    labelText: 'Your feedback',
+                    border: OutlineInputBorder(),
+                  ),
                   maxLines: 3,
-                  decoration: InputDecoration(
-                    hintText: "Write your feedback",
-                    filled: true,
-                    fillColor: Colors.grey[300],
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
                 ),
-                const SizedBox(height: 10),
-                ElevatedButton(
-                  onPressed: isSubmitting ? null : submitFeedback,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                  child: isSubmitting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text("Submit",
-                          style: TextStyle(color: Colors.white)),
-                ),
-                const SizedBox(height: 5),
-                const Text("Need to share your thoughts"),
               ],
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: isSubmitting ? null : submitFeedback,
+                child: isSubmitting
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Text('Submitting...'),
+                        ],
+                      )
+                    : Text('Submit'),
+              ),
+            ],
           );
         },
-      );
-    },
-  );
-}
-
-String _getRatingText(int rating) {
-  switch (rating) {
-    case 1:
-      return "Poor";
-    case 2:
-      return "Fair";
-    case 3:
-      return "Good";
-    case 4:
-      return "Very Good";
-    case 5:
-      return "Excellent";
-    default:
-      return "";
-  }
-}
-
-void showShareFeedbackDialog(BuildContext context, String feedback,
-    {bool isJobOwner = false}) {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: const Text('Share Your Feedback'),
-        content: const Text(
-            'Would you like to share your feedback with the community?'),
-        actions: <Widget>[
-          TextButton(
-            child: const Text('No'),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-          ),
-          TextButton(
-            child: const Text('Yes'),
-            onPressed: () async {
-              Navigator.pop(context);
-              await sendFeedbackToChats(context, feedback,
-                  isJobOwner: isJobOwner);
-              if (isJobOwner) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Feedback sent successfully!")),
-                );
-              }
-            },
-          ),
-        ],
       );
     },
   );
@@ -252,7 +206,7 @@ Future<void> sendFeedbackToChats(BuildContext context, String feedback,
     final userId = await storage.read(key: 'user_id');
     final userName = await storage.read(key: 'user_name');
 
-    if (token == null || userId == null) {
+    if (token == null || token.isEmpty || userId == null) {
       scaffoldMessenger.showSnackBar(
         const SnackBar(content: Text("Please login to share feedback")),
       );
@@ -508,4 +462,34 @@ Future<void> sendFeedbackToChats(BuildContext context, String feedback,
       }
     });
   }
+}
+
+void _showShareToCommunityDialog(BuildContext context, String feedback,
+    String? applicationId, bool isJobOwner) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text('Share to Community'),
+        content: const Text(
+            'Would you like to share this feedback to the community chat for this job?'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text('No'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              sendFeedbackToChats(context, feedback,
+                  jobCategory: null, isJobOwner: isJobOwner);
+            },
+            child: const Text('Yes'),
+          ),
+        ],
+      );
+    },
+  );
 }
