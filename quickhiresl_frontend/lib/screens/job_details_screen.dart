@@ -27,8 +27,6 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
   bool _isDeleting = false;
   Map<String, dynamic> jobOwnerData = {};
   bool isJobOwnerLoading = true;
-  int _ownerRating = 0;
-  int _completedJobs = 0;
   String _currentUserId = '';
   bool _isJobOwner = false;
 
@@ -177,8 +175,6 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
         setState(() {
           jobOwnerData = data;
           isJobOwnerLoading = false;
-          _ownerRating = data['rating'] ?? 0;
-          _completedJobs = data['completedJobs'] ?? 0;
         });
       } else {
         print(
@@ -383,7 +379,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
 
   Future<void> _deleteJob() async {
     if (!_isJobOwner) return;
-    
+
     // Check if job ID is null
     if (widget.job.id == null) {
       if (mounted) {
@@ -403,7 +399,8 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Delete Job'),
-          content: const Text('Are you sure you want to delete this job? This action cannot be undone.'),
+          content: const Text(
+              'Are you sure you want to delete this job? This action cannot be undone.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -427,7 +424,8 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
               backgroundColor: Colors.green,
             ),
           );
-          Navigator.pop(context, true); // Return true to indicate job was deleted
+          Navigator.pop(
+              context, true); // Return true to indicate job was deleted
         }
       }
     } catch (e) {
@@ -639,41 +637,14 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Job Owner',
+                          'Rating',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.grey[800],
                             fontSize: 16,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            // Star rating display
-                            Row(
-                              children: List.generate(5, (index) {
-                                return Icon(
-                                  index < _ownerRating
-                                      ? Icons.star
-                                      : Icons.star_border,
-                                  color: Colors.amber,
-                                  size: 20,
-                                );
-                              }),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              _ownerRating > 0
-                                  ? '$_ownerRating.0'
-                                  : 'No ratings',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.amber[700],
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
+                        const SizedBox(height: 8),
                         const SizedBox(height: 12),
                         if (isJobOwnerLoading)
                           const Center(child: CircularProgressIndicator())
@@ -701,20 +672,20 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                                     : null,
                               ),
                               const SizedBox(width: 16),
-                              // Job Owner Details
+                              // Job Owner Name
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      "${jobOwnerData['firstName'] ?? ''} ${jobOwnerData['lastName'] ?? ''}",
+                                      "${jobOwnerData['fullName'] ?? jobOwnerData['name'] ?? '${jobOwnerData['firstName'] ?? ''} ${jobOwnerData['lastName'] ?? ''}'}",
                                       style: const TextStyle(
-                                        fontSize: 16,
+                                        fontSize: 14,
                                         fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
-                                    // Rating display
+                                    const SizedBox(height: 8),
                                     RatingDisplay(
                                       rating:
                                           _parseRating(jobOwnerData['rating']),
@@ -724,7 +695,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      "Completed ${_completedJobs} jobs",
+                                      "Completed ${jobOwnerData['completedJobs'] ?? 0} jobs",
                                       style: TextStyle(
                                         fontSize: 14,
                                         color: Colors.grey[600],
@@ -909,8 +880,8 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                                 width: 20,
                                 height: 20,
                                 child: CircularProgressIndicator(
-                                  valueColor:
-                                      AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
                                   strokeWidth: 2,
                                 ),
                               )
