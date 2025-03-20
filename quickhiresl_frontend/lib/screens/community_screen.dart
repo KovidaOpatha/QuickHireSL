@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -60,8 +61,16 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   Future<void> fetchJobOwnerData(String userId) async {
     try {
+      // Get token from storage
+      final storage = const FlutterSecureStorage();
+      final token = await storage.read(key: 'jwt_token');
+      
       final response = await http.get(
         Uri.parse('${_userService.baseUrl}/users/$userId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token', // Add token for authentication
+        },
       );
 
       if (response.statusCode == 200) {
@@ -76,6 +85,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
             jobOwners[userId] = data;
           });
         }
+      } else {
+        print('Error fetching job owner data: ${response.statusCode} - ${response.body}');
       }
     } catch (e) {
       print('Error fetching job owner data: $e');
@@ -267,15 +278,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       },
                     ),
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          if (widget.onNavigateToTab != null) {
-            widget.onNavigateToTab!(2); // Navigate to post job tab
-          }
-        },
-        child: Icon(Icons.add),
-        tooltip: 'Post a Job',
-      ),
+      // Removed floating action button
     );
   }
 }
