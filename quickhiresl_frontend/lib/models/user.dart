@@ -8,6 +8,8 @@ class User {
   final List<String>? skills;
   final String? location;
   final String? phoneNumber;
+  final int? rating;
+  final int? completedJobs;
 
   User({
     required this.id,
@@ -19,6 +21,8 @@ class User {
     this.skills,
     this.location,
     this.phoneNumber,
+    this.rating,
+    this.completedJobs,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -34,7 +38,33 @@ class User {
           skills: null,
           location: '',
           phoneNumber: '',
+          rating: 0,
+          completedJobs: 0,
         );
+      }
+
+      // Parse rating and completedJobs safely
+      int? parseRating() {
+        if (json['rating'] == null) return 0;
+        if (json['rating'] is int) return json['rating'];
+        if (json['rating'] is double) return json['rating'].round();
+        try {
+          return int.parse(json['rating'].toString());
+        } catch (e) {
+          return 0;
+        }
+      }
+
+      int? parseCompletedJobs() {
+        if (json['completedJobs'] == null) return 0;
+        if (json['completedJobs'] is int) return json['completedJobs'];
+        if (json['completedJobs'] is double)
+          return json['completedJobs'].round();
+        try {
+          return int.parse(json['completedJobs'].toString());
+        } catch (e) {
+          return 0;
+        }
       }
 
       return User(
@@ -44,11 +74,12 @@ class User {
         role: json['role'] ?? 'user',
         profileImage: json['profileImage'] ?? '',
         bio: json['bio'] ?? '',
-        skills: json['skills'] != null 
-          ? List<String>.from(json['skills'])
-          : null,
+        skills:
+            json['skills'] != null ? List<String>.from(json['skills']) : null,
         location: json['location'] ?? '',
         phoneNumber: json['phoneNumber'] ?? '',
+        rating: parseRating(),
+        completedJobs: parseCompletedJobs(),
       );
     } catch (e) {
       print('Error parsing user: $e');
@@ -68,6 +99,8 @@ class User {
       'skills': skills,
       'location': location,
       'phoneNumber': phoneNumber,
+      'rating': rating,
+      'completedJobs': completedJobs,
     };
   }
 }

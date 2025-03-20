@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import '../models/application.dart';
 import 'applicant_details_screen.dart';
 import '../widgets/feedback_dialog.dart';
+import 'previous_jobs_screen.dart'; // Import the PreviousJobsScreen
 
 class JobOwnerDashboard extends StatefulWidget {
   const JobOwnerDashboard({Key? key}) : super(key: key);
@@ -91,7 +92,8 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
     }
   }
 
-  Future<void> _confirmCompletion(String applicationId) async {
+  Future<void> _confirmCompletion(
+      String applicationId, Application application) async {
     try {
       final token = await _authService.getToken();
       if (token == null) {
@@ -108,6 +110,7 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
           provider.Provider.of<JobService>(context, listen: false);
       await jobService.confirmCompletion(applicationId, token!);
       await _loadApplications(); // Reload the list
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -116,7 +119,14 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
       }
 
       // Show the feedback dialog after confirming the completion
-      showFeedbackDialog(context, isJobOwner: true);
+      if (mounted) {
+        showFeedbackDialog(
+          context,
+          isJobOwner: true,
+          applicationId: applicationId,
+          targetUserId: application.applicant.id,
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -124,23 +134,6 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
         );
       }
     }
-  }
-
-  Widget _buildCompletionButton(Application application) {
-    if (application.status == 'completion_requested' &&
-        application.completionDetails?.requestedBy == 'applicant') {
-      return Expanded(
-        child: ElevatedButton(
-          onPressed: () => _showConfirmationDialog(application),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-            foregroundColor: Colors.white,
-          ),
-          child: const Text('Confirm Completion'),
-        ),
-      );
-    }
-    return const SizedBox.shrink();
   }
 
   Future<void> _showConfirmationDialog(Application application) async {
@@ -156,38 +149,9 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () async {
+            onPressed: () {
               Navigator.pop(dialogContext);
-
-              try {
-                final token = await _authService.getToken();
-                if (token == null) {
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please login to continue')),
-                  );
-                  return;
-                }
-
-                final jobService =
-                    provider.Provider.of<JobService>(context, listen: false);
-                await jobService.confirmCompletion(application.id, token);
-                await _loadApplications();
-
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Job completion confirmed successfully')),
-                );
-
-                // Show the feedback dialog after confirming the completion
-                showFeedbackDialog(context, isJobOwner: true);
-              } catch (e) {
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Failed to confirm completion: $e')),
-                );
-              }
+              _confirmCompletion(application.id, application);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
@@ -207,10 +171,22 @@ class _JobOwnerDashboardState extends State<JobOwnerDashboard> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text(
-          'Job Applications',
+          'Job Owner Dashboard',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: 'Previous Jobs',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PreviousJobsScreen(),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadApplications,

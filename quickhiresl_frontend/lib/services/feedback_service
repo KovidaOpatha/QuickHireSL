@@ -1,0 +1,97 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../config/config.dart';
+import '../models/feedback.dart' as feedback_model;
+
+class FeedbackService {
+  final String baseUrl = Config.apiUrl;
+  final storage = const FlutterSecureStorage();
+
+  // Submit feedback for a job
+  Future<Map<String, dynamic>> submitFeedback({
+    required int rating,
+    String? feedback,
+    required String applicationId,
+    required String targetUserId,
+  }) async {
+    try {
+      final token = await storage.read(key: 'jwt_token');
+      
+      if (token == null) {
+        throw Exception('Authentication required');
+      }
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/feedback'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode({
+          'rating': rating,
+          'feedback': feedback,
+          'applicationId': applicationId,
+          'targetUserId': targetUserId,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        return {
+          'success': true,
+          'data': data['data'],
+        };
+      } else {
+        print('Failed to submit feedback: ${response.body}');
+        final errorMsg = jsonDecode(response.body);
+        return {
+          'success': false,
+          'error': errorMsg['message'] ?? 'Failed to submit feedback',
+        };
+      }
+    } catch (e) {
+      print('Error submitting feedback: $e');
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
+  // Get feedback for a user
+  Future<List<feedback_model.Feedback>> getUserFeedback(String userId) async {
+    try {
+      final token = await storage.read(key: 'jwt_token');
+      
+      if (token == null) {
+        throw Exception('Authentication required');
+      }
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/feedback/user/$userId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] && data['data'] != null) {
+          return (data['data'] as List)
+              .map((item) => feedback_model.Feedback.fromJson(item))
+              .toList();
+        } else {
+          return [];
+        }
+      } else {
+        print('Failed to get user feedback: ${response.body}');
+        return [];
+      }
+    } catch (e) {
+      print('Error getting user feedback: $e');
+      return [];
+    }
+  }
+}
