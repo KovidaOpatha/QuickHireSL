@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'personalinformation_screen.dart';
 import '../services/auth_service.dart';
 
@@ -22,7 +21,6 @@ class _JobOwnerRegistrationScreenState
     extends State<JobOwnerRegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController shopNameController = TextEditingController();
-  final TextEditingController shopLocationController = TextEditingController();
   final TextEditingController shopRegNoController = TextEditingController();
   final AuthService _authService = AuthService();
   bool _isLoading = false;
@@ -51,43 +49,6 @@ class _JobOwnerRegistrationScreenState
     'Gampaha',
   ];
 
-  /// Fetch current location
-  Future<void> _getCurrentLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Location services are disabled. Please enable them.')),
-      );
-      return;
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Location permission denied.')),
-        );
-        return;
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Location permissions are permanently denied.')),
-      );
-      return;
-    }
-
-    final position = await Geolocator.getCurrentPosition();
-    shopLocationController.text = "${position.latitude}, ${position.longitude}";
-  }
-
   /// Submit form data to server
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
@@ -114,7 +75,7 @@ class _JobOwnerRegistrationScreenState
 
         // Ensure all required fields are filled
         if (shopNameController.text.isEmpty ||
-            shopLocationController.text.isEmpty ||
+            _selectedLocation == null ||
             shopRegNoController.text.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('All fields are required')),
@@ -128,7 +89,7 @@ class _JobOwnerRegistrationScreenState
         final jobOwnerDetails = {
           'jobOwnerDetails': {
             'shopName': shopNameController.text,
-            'shopLocation': shopLocationController.text,
+            'shopLocation': _selectedLocation,
             'shopRegisterNo': shopRegNoController.text,
           }
         };
@@ -291,7 +252,7 @@ class _JobOwnerRegistrationScreenState
     );
   }
 
-  /// Location Field with GPS Button
+  /// Location Field with Dropdown
   Widget _buildLocationField() {
     return DropdownButtonFormField<String>(
       value: _selectedLocation,
@@ -315,7 +276,6 @@ class _JobOwnerRegistrationScreenState
       onChanged: (String? newValue) {
         setState(() {
           _selectedLocation = newValue;
-          shopLocationController.text = newValue ?? '';
         });
       },
       validator: (value) => value == null || value.isEmpty ? 'Shop Location is required' : null,
