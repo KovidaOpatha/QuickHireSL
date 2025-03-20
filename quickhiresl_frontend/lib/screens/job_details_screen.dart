@@ -24,10 +24,34 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
   final UserService _userService = UserService();
   final _storage = const FlutterSecureStorage();
   bool _isApplying = false;
+  bool _isDeleting = false;
   Map<String, dynamic> jobOwnerData = {};
   bool isJobOwnerLoading = true;
   int _ownerRating = 0;
   int _completedJobs = 0;
+  String _currentUserId = '';
+  bool _isJobOwner = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchJobOwnerData();
+    _checkIfJobOwner();
+  }
+
+  Future<void> _checkIfJobOwner() async {
+    try {
+      final userId = await _storage.read(key: 'user_id');
+      if (userId != null) {
+        setState(() {
+          _currentUserId = userId;
+          _isJobOwner = widget.job.postedBy == userId;
+        });
+      }
+    } catch (e) {
+      print('Error checking job owner: $e');
+    }
+  }
 
   String _formatDate(DateTime date) {
     final now = DateTime.now();
@@ -103,12 +127,6 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
         ],
       ),
     );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchJobOwnerData();
   }
 
   Future<void> _fetchJobOwnerData() async {
@@ -360,6 +378,71 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     } catch (e) {
       print('Error parsing rating: $e');
       return 0.0;
+    }
+  }
+
+  Future<void> _deleteJob() async {
+    if (!_isJobOwner) return;
+    
+    // Check if job ID is null
+    if (widget.job.id == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cannot delete job: Job ID is missing'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    setState(() => _isDeleting = true);
+    try {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Delete Job'),
+          content: const Text('Are you sure you want to delete this job? This action cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed == true) {
+        // Use non-null assertion operator since we've already checked it's not null
+        final success = await _jobService.deleteJob(widget.job.id!);
+        if (success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Job deleted successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context, true); // Return true to indicate job was deleted
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete job: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isDeleting = false);
+      }
     }
   }
 
@@ -779,7 +862,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                     child: ElevatedButton(
                       onPressed: _isApplying ? null : _applyForJob,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
+                        backgroundColor: const Color(0xFF98C9C5),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -789,9 +872,9 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
-                                strokeWidth: 2,
                                 valueColor:
                                     AlwaysStoppedAnimation<Color>(Colors.white),
+                                strokeWidth: 2,
                               ),
                             )
                           : const Text(
@@ -807,35 +890,48 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
 
                   const SizedBox(height: 16),
 
-                  // Discuss button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: OutlinedButton(
-                      onPressed: () => _navigateToChat(),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFF98C9C5)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Icon(Icons.chat_bubble_outline,
-                              color: Color(0xFF98C9C5)),
-                          SizedBox(width: 8),
-                          Text(
-                            'Discuss Job',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Color(0xFF98C9C5),
-                            ),
+                  // Delete button (only visible for job owner)
+                  if (_isJobOwner) ...[
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: _isDeleting ? null : _deleteJob,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                        ],
+                        ),
+                        child: _isDeleting
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  valueColor:
+                                      AlwaysStoppedAnimation<Color>(Colors.white),
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: const [
+                                  Icon(Icons.delete, color: Colors.white),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Delete Job',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),

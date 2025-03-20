@@ -145,11 +145,20 @@ class JobService extends ChangeNotifier {
     }
   }
 
-  Future<void> deleteJob(String id, String token) async {
+  Future<bool> deleteJob(String jobId) async {
     try {
+      // Get token from AuthService
+      final authService = AuthService();
+      final token = await authService.getToken();
+      
+      if (token == null) {
+        throw Exception('User not authenticated');
+      }
+
       final response = await http.delete(
-        Uri.parse('$_baseUrl/$id'),
+        Uri.parse('$_baseUrl/$jobId'),
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
       );
@@ -157,8 +166,16 @@ class JobService extends ChangeNotifier {
       print('Delete job response: ${response.statusCode}');
       print('Response body: ${response.body}');
 
-      if (response.statusCode != 200) {
-        throw Exception('Failed to delete job: ${response.body}');
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        if (responseData['success'] == true) {
+          return true;
+        } else {
+          throw Exception(responseData['message'] ?? 'Failed to delete job');
+        }
+      } else {
+        final responseData = json.decode(response.body);
+        throw Exception(responseData['message'] ?? 'Failed to delete job');
       }
     } catch (e) {
       print('Error in deleteJob: $e');

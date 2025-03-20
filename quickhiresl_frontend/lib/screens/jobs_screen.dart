@@ -212,6 +212,20 @@ class _JobsScreenState extends State<JobsScreen> {
     );
   }
 
+  void _navigateToJobDetails(Job job) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => JobDetailsScreen(job: job),
+      ),
+    );
+    
+    // If result is true, it means the job was deleted
+    if (result == true) {
+      _loadJobs(); // Refresh the job list
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -341,13 +355,7 @@ class _JobsScreenState extends State<JobsScreen> {
                                 final job = _filteredJobs[index];
                                 return GestureDetector(
                                   onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            JobDetailsScreen(job: job),
-                                      ),
-                                    );
+                                    _navigateToJobDetails(job);
                                   },
                                   child: Container(
                                     margin:
