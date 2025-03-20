@@ -476,7 +476,7 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Job Posted By',
+                        'Rating',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -517,6 +517,27 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
                                   style: const TextStyle(
                                     fontSize: 14,
                                     color: Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    RatingDisplay(
+                                      rating: (jobOwnerData['rating'] ?? 0)
+                                          .toDouble(),
+                                      size: 18,
+                                      showText: false,
+                                      showValue: true,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  "Completed ${jobOwnerData['completedJobs'] ?? 0} jobs",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
+                                    fontStyle: FontStyle.italic,
                                   ),
                                 ),
                               ],
