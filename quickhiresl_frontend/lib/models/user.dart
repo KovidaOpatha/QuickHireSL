@@ -69,7 +69,7 @@ class User {
 
       return User(
         id: json['_id'] ?? json['id'] ?? '',
-        name: json['name'] ?? '',
+        name: _constructName(json),
         email: json['email'] ?? '',
         role: json['role'] ?? 'user',
         profileImage: json['profileImage'] ?? '',
@@ -88,9 +88,38 @@ class User {
     }
   }
 
+  static String _constructName(Map<String, dynamic> json) {
+    // First try to get the name directly
+    if (json['name'] != null && json['name'].toString().isNotEmpty) {
+      return json['name'].toString();
+    }
+
+    // If no direct name, try to construct from firstName and lastName
+    String firstName = json['firstName']?.toString() ?? '';
+    String lastName = json['lastName']?.toString() ?? '';
+
+    if (firstName.isNotEmpty || lastName.isNotEmpty) {
+      return '$firstName $lastName'.trim();
+    }
+
+    // If still no name, try email as fallback
+    if (json['email'] != null && json['email'].toString().isNotEmpty) {
+      return json['email']
+          .toString()
+          .split('@')[0]; // Use part before @ as name
+    }
+
+    // Last resort, use ID if available
+    if (json['_id'] != null || json['id'] != null) {
+      return 'User ${json['_id'] ?? json['id']}';
+    }
+
+    return 'Anonymous User';
+  }
+
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      '_id': id,
       'name': name,
       'email': email,
       'role': role,
