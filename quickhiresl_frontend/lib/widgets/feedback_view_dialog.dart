@@ -5,7 +5,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import '../config/config.dart';
 import '../models/feedback.dart' as app_models;
-import '../services/auth_service.dart';
 import 'rating_display.dart';
 
 void showFeedbackViewDialog(
@@ -22,17 +21,20 @@ void showFeedbackViewDialog(
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (context) {
-      return DraggableScrollableSheet(
-        initialChildSize: 0.85,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (context, scrollController) {
-          return _FeedbackViewWidget(
-            applicationId: applicationId,
-            userId: userId,
-            scrollController: scrollController,
-          );
-        },
+      return Container(
+        height: MediaQuery.of(context).size.height,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: _FeedbackViewWidget(
+          applicationId: applicationId,
+          userId: userId,
+          scrollController: ScrollController(),
+        ),
       );
     },
   );
@@ -59,20 +61,11 @@ class _FeedbackViewWidgetState extends State<_FeedbackViewWidget> {
   bool _isLoading = true;
   String? _error;
   double _averageRating = 0.0;
-  final AuthService _authService = AuthService();
-  String? _currentUserId;
-  String? _currentUserEmail;
 
   @override
   void initState() {
     super.initState();
-    _getCurrentUserInfo();
     _loadFeedbacks();
-  }
-
-  Future<void> _getCurrentUserInfo() async {
-    _currentUserId = await _authService.getUserId();
-    _currentUserEmail = await _authService.getEmail();
   }
 
   Future<void> _loadFeedbacks() async {
@@ -294,109 +287,44 @@ class _FeedbackViewWidgetState extends State<_FeedbackViewWidget> {
     }
   }
 
-  // Helper method to get the user name from feedback
-  String _getUserNameForFeedback(app_models.Feedback feedback) {
-    try {
-      // First try to get the name from fromUser
-      if (feedback.fromUser != null) {
-        final user = feedback.fromUser!;
-
-        // If this feedback is from the current logged-in user, show "You"
-        if (_currentUserId != null && user.id == _currentUserId) {
-          return "You";
-        }
-
-        // Try to use the user's name if it's not empty
-        if (user.name.isNotEmpty) {
-          return user.name;
-        }
-
-        // Fall back to email if name is empty
-        if (user.email.isNotEmpty) {
-          // If this is the current user's email, show "You"
-          if (_currentUserEmail != null && user.email == _currentUserEmail) {
-            return "You";
-          }
-          return user.email;
-        }
-
-        // If both name and email are empty, use the user ID
-        if (user.id.isNotEmpty) {
-          // If this is the current user's ID, show "You"
-          if (_currentUserId != null && user.id == _currentUserId) {
-            return "You";
-          }
-          return "User ${user.id}";
-        }
-      }
-
-      // If fromUser is not available or has no usable identifier, return a placeholder
-      return "Anonymous User";
-    } catch (e) {
-      print("Error getting user name: $e");
-      return "Anonymous User";
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return Scaffold(
       backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15.0),
-      ),
-      contentPadding: EdgeInsets.zero,
-      content: Container(
-        width: double.maxFinite,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Back button and title row
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  InkWell(
-                    onTap: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: Icon(Icons.arrow_back, color: Colors.black),
-                  ),
-                  Text(
-                    'Ratings & Reviews',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                  // Always show debug button during development to help with testing
-                  IconButton(
-                    icon: Icon(Icons.bug_report,
-                        color: _error != null ? Colors.orange : Colors.grey),
-                    onPressed: _testApiEndpoints,
-                    tooltip: 'Test with Mock Data',
-                  ),
-                ],
-              ),
-            ),
-            Divider(height: 1),
-            Flexible(
-              child: _isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(),
-                    )
-                  : _error != null
-                      ? _buildErrorDisplay()
-                      : _feedbacks.isEmpty
-                          ? _buildNoFeedbackDisplay()
-                          : _buildFeedbackList(),
-            ),
-          ],
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Colors.black87),
+          onPressed: () => Navigator.of(context).pop(),
         ),
+        title: Text(
+          'Ratings & Reviews',
+          style: TextStyle(
+            color: Colors.black87,
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.3,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.settings, color: Colors.black54),
+            onPressed: () {},
+          ),
+        ],
       ),
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF98C9C5)),
+              ),
+            )
+          : _error != null
+              ? _buildErrorDisplay()
+              : _feedbacks.isEmpty
+                  ? _buildNoFeedbackDisplay()
+                  : _buildFeedbackList(),
     );
   }
 
@@ -465,436 +393,292 @@ class _FeedbackViewWidgetState extends State<_FeedbackViewWidget> {
   }
 
   Widget _buildFeedbackList() {
-    return Column(
-      children: [
-        // Display average rating at the top
-        if (_feedbacks.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                Text(
-                  'Average Rating',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      _averageRating.toStringAsFixed(1),
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF98C9C5),
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    Icon(Icons.star, color: Colors.amber, size: 24),
-                    Text(
-                      ' (${_feedbacks.length} ${_feedbacks.length == 1 ? 'review' : 'reviews'})',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+    // Group feedbacks by rating
+    Map<int, List<app_models.Feedback>> groupedFeedbacks = {};
+    for (var feedback in _feedbacks) {
+      groupedFeedbacks.putIfAbsent(feedback.rating, () => []);
+      groupedFeedbacks[feedback.rating]!.add(feedback);
+    }
 
-        Expanded(
-          child: ListView.separated(
-            controller: widget.scrollController,
-            padding: const EdgeInsets.all(20),
-            itemCount: _feedbacks.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 20),
-            itemBuilder: (context, index) {
-              final feedback = _feedbacks[index];
-              return _buildReviewCard(feedback, index);
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildReviewCard(app_models.Feedback feedback, int index) {
-    final userName = _getUserNameForFeedback(feedback);
-    // Get initials for avatar
-    final initials = userName != "Anonymous User"
-        ? userName
-            .split(' ')
-            .map((e) => e.isNotEmpty ? e[0] : '')
-            .join('')
-            .toUpperCase()
-        : 'AU';
-
-    // Alternate card styles for visual interest
-    final isEven = index % 2 == 0;
-    final cardGradient = isEven
-        ? LinearGradient(
-            colors: [Colors.white, Color(0xFFF8F9FF)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          )
-        : LinearGradient(
-            colors: [Color(0xFFF8F9FF), Colors.white],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          );
+    // Sort ratings in descending order
+    final sortedRatings = groupedFeedbacks.keys.toList()
+      ..sort((a, b) => b.compareTo(a));
 
     return Container(
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: cardGradient,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            spreadRadius: 0,
-            offset: Offset(0, 5),
-          ),
-        ],
-        border: Border.all(
-          color: Colors.grey.withOpacity(0.1),
-          width: 1,
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Colors.white, Color(0xFFF8F9FF)],
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // User info and rating
-          Row(
-            children: [
-              // User avatar with gradient
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF3498DB), Color(0xFF2980B9)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Color(0xFF3498DB).withOpacity(0.2),
-                      blurRadius: 8,
-                      spreadRadius: 0,
-                      offset: Offset(0, 3),
-                    ),
-                  ],
+          // Header with total reviews and average rating
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  offset: Offset(0, 2),
+                  blurRadius: 5,
                 ),
-                child: Center(
-                  child: Text(
-                    initials.length > 2 ? initials.substring(0, 2) : initials,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Ratings & Reviews (${_feedbacks.length})',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black87,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      Row(
+                        children: [
+                          RatingDisplay(
+                            rating: _averageRating,
+                            size: 20,
+                            showText: false,
+                            showValue: false,
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(width: 15),
-              // User name and rating
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      userName,
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF98C9C5),
+                        Color(0xFF98C9C5).withOpacity(0.8),
+                      ],
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(0xFF98C9C5).withOpacity(0.2),
+                        offset: Offset(0, 3),
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      _averageRating.toStringAsFixed(1),
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 20,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
                       ),
                     ),
-                    const SizedBox(height: 5),
-                    Row(
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Rating distribution
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            color: Colors.white,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Rating Distribution',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                SizedBox(height: 12),
+                ...List.generate(5, (index) {
+                  final rating = 5 - index;
+                  final count = groupedFeedbacks[rating]?.length ?? 0;
+                  final percentage = _feedbacks.isEmpty
+                      ? 0.0
+                      : (count / _feedbacks.length * 100);
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
                       children: [
-                        RatingDisplay(
-                          rating: feedback.rating.toDouble(),
-                          size: 18,
-                          showText: false,
-                          showValue: false,
-                        ),
-                        const SizedBox(width: 8),
                         Text(
-                          '${feedback.rating.toDouble()}',
+                          '$rating',
                           style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.black,
+                            fontSize: 12,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Icon(Icons.star, size: 14, color: Color(0xFFFFB800)),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: percentage / 100,
+                              backgroundColor: Colors.grey[200],
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                  Color(0xFF98C9C5)),
+                              minHeight: 8,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          '${count.toString().padLeft(2, '0')}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          // Review text with decorative quote marks
-          if (feedback.feedback != null && feedback.feedback!.isNotEmpty)
-            Container(
-              margin: const EdgeInsets.only(top: 20),
-              padding: const EdgeInsets.all(15),
-              decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(
-                  color: Colors.grey.withOpacity(0.1),
-                  width: 1,
-                ),
-              ),
-              child: Stack(
-                children: [
-                  Positioned(
-                    left: 0,
-                    top: 0,
-                    child: Icon(
-                      Icons.format_quote,
-                      color: Colors.grey.withOpacity(0.2),
-                      size: 20,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(15, 10, 15, 10),
-                    child: Text(
-                      feedback.feedback!,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        color: Color(0xFF4B5563),
-                        height: 1.6,
-                        letterSpacing: 0.2,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Transform.rotate(
-                      angle: 3.14, // 180 degrees in radians
-                      child: Icon(
-                        Icons.format_quote,
-                        color: Colors.grey.withOpacity(0.2),
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else
-            Container(
-              margin: const EdgeInsets.only(top: 20),
-              padding: const EdgeInsets.all(15),
-              decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(15),
-                border: Border.all(
-                  color: Colors.grey.withOpacity(0.1),
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.chat_bubble_outline,
-                    color: Colors.grey[400],
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'No comment provided',
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: Colors.grey[500],
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ],
-              ),
+                  );
+                }),
+              ],
             ),
+          ),
+          // Feedback sections
+          Expanded(
+            child: ListView.builder(
+              controller: widget.scrollController,
+              padding: EdgeInsets.symmetric(vertical: 8),
+              itemCount: sortedRatings.length,
+              itemBuilder: (context, index) {
+                final rating = sortedRatings[index];
+                final feedbacks = groupedFeedbacks[rating]!;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+                      child: Row(
+                        children: [
+                          Text(
+                            '$rating Star Reviews',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            '(${feedbacks.length})',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ...feedbacks.map((feedback) => _buildReviewCard(feedback)),
+                  ],
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // Method to test the API with mock data for debugging
-  Future<void> _testApiEndpoints() async {
-    try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
-
-      print("DEBUG: Testing with mock feedback data");
-
-      // Create mock feedback data
-      final mockFeedbacks = [
-        {
-          "_id": "mock1",
-          "rating": 5,
-          "feedback":
-              "This person was excellent to work with. Very professional and delivered high-quality work ahead of schedule.",
-          "applicationId": "app123",
-          "fromUser": {
-            "_id": "user1",
-            "firstName": "John",
-            "lastName": "Smith",
-            "email": "john.smith@example.com",
-            "role": "jobseeker"
-          },
-          "targetUserId": {
-            "_id": widget.userId ?? "default-user",
-            "firstName": "Target",
-            "lastName": "User",
-            "email": "target@example.com",
-            "role": "employer"
-          },
-          "createdAt":
-              DateTime.now().subtract(Duration(days: 5)).toIso8601String(),
-        },
-        {
-          "_id": "mock2",
-          "rating": 4,
-          "feedback":
-              "Good job overall. Communication was clear and the work was completed as requested.",
-          "applicationId": "app456",
-          "userId": {
-            "_id": "user2",
-            "firstName": "Sarah",
-            "lastName": "Johnson",
-            "email": "sarah.j@example.com",
-            "role": "jobseeker"
-          },
-          "targetUserId": {
-            "_id": widget.userId ?? "default-user",
-            "firstName": "Target",
-            "lastName": "User",
-            "email": "target@example.com",
-            "role": "employer"
-          },
-          "createdAt":
-              DateTime.now().subtract(Duration(days: 12)).toIso8601String(),
-        },
-        {
-          "_id": "mock3",
-          "rating": 3,
-          "feedback":
-              "Satisfactory work. Met expectations but could improve on timeliness.",
-          "applicationId": "app789",
-          "userId": {
-            "_id": "user3",
-            "firstName": "Michael",
-            "lastName": "Wong",
-            "email": "michael.w@example.com",
-            "role": "jobseeker"
-          },
-          "targetUserId": {
-            "_id": widget.userId ?? "default-user",
-            "firstName": "Target",
-            "lastName": "User",
-            "email": "target@example.com",
-            "role": "employer"
-          },
-          "createdAt":
-              DateTime.now().subtract(Duration(days: 20)).toIso8601String(),
-        }
-      ];
-
-      // Process the mock data
-      setState(() {
-        _isLoading = false;
-        _feedbacks = mockFeedbacks
-            .map((item) {
-              try {
-                // Handle user objects with firstName/lastName instead of name
-                if (item['userId'] != null && item['userId'] is Map) {
-                  Map<String, dynamic> userData =
-                      item['userId'] as Map<String, dynamic>;
-                  print("DEBUG: User data from API: $userData");
-
-                  // Convert firstName/lastName to name
-                  if (userData.containsKey('firstName') ||
-                      userData.containsKey('lastName')) {
-                    String firstName = userData['firstName']?.toString() ?? '';
-                    String lastName = userData['lastName']?.toString() ?? '';
-                    userData['name'] = '$firstName $lastName'.trim();
-                    print(
-                        "DEBUG: Created name from firstName/lastName: ${userData['name']}");
-                  }
-
-                  // Map to fromUser for our model
-                  if (!item.containsKey('fromUser')) {
-                    item['fromUser'] = userData;
-                  }
-                }
-
-                if (item['targetUserId'] != null &&
-                    item['targetUserId'] is Map) {
-                  Map<String, dynamic> targetUserData =
-                      item['targetUserId'] as Map<String, dynamic>;
-                  print("DEBUG: Target user data from API: $targetUserData");
-
-                  // Convert firstName/lastName to name
-                  if (targetUserData.containsKey('firstName') ||
-                      targetUserData.containsKey('lastName')) {
-                    String firstName =
-                        targetUserData['firstName']?.toString() ?? '';
-                    String lastName =
-                        targetUserData['lastName']?.toString() ?? '';
-                    targetUserData['name'] = '$firstName $lastName'.trim();
-                    print(
-                        "DEBUG: Created target name from firstName/lastName: ${targetUserData['name']}");
-                  }
-
-                  // Map to targetUser for our model
-                  if (!item.containsKey('targetUser')) {
-                    item['targetUser'] = targetUserData;
-                  }
-                }
-
-                return app_models.Feedback.fromJson(item);
-              } catch (e) {
-                print("DEBUG: Error parsing mock feedback item: $e");
-                print("DEBUG: Problem item: $item");
-                return null;
-              }
-            })
-            .whereType<app_models.Feedback>()
-            .toList();
-
-        if (_feedbacks.isNotEmpty) {
-          _averageRating =
-              _feedbacks.fold(0.0, (sum, feedback) => sum + feedback.rating) /
-                  _feedbacks.length;
-        }
-      });
-
-      print("DEBUG: Successfully loaded ${_feedbacks.length} mock feedbacks");
-      if (_feedbacks.isNotEmpty) {
-        print(
-            "DEBUG: First feedback user name: ${_getUserNameForFeedback(_feedbacks.first)}");
-      }
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _error = 'Error with mock data: $e';
-      });
-      print("DEBUG: Error loading mock data: $e");
-    }
+  Widget _buildReviewCard(app_models.Feedback feedback) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            offset: Offset(0, 2),
+            blurRadius: 8,
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Color(0xFF98C9C5).withOpacity(0.1),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (feedback.feedback != null && feedback.feedback!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                child: Text(
+                  feedback.feedback!,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.black87,
+                    height: 1.4,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Color(0xFFFAFAFA),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(12),
+                  bottomRight: Radius.circular(12),
+                ),
+              ),
+              child: Row(
+                children: [
+                  RatingDisplay(
+                    rating: feedback.rating.toDouble(),
+                    size: 16,
+                    showText: false,
+                    showValue: false,
+                  ),
+                  SizedBox(width: 8),
+                  Text(
+                    'Anonymous User',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
