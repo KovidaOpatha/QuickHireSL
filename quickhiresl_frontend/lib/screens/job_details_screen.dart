@@ -191,47 +191,60 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     required IconData icon,
     Color? iconColor,
   }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: (iconColor ?? const Color(0xFF98C9C5)).withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 3),
           ),
-          child: Icon(
-            icon,
-            color: iconColor ?? const Color(0xFF98C9C5),
-            size: 20,
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: (iconColor ?? Colors.blue).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              color: iconColor ?? Colors.blue,
+              size: 24,
+            ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 12,
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -473,8 +486,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                             _buildDetailItem(
                               icon: Icons.attach_money,
                               title: 'Salary',
-                              value:
-                                  'LKR ${widget.job.salary.min} - ${widget.job.salary.max}',
+                              value: 'LKR ${widget.job.salary.value}',
                               iconColor: Colors.green,
                             ),
                             _buildDetailItem(
@@ -845,7 +857,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
           MaterialPageRoute(
             builder: (context) => JobApplicationScreen(
               jobTitle: widget.job.title,
-              salary: 'LKR ${widget.job.salary.min} - ${widget.job.salary.max}',
+              salary: 'LKR ${widget.job.salary.value}',
               email: email,
               jobOwnerEmail: widget.job.postedBy ?? '',
             ),
@@ -884,7 +896,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
       'id': widget.job.id,
       'title': widget.job.title,
       'company': widget.job.company,
-      'salary': 'LKR ${widget.job.salary.min} - ${widget.job.salary.max}',
+      'salary': 'LKR ${widget.job.salary.value}',
       'location': widget.job.location,
       'type': widget.job.employmentType,
       'postedBy': widget.job.postedBy

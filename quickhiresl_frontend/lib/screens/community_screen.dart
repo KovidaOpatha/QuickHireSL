@@ -103,7 +103,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
       'id': job.id,
       'title': job.title,
       'company': job.company,
-      'salary': 'LKR ${job.salary.min} - ${job.salary.max}',
+      'salary': 'LKR ${job.salary.value}',
       'location': job.location,
       'type': job.employmentType,
       'postedBy': job.postedBy,
@@ -264,7 +264,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                                   ),
                                   SizedBox(height: 12),
                                   Text(
-                                    'LKR ${job.salary.min} - ${job.salary.max}',
+                                    'LKR ${job.salary.value}',
                                     style: TextStyle(
                                       color: Theme.of(context).primaryColor,
                                       fontWeight: FontWeight.bold,

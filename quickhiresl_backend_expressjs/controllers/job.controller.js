@@ -40,8 +40,7 @@ exports.getJobs = async (req, res) => {
             location,
             employmentType,
             experienceLevel,
-            salaryMin,
-            salaryMax,
+            salary,
             search
         } = req.query;
 
@@ -56,11 +55,8 @@ exports.getJobs = async (req, res) => {
         if (experienceLevel) {
             query.experienceLevel = experienceLevel;
         }
-        if (salaryMin) {
-            query['salary.min'] = { $gte: parseInt(salaryMin) };
-        }
-        if (salaryMax) {
-            query['salary.max'] = { $lte: parseInt(salaryMax) };
+        if (salary) {
+            query.salary = { $gte: parseInt(salary) };
         }
         if (search) {
             query.$or = [

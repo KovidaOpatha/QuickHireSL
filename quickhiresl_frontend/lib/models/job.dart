@@ -1,26 +1,37 @@
 class Salary {
-  final int min;
-  final int max;
+  final int value;
   final String currency;
 
   Salary({
-    required this.min,
-    required this.max,
+    required this.value,
     this.currency = 'LKR',
   });
 
   factory Salary.fromJson(Map<String, dynamic> json) {
+    // Handle both old format and new format
+    if (json is int || json is double) {
+      return Salary(
+        value: (json as num).toInt(),
+      );
+    }
+    
+    if (json['min'] != null && json['max'] != null) {
+      // For backward compatibility with old data format
+      return Salary(
+        value: json['min'] ?? 0,
+        currency: json['currency'] ?? 'LKR',
+      );
+    }
+    
     return Salary(
-      min: json['min'] ?? 0,
-      max: json['max'] ?? 0,
+      value: json['value'] ?? 0,
       currency: json['currency'] ?? 'LKR',
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'min': min,
-      'max': max,
+      'value': value,
       'currency': currency,
     };
   }
@@ -126,7 +137,7 @@ class Job {
           location: '',
           description: '',
           requirements: [],
-          salary: Salary(min: 0, max: 0),
+          salary: Salary(value: 0),
           employmentType: '',
           experienceLevel: '',
           postedBy: '',
@@ -146,6 +157,14 @@ class Job {
             .toList();
       }
 
+      // Handle salary - could be a number or an object
+      Salary salary;
+      if (json['salary'] is int || json['salary'] is double) {
+        salary = Salary(value: (json['salary'] as num).toInt());
+      } else {
+        salary = Salary.fromJson(json['salary'] ?? {'value': 0, 'currency': 'LKR'});
+      }
+
       return Job(
         id: json['_id'] ?? json['id'] ?? '',
         title: json['title'] ?? '',
@@ -153,8 +172,7 @@ class Job {
         location: json['location'] ?? '',
         description: json['description'] ?? '',
         requirements: List<String>.from(json['requirements'] ?? []),
-        salary: Salary.fromJson(
-            json['salary'] ?? {'min': 0, 'max': 0, 'currency': 'LKR'}),
+        salary: salary,
         employmentType: json['employmentType'] ?? '',
         experienceLevel: json['experienceLevel'] ?? '',
         postedBy: json['postedBy'] is Map

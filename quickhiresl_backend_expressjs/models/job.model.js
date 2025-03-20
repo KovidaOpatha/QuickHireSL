@@ -30,18 +30,8 @@ const jobSchema = new mongoose.Schema({
         required: true
     }],
     salary: {
-        min: {
-            type: Number,
-            required: true
-        },
-        max: {
-            type: Number,
-            required: true
-        },
-        currency: {
-            type: String,
-            default: 'LKR'
-        }
+        type: Number,
+        required: true
     },
     employmentType: {
         type: String,

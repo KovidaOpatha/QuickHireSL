@@ -4,14 +4,23 @@ import 'package:http/http.dart' as http;
 import '../config/config.dart';
 import '../models/job.dart';
 import '../models/application.dart';
+import '../services/auth_service.dart';
 
 class JobService extends ChangeNotifier {
   final String _baseUrl = '${Config.apiUrl}/jobs';
 
-  Future<Job> createJob(Map<String, dynamic> jobData, String token) async {
+  Future<Job> createJob(Map<String, dynamic> jobData) async {
     try {
       print('Making request to: $_baseUrl');
       print('Request data: ${json.encode(jobData)}');
+
+      // Get token from AuthService
+      final authService = AuthService();
+      final token = await authService.getToken();
+      
+      if (token == null) {
+        throw Exception('User not authenticated');
+      }
 
       final response = await http.post(
         Uri.parse(_baseUrl),
@@ -45,8 +54,7 @@ class JobService extends ChangeNotifier {
     String? location,
     String? employmentType,
     String? experienceLevel,
-    int? salaryMin,
-    int? salaryMax,
+    int? salary,
     String? search,
   }) async {
     try {
@@ -56,8 +64,7 @@ class JobService extends ChangeNotifier {
         queryParams['employmentType'] = employmentType;
       if (experienceLevel != null)
         queryParams['experienceLevel'] = experienceLevel;
-      if (salaryMin != null) queryParams['salaryMin'] = salaryMin.toString();
-      if (salaryMax != null) queryParams['salaryMax'] = salaryMax.toString();
+      if (salary != null) queryParams['salary'] = salary.toString();
       if (search != null) queryParams['search'] = search;
 
       final response = await http.get(

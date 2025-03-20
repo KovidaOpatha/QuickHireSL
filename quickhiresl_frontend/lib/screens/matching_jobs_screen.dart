@@ -207,8 +207,15 @@ class _MatchingJobsScreenState extends State<MatchingJobsScreen> {
                 description: job['description'] ?? '',
                 requirements: List<String>.from(job['requirements'] ?? []),
                 salary: Salary(
-                  min: job['salary'] != null && job['salary']['min'] != null ? job['salary']['min'] : 0,
-                  max: job['salary'] != null && job['salary']['max'] != null ? job['salary']['max'] : 0,
+                  value: job['salary'] != null 
+                    ? (job['salary'] is int || job['salary'] is double) 
+                      ? job['salary'] 
+                      : job['salary']['min'] != null 
+                        ? job['salary']['min'] 
+                        : job['salary']['value'] != null 
+                          ? job['salary']['value'] 
+                          : 0
+                    : 0,
                   currency: job['salary'] != null && job['salary']['currency'] != null ? job['salary']['currency'] : 'LKR',
                 ),
                 postedBy: job['postedBy']?.toString() ?? '',

@@ -11,28 +11,28 @@ class PostJobScreen extends StatefulWidget {
 
 class _PostJobScreenState extends State<PostJobScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _jobService = JobService();
-  final _authService = AuthService();
-  final List<String> _requirements = [];
-  final _requirementController = TextEditingController();
-  final List<Map<String, dynamic>> _availableDates = [];
+  final JobService _jobService = JobService();
+  final AuthService _authService = AuthService();
+
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _companyController = TextEditingController();
+  final TextEditingController _locationController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _requirementController = TextEditingController();
+  final TextEditingController _salaryController = TextEditingController();
+
+  List<String> _requirements = [];
+  String _employmentType = 'Full-time';
+  String _experienceLevel = 'Entry';
+  String _category = '';
+  double _salary = 0;
+  List<Map<String, dynamic>> _availableDates = [];
+  bool _isSubmitting = false;
 
   // Controllers for date selection
   DateTime? _selectedDate;
   bool _isFullDay = false;
   final List<Map<String, String>> _selectedTimeSlots = [];
-
-  String _title = '';
-  String _company = '';
-  String _location = '';
-  String _description = '';
-  String _employmentType = 'Full-time';
-  String _experienceLevel = 'Entry';
-  String _category = '';
-  double _salaryMin = 0;
-  double _salaryMax = 0;
-  String _newRequirement = '';
-  bool _isLoading = false;
 
   // All available job categories (same as in JobCategoriesScreen)
   final List<String> _allCategories = [
@@ -87,7 +87,6 @@ class _PostJobScreenState extends State<PostJobScreen> {
       setState(() {
         _requirements.add(_requirementController.text);
         _requirementController.clear();
-        _newRequirement = '';
       });
     }
   }
@@ -312,72 +311,70 @@ class _PostJobScreenState extends State<PostJobScreen> {
   }
 
   Future<void> _submitJob() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
+    if (!_formKey.currentState!.validate()) return;
 
-      if (_requirements.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please add at least one requirement')),
-        );
-        return;
+    if (_requirements.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please add at least one requirement')),
+      );
+      return;
+    }
+
+    if (_category.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a job category')),
+      );
+      return;
+    }
+
+    if (_availableDates.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please add at least one available date')),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    _formKey.currentState!.save();
+
+    try {
+      final userId = await _authService.getUserId();
+
+      if (userId == null) {
+        throw Exception('User not authenticated');
       }
 
-      if (_category.isEmpty) {
+      final jobData = {
+        'title': _titleController.text.trim(),
+        'company': _companyController.text.trim(),
+        'location': _locationController.text.trim(),
+        'description': _descriptionController.text.trim(),
+        'requirements': _requirements,
+        'salary': _salary,
+        'employmentType': _employmentType,
+        'experienceLevel': _experienceLevel,
+        'postedBy': userId,
+        'category': _category,
+        'availableDates': _availableDates,
+      };
+
+      final job = await _jobService.createJob(jobData);
+
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select a job category')),
+          const SnackBar(content: Text('Job posted successfully!')),
         );
-        return;
+        Navigator.pop(context, true); // Return true to indicate success
       }
-
-      setState(() => _isLoading = true);
-
-      try {
-        // Get the current token
-        final token = await _authService.getToken();
-
-        if (token == null) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Please login first')),
-            );
-          }
-          return;
-        }
-
-        final jobData = {
-          'title': _title,
-          'company': _company,
-          'location': _location,
-          'description': _description,
-          'employmentType': _employmentType,
-          'experienceLevel': _experienceLevel,
-          'category': _category,
-          'salary': {
-            'min': _salaryMin,
-            'max': _salaryMax,
-          },
-          'requirements': _requirements,
-          'availableDates': _availableDates,
-        };
-
-        final job = await _jobService.createJob(jobData, token);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Job posted successfully!')),
-          );
-          Navigator.pop(context, true); // Return true to indicate success
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error posting job: ${e.toString()}')),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() => _isLoading = false);
-        }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error posting job: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
       }
     }
   }
@@ -437,35 +434,35 @@ class _PostJobScreenState extends State<PostJobScreen> {
                   children: [
                     TextFormField(
                       decoration: _getInputDecoration('Job Title'),
+                      controller: _titleController,
                       validator: (value) => value?.isEmpty ?? true
                           ? 'Please enter a job title'
                           : null,
-                      onSaved: (value) => _title = value ?? '',
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       decoration: _getInputDecoration('Company'),
+                      controller: _companyController,
                       validator: (value) => value?.isEmpty ?? true
                           ? 'Please enter a company name'
                           : null,
-                      onSaved: (value) => _company = value ?? '',
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       decoration: _getInputDecoration('Location'),
+                      controller: _locationController,
                       validator: (value) => value?.isEmpty ?? true
                           ? 'Please enter a location'
                           : null,
-                      onSaved: (value) => _location = value ?? '',
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
                       decoration: _getInputDecoration('Description'),
+                      controller: _descriptionController,
                       maxLines: 3,
                       validator: (value) => value?.isEmpty ?? true
                           ? 'Please enter a description'
                           : null,
-                      onSaved: (value) => _description = value ?? '',
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
@@ -524,32 +521,15 @@ class _PostJobScreenState extends State<PostJobScreen> {
                           setState(() => _experienceLevel = value ?? 'Entry'),
                     ),
                     const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            decoration: _getInputDecoration('Min Salary (LKR)'),
-                            keyboardType: TextInputType.number,
-                            validator: (value) => value?.isEmpty ?? true
-                                ? 'Please enter minimum salary'
-                                : null,
-                            onSaved: (value) =>
-                                _salaryMin = double.tryParse(value ?? '0') ?? 0,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: TextFormField(
-                            decoration: _getInputDecoration('Max Salary (LKR)'),
-                            keyboardType: TextInputType.number,
-                            validator: (value) => value?.isEmpty ?? true
-                                ? 'Please enter maximum salary'
-                                : null,
-                            onSaved: (value) =>
-                                _salaryMax = double.tryParse(value ?? '0') ?? 0,
-                          ),
-                        ),
-                      ],
+                    TextFormField(
+                      decoration: _getInputDecoration('Salary (LKR)'),
+                      controller: _salaryController,
+                      keyboardType: TextInputType.number,
+                      validator: (value) => value?.isEmpty ?? true
+                          ? 'Please enter salary'
+                          : null,
+                      onSaved: (value) =>
+                          _salary = double.tryParse(value ?? '0') ?? 0,
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -558,7 +538,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                           child: TextFormField(
                             decoration: _getInputDecoration('Add Requirement'),
                             controller: _requirementController,
-                            onChanged: (value) => _newRequirement = value,
+                            onChanged: (value) => setState(() {}),
                           ),
                         ),
                         IconButton(
@@ -615,14 +595,14 @@ class _PostJobScreenState extends State<PostJobScreen> {
                     SizedBox(
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: _isLoading ? null : _submitJob,
+                        onPressed: _isSubmitting ? null : _submitJob,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.black,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        child: _isLoading
+                        child: _isSubmitting
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
@@ -655,6 +635,11 @@ class _PostJobScreenState extends State<PostJobScreen> {
   @override
   void dispose() {
     _requirementController.dispose();
+    _titleController.dispose();
+    _companyController.dispose();
+    _locationController.dispose();
+    _descriptionController.dispose();
+    _salaryController.dispose();
     super.dispose();
   }
 }
