@@ -14,6 +14,7 @@ const jobMatchingRoutes = require('./routes/job-matching.routes');
 const chatController = require('./controllers/chat.controller');
 const authMiddleware = require('./middleware/auth.middleware');
 const chatRoutes = require('./routes/chat.routes');
+const messagesRoutes = require('./routes/messages.js');
 
 dotenv.config();
 
@@ -41,6 +42,7 @@ app.use('/api/applications', applicationRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/matching', jobMatchingRoutes);
 app.use('/api', chatRoutes);
+app.use('/api/messages', messagesRoutes);
 
 // Chat routes
 app.get('/api/jobs/:jobId/chat', authMiddleware, chatController.getJobChat);
