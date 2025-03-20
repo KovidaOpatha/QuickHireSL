@@ -28,6 +28,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
   double _salary = 0;
   List<Map<String, dynamic>> _availableDates = [];
   bool _isSubmitting = false;
+  String? _selectedLocation;
 
   // Controllers for date selection
   DateTime? _selectedDate;
@@ -80,6 +81,31 @@ class _PostJobScreenState extends State<PostJobScreen> {
     'Mid-level',
     'Senior',
     'Lead'
+  ];
+
+  // Standardized list of locations
+  final List<String> _availableLocations = [
+    'Dehiwala',
+    'Mount Lavinia',
+    'Nugegoda',
+    'Maharagama',
+    'Boralesgamuwa',
+    'Battaramulla',
+    'Kaduwela',
+    'Athurugiriya',
+    'Malabe',
+    'Homagama',
+    'Pannipitiya',
+    'Piliyandala',
+    'Ratmalana',
+    'Wattala',
+    'Kelaniya',
+    'Ja-Ela',
+    'Negombo',
+    'Panadura',
+    'Moratuwa',
+    'Kadawatha',
+    'Gampaha',
   ];
 
   void _addRequirement() {
@@ -334,6 +360,13 @@ class _PostJobScreenState extends State<PostJobScreen> {
       return;
     }
 
+    if (_selectedLocation == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a location')),
+      );
+      return;
+    }
+
     setState(() => _isSubmitting = true);
     _formKey.currentState!.save();
 
@@ -448,12 +481,29 @@ class _PostJobScreenState extends State<PostJobScreen> {
                           : null,
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
+                    DropdownButtonFormField<String>(
                       decoration: _getInputDecoration('Location'),
-                      controller: _locationController,
-                      validator: (value) => value?.isEmpty ?? true
-                          ? 'Please enter a location'
-                          : null,
+                      value: _selectedLocation,
+                      hint: const Text('Select a location'),
+                      isExpanded: true,
+                      items: _availableLocations
+                          .map((location) => DropdownMenuItem(
+                                value: location,
+                                child: Text(location),
+                              ))
+                          .toList(),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please select a location';
+                        }
+                        return null;
+                      },
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedLocation = value;
+                          _locationController.text = value ?? '';
+                        });
+                      },
                     ),
                     const SizedBox(height: 16),
                     TextFormField(

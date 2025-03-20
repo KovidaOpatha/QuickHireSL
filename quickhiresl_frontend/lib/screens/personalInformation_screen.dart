@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'home_screen.dart';
 
 class PersonalInformationScreen extends StatefulWidget {
@@ -17,6 +18,23 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
   final TextEditingController dobController = TextEditingController();
   final TextEditingController mobileController = TextEditingController();
   final TextEditingController nicController = TextEditingController();
+  DateTime? _selectedDate;
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime(1950),
+      lastDate: DateTime.now(),
+    );
+
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+        dobController.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +84,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
                         const SizedBox(height: 15),
                         _buildTextField(addressController, "Leaving Address"),
                         const SizedBox(height: 15),
-                        _buildTextField(dobController, "Date of Birth"),
+                        _buildTextField(dobController, "Date of Birth", isDateField: true),
                         const SizedBox(height: 15),
                         _buildTextField(mobileController, "Mobile Number"),
                         const SizedBox(height: 15),
@@ -111,9 +129,11 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
   }
 
   // Reusable Text Field Widget with Floating Labels and Border
-  Widget _buildTextField(TextEditingController controller, String labelText) {
+  Widget _buildTextField(TextEditingController controller, String labelText, {bool isDateField = false}) {
     return TextFormField(
       controller: controller,
+      readOnly: isDateField,
+      onTap: isDateField ? () => _selectDate(context) : null,
       decoration: InputDecoration(
         labelText: labelText,
         floatingLabelBehavior: FloatingLabelBehavior.auto,
@@ -132,6 +152,7 @@ class _PersonalInformationScreenState extends State<PersonalInformationScreen> {
           borderRadius: BorderRadius.circular(30),
           borderSide: const BorderSide(color: Colors.black, width: 2),
         ),
+        suffixIcon: isDateField ? const Icon(Icons.calendar_today) : null,
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {

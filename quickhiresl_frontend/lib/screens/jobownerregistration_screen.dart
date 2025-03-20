@@ -26,6 +26,30 @@ class _JobOwnerRegistrationScreenState
   final TextEditingController shopRegNoController = TextEditingController();
   final AuthService _authService = AuthService();
   bool _isLoading = false;
+  String? _selectedLocation;
+  final List<String> _availableLocations = [
+    'Dehiwala',
+    'Mount Lavinia',
+    'Nugegoda',
+    'Maharagama',
+    'Boralesgamuwa',
+    'Battaramulla',
+    'Kaduwela',
+    'Athurugiriya',
+    'Malabe',
+    'Homagama',
+    'Pannipitiya',
+    'Piliyandala',
+    'Ratmalana',
+    'Wattala',
+    'Kelaniya',
+    'Ja-Ela',
+    'Negombo',
+    'Panadura',
+    'Moratuwa',
+    'Kadawatha',
+    'Gampaha',
+  ];
 
   /// Fetch current location
   Future<void> _getCurrentLocation() async {
@@ -269,22 +293,32 @@ class _JobOwnerRegistrationScreenState
 
   /// Location Field with GPS Button
   Widget _buildLocationField() {
-    return TextFormField(
-      controller: shopLocationController,
+    return DropdownButtonFormField<String>(
+      value: _selectedLocation,
       decoration: InputDecoration(
         labelText: "Shop Location",
         filled: true,
         fillColor: Colors.white,
         floatingLabelBehavior: FloatingLabelBehavior.auto,
-        suffixIcon: IconButton(
-          icon: const Icon(Icons.location_on, color: Colors.red),
-          onPressed: _getCurrentLocation,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
           borderSide: BorderSide(color: Colors.grey.shade400),
         ),
       ),
+      items: _availableLocations.map((String location) {
+        return DropdownMenuItem<String>(
+          value: location,
+          child: Text(location),
+        );
+      }).toList(),
+      onChanged: (String? newValue) {
+        setState(() {
+          _selectedLocation = newValue;
+          shopLocationController.text = newValue ?? '';
+        });
+      },
+      validator: (value) => value == null || value.isEmpty ? 'Shop Location is required' : null,
     );
   }
 }
