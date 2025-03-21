@@ -163,4 +163,50 @@ class UserService {
       };
     }
   }
+
+  Future<Map<String, dynamic>> updateJobPreferences(Map<String, dynamic> jobPreferences) async {
+    try {
+      final token = await storage.read(key: 'jwt_token');
+      final userId = await storage.read(key: 'user_id');
+
+      if (token == null || userId == null) {
+        throw Exception('Authentication required');
+      }
+
+      print('[UserService] Updating job preferences for user: $userId');
+      print('[UserService] Preferences data: $jobPreferences');
+      
+      final response = await http.put(
+        Uri.parse('$baseUrl/users/$userId/job-preferences'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: json.encode(jobPreferences),
+      );
+
+      print('[UserService] Response status: ${response.statusCode}');
+      print('[UserService] Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        print('[UserService] Job preferences updated successfully');
+        return {
+          'success': true,
+          'data': json.decode(response.body)
+        };
+      } else {
+        print('[UserService] Failed to update job preferences: ${response.body}');
+        return {
+          'success': false,
+          'error': 'Failed to update job preferences',
+        };
+      }
+    } catch (e) {
+      print('[ERROR] Job preferences update error: $e');
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
+  }
 }

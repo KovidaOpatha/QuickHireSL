@@ -1,4 +1,4 @@
-import 'package:geolocator/geolocator.dart';
+// LocationService class for managing standardized locations in Sri Lanka
 
 class LocationService {
   // List of standardized locations

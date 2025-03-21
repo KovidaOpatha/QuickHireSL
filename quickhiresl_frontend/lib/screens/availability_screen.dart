@@ -4,7 +4,12 @@ import '../services/availability_service.dart';
 import '../services/auth_service.dart';
 
 class AvailabilityScreen extends StatefulWidget {
-  const AvailabilityScreen({Key? key}) : super(key: key);
+  final bool fromRegistration;
+  
+  const AvailabilityScreen({
+    Key? key, 
+    this.fromRegistration = false
+  }) : super(key: key);
 
   @override
   _AvailabilityScreenState createState() => _AvailabilityScreenState();
@@ -626,7 +631,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: _completeRegistration,
+                            onPressed: widget.fromRegistration ? _completeRegistration : null,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.black,
                               foregroundColor: Colors.white,
