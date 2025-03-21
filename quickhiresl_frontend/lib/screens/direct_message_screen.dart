@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/config.dart';
 import '../services/user_service.dart';
+import '../utils/profile_image_util.dart';
 
 class DirectMessageScreen extends StatefulWidget {
   final String receiverId;
@@ -226,7 +227,7 @@ class _DirectMessageScreenState extends State<DirectMessageScreen> {
           children: [
             if (widget.receiverAvatar != null)
               CircleAvatar(
-                backgroundImage: NetworkImage(widget.receiverAvatar!),
+                backgroundImage: ProfileImageUtil.getProfileImageProvider(widget.receiverAvatar!),
                 radius: 20,
                 backgroundColor: Colors.grey[200],
                 onBackgroundImageError: (_, __) {
@@ -315,7 +316,7 @@ class _DirectMessageScreenState extends State<DirectMessageScreen> {
                                 if (!isMe) ...[
                                   hasAvatar
                                       ? CircleAvatar(
-                                          backgroundImage: NetworkImage(avatarUrl),
+                                          backgroundImage: ProfileImageUtil.getProfileImageProvider(avatarUrl),
                                           radius: 16,
                                           backgroundColor: Colors.grey[300],
                                           onBackgroundImageError: (_, __) {
@@ -369,7 +370,7 @@ class _DirectMessageScreenState extends State<DirectMessageScreen> {
                                   SizedBox(width: 8),
                                   hasAvatar
                                       ? CircleAvatar(
-                                          backgroundImage: NetworkImage(
+                                          backgroundImage: ProfileImageUtil.getProfileImageProvider(
                                               userAvatar != null ? _userService.getFullImageUrl(userAvatar!) : ''),
                                           radius: 16,
                                           backgroundColor: Colors.grey[300],

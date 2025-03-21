@@ -288,11 +288,15 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
         );
 
         // Navigate to home screen or dashboard
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/home',
-          (route) => false,
-        );
+        if (widget.fromRegistration) {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/home',
+            (route) => false,
+          );
+        } else {
+          Navigator.pop(context); // Just go back if not from registration
+        }
       } else {
         // Show error message
         ScaffoldMessenger.of(context).showSnackBar(
@@ -631,7 +635,7 @@ class _AvailabilityScreenState extends State<AvailabilityScreen> {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: widget.fromRegistration ? _completeRegistration : null,
+                            onPressed: (widget.fromRegistration || _availabilityDates.isNotEmpty) ? _completeRegistration : null,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.black,
                               foregroundColor: Colors.white,

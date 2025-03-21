@@ -152,7 +152,7 @@ class _JobCategoriesScreenState extends State<JobCategoriesScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const AvailabilityScreen(),
+            builder: (context) => AvailabilityScreen(fromRegistration: true),
           ),
         );
       }

@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import '../models/job.dart';
 import '../services/job_service.dart';
 import '../services/user_service.dart';
+import '../utils/profile_image_util.dart';
 import '../widgets/rating_display.dart';
 import '../widgets/feedback_view_dialog.dart';
 import 'job_application_screen.dart';
@@ -166,7 +167,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
         if (data['profileImage'] != null &&
             data['profileImage'].toString().isNotEmpty) {
           data['profilePicture'] =
-              _userService.getFullImageUrl(data['profileImage']);
+              ProfileImageUtil.getFullImageUrl(data['profileImage']);
           print('Profile Picture URL: ${data['profilePicture']}');
         } else {
           print('No profile image found for user');
@@ -327,6 +328,32 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
     );
   }
 
+  Widget _buildBackgroundImage() {
+    if (isJobOwnerLoading || jobOwnerData.isEmpty) {
+      return _buildDefaultCompanyBackground();
+    }
+
+    final imageUrl = jobOwnerData['profilePicture'];
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return _buildDefaultCompanyBackground();
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: ProfileImageUtil.getProfileImageProvider(imageUrl) ?? AssetImage('assets/default_company.png') as ImageProvider,
+          fit: BoxFit.cover,
+          onError: (_, __) {
+            print('Error loading profile image');
+            setState(() {
+              jobOwnerData['profilePicture'] = null;
+            });
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _buildDefaultCompanyBackground() {
     return Container(
       decoration: BoxDecoration(
@@ -466,19 +493,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                 fit: StackFit.expand,
                 children: [
                   // Background with profile picture
-                  !isJobOwnerLoading &&
-                          jobOwnerData.isNotEmpty &&
-                          jobOwnerData['profilePicture'] != null &&
-                          jobOwnerData['profilePicture'].toString().isNotEmpty
-                      ? Image.network(
-                          jobOwnerData['profilePicture'],
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            print('Error loading profile image: $error');
-                            return _buildDefaultCompanyBackground();
-                          },
-                        )
-                      : _buildDefaultCompanyBackground(),
+                  _buildBackgroundImage(),
 
                   // Overlay gradient for better text visibility
                   Container(
@@ -661,7 +676,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                                             jobOwnerData['profilePicture']
                                                 .toString()
                                                 .isNotEmpty
-                                        ? NetworkImage(
+                                        ? ProfileImageUtil.getProfileImageProvider(
                                             jobOwnerData['profilePicture'])
                                         : null,
                                 child: jobOwnerData['profilePicture'] == null ||

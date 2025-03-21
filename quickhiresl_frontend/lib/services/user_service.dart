@@ -4,24 +4,14 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/config.dart';
+import '../utils/profile_image_util.dart';
 
 class UserService {
   final String baseUrl = Config.apiUrl;
   final storage = const FlutterSecureStorage();
 
   String getFullImageUrl(String? imagePath) {
-    if (imagePath == null || imagePath.isEmpty) return '';
-    
-    // If it's already a full URL (Cloudinary or data URL), return it as is
-    if (imagePath.startsWith('http') || imagePath.startsWith('https') || imagePath.startsWith('data:')) {
-      return imagePath;
-    }
-    
-    // Remove any leading slashes and add the correct base URL
-    final cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
-    // Extract the base server URL without the /api path
-    final serverUrl = Config.apiUrl.replaceAll('/api', '');
-    return '$serverUrl/$cleanPath';
+    return ProfileImageUtil.getFullImageUrl(imagePath);
   }
 
   Future<Map<String, dynamic>> getUserProfile() async {

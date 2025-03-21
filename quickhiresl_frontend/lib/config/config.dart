@@ -23,8 +23,8 @@ class Config {
   // static const String apiUrl = 'http://10.0.2.2:3000/api';
 
   // Option 3: For local development
-  static const String apiUrl = 'http://localhost:3000/api';
+  // static const String apiUrl = 'http://localhost:3000/api';
 
   // Option 4: For production deployment
-  // static const String apiUrl = 'https://your-backend-url.com/api';
+  static const String apiUrl = 'https://quickhiresl2-d8e9g7h6b0c5emgx.southeastasia-01.azurewebsites.net/api';
 }

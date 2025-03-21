@@ -6,6 +6,7 @@ import '../services/job_service.dart';
 import '../services/user_service.dart';
 import '../services/auth_service.dart';
 import '../services/favorites_service.dart';
+import '../utils/profile_image_util.dart';
 import 'job_details_screen.dart';
 import 'home_screen.dart';
 
@@ -384,10 +385,10 @@ class _JobsScreenState extends State<JobsScreen> {
                                               ? ClipRRect(
                                                   borderRadius:
                                                       BorderRadius.circular(8),
-                                                  child: Image.network(
-                                                    _jobOwnerData[
-                                                            job.postedBy]![
-                                                        'profilePicture'],
+                                                  child: Image(
+                                                    image: ProfileImageUtil.getProfileImageProvider(
+                                                      _jobOwnerData[job.postedBy]!['profilePicture']
+                                                    ) ?? AssetImage('assets/default_company.png') as ImageProvider,
                                                     fit: BoxFit.cover,
                                                     errorBuilder: (context,
                                                         error, stackTrace) {

@@ -1,12 +1,14 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../config/config.dart';
 import '../models/job.dart';
 import '../services/job_service.dart';
 import '../services/auth_service.dart';
 import '../services/notification_service.dart';
 import '../services/user_service.dart';
 import '../services/favorites_service.dart';
+import '../utils/profile_image_util.dart';
 import '../widgets/notification_icon.dart';
 import 'post_job_screen.dart';
 import 'job_details_screen.dart';
@@ -452,9 +454,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ? ClipRRect(
                                               borderRadius:
                                                   BorderRadius.circular(8),
-                                              child: Image.network(
-                                                _jobOwnerData[job.postedBy]![
-                                                    'profilePicture'],
+                                              child: Image(
+                                                image: ProfileImageUtil.getProfileImageProvider(
+                                                  _jobOwnerData[job.postedBy]![
+                                                      'profilePicture'],
+                                                ) ??
+                                                    AssetImage(
+                                                        'assets/default_company.png')
+                                                        as ImageProvider,
                                                 fit: BoxFit.cover,
                                                 errorBuilder:
                                                     (context, error, stackTrace) {
@@ -758,26 +765,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 : CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.white,
-                    child: _userData?['profileImage'] != null && _userData!['profileImage'].isNotEmpty
-                      ? ClipOval(
-                          child: Image.network(
-                            _userData!['profileImage'],
-                            fit: BoxFit.cover,
-                            width: 100,
-                            height: 100,
-                            errorBuilder: (context, error, stackTrace) {
-                              print('[ERROR] Failed to load profile image: $error');
-                              return const Icon(Icons.person, size: 70, color: Colors.black54);
-                            },
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return const Center(
-                                child: CircularProgressIndicator(),
-                              );
-                            },
-                          ),
-                        )
-                      : const Icon(Icons.person, size: 70, color: Colors.black54),
+                    backgroundImage: _userData?['profileImage'] != null && _userData!['profileImage'].isNotEmpty
+                      ? ProfileImageUtil.getProfileImageProvider(_userData!['profileImage'])
+                      : null,
+                    child: (_userData?['profileImage'] == null || _userData!['profileImage'].isEmpty)
+                      ? const Icon(Icons.person, size: 70, color: Colors.black54)
+                      : null,
                   ),
             ),
             
@@ -1331,7 +1324,11 @@ class _SearchPageState extends State<_SearchPage> {
                                           ),
                                           IconButton(
                                             icon: Icon(
-                                              Icons.favorite,
+                                              job.id != null &&
+                                                      widget.favoriteStatus[job.id] ==
+                                                          true
+                                                  ? Icons.favorite
+                                                  : Icons.favorite_border,
                                               color: job.id != null &&
                                                       widget.favoriteStatus[job.id] ==
                                                           true

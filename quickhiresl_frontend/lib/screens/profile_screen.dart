@@ -7,6 +7,7 @@ import '../widgets/rating_display.dart';
 import 'job_owner_dashboard.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import '../utils/profile_image_util.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -169,10 +170,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             backgroundColor: Colors.grey[200],
                             backgroundImage: _imageFile != null 
                               ? FileImage(_imageFile!) 
-                              : (_userData?['profileImage'] != null 
-                                ? NetworkImage(_userData?['profileImage']) as ImageProvider 
-                                : null),
-                            child: (_imageFile == null && _userData?['profileImage'] == null)
+                              : ProfileImageUtil.getProfileImageProvider(_userData?['profileImage']),
+                            child: (_imageFile == null && (_userData?['profileImage'] == null || _userData!['profileImage'].isEmpty))
                               ? const Icon(Icons.person, size: 40, color: Colors.grey)
                               : null,
                           ),
@@ -353,27 +352,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // Helper method to get the correct image provider
   ImageProvider? _getProfileImage() {
-    if (_userData == null || 
-        _userData!['profileImage'] == null || 
-        _userData!['profileImage'].isEmpty) {
-      return null;
-    }
-    
-    final imageUrl = _userData!['profileImage'];
-    
-    if (imageUrl.startsWith('data:image')) {
-      // Handle data URL
-      try {
-        final base64String = imageUrl.split(',').last;
-        return MemoryImage(base64Decode(base64String));
-      } catch (e) {
-        print('Error decoding base64 image: $e');
-        return null;
-      }
-    } else {
-      // Handle network image
-      return NetworkImage(imageUrl);
-    }
+    return ProfileImageUtil.getProfileImageProvider(_userData?['profileImage']);
   }
 
   void _showEditBioDialog() {

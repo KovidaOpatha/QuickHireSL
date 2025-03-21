@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/config.dart';
 import '../widgets/rating_display.dart';
+import '../utils/profile_image_util.dart';
 
 class JobApplicationScreen extends StatefulWidget {
   final String jobTitle;
@@ -415,7 +416,7 @@ class _JobApplicationScreenState extends State<JobApplicationScreen> {
                             backgroundColor: const Color(0xFF98C9C5),
                             backgroundImage:
                                 jobOwnerData['profileImage'] != null
-                                    ? NetworkImage(jobOwnerData['profileImage'])
+                                    ? ProfileImageUtil.getProfileImageProvider(jobOwnerData['profileImage'])
                                     : null,
                             child: jobOwnerData['profileImage'] == null
                                 ? const Icon(Icons.person,

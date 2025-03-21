@@ -6,6 +6,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/config.dart';
 import '../models/job.dart';
 import '../services/user_service.dart';
+import '../utils/profile_image_util.dart';
 import 'community_screen.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -187,7 +188,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     widget.job!['profilePicture'].toString().isNotEmpty
                 ? CircleAvatar(
                     backgroundImage:
-                        NetworkImage(widget.job!['profilePicture']),
+                        ProfileImageUtil.getProfileImageProvider(widget.job!['profilePicture']),
                     radius: 16,
                     backgroundColor: Colors.grey[200],
                     onBackgroundImageError: (_, __) {
@@ -287,7 +288,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                     hasAvatar
                                         ? CircleAvatar(
                                             backgroundImage:
-                                                NetworkImage(avatarUrl),
+                                                ProfileImageUtil.getProfileImageProvider(avatarUrl),
                                             radius: 16,
                                             backgroundColor: Colors.grey[300],
                                             onBackgroundImageError: (_, __) {
@@ -359,7 +360,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                     hasAvatar
                                         ? CircleAvatar(
                                             backgroundImage:
-                                                NetworkImage(avatarUrl),
+                                                ProfileImageUtil.getProfileImageProvider(avatarUrl),
                                             radius: 16,
                                             backgroundColor: Colors.grey[300],
                                             onBackgroundImageError: (_, __) {
