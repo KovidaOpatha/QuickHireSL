@@ -61,7 +61,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error marking all notifications as read: $e')),
+          SnackBar(
+              content: Text('Error marking all notifications as read: $e')),
         );
       }
     }
@@ -71,6 +72,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        // Using the mint/seafoam green theme color from home screen
+        backgroundColor: const Color(0xFF98C9C5),
         title: const Text("Notifications"),
         actions: [
           if (_notifications.isNotEmpty)
@@ -81,6 +84,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
             ),
         ],
       ),
+      // Adding a light grey background color to the screen
+      backgroundColor: Colors.grey[50],
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _notifications.isEmpty
@@ -88,6 +93,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
               : RefreshIndicator(
                   onRefresh: _loadNotifications,
                   child: ListView.builder(
+                    padding: const EdgeInsets.all(
+                        8.0), // Adding padding around the list
                     itemCount: _notifications.length,
                     itemBuilder: (context, index) {
                       final notification = _notifications[index];
@@ -96,30 +103,54 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         onDismissed: (direction) =>
                             _markAsRead(notification['_id']),
                         background: Container(
-                          color: Colors.green,
+                          decoration: BoxDecoration(
+                            // Adding curved corners to the dismiss background
+                            borderRadius: BorderRadius.circular(12),
+                            color: Colors.green,
+                          ),
                           alignment: Alignment.centerRight,
                           padding: const EdgeInsets.only(right: 20.0),
+                          margin: const EdgeInsets.symmetric(vertical: 4.0),
                           child: const Icon(Icons.check, color: Colors.white),
                         ),
-                        child: ListTile(
-                          leading: const Icon(Icons.notifications),
-                          title: Text(notification['title']),
-                          subtitle: Text(notification['message']),
-                          trailing: notification['read']
-                              ? null
-                              : Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.blue,
-                                    shape: BoxShape.circle,
+                        child: Card(
+                          // Adding curved box with light grey background for each notification
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          color: Colors.grey[100], // Light grey background
+                          margin: const EdgeInsets.symmetric(vertical: 4.0),
+                          child: ListTile(
+                            // Adding blue color to the notification icon
+                            leading: const Icon(
+                              Icons.notifications,
+                              color: Colors.blue,
+                              size: 28,
+                            ),
+                            title: Text(
+                              notification['title'],
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: Text(notification['message']),
+                            trailing: notification['read']
+                                ? null
+                                : Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.blue,
+                                      shape: BoxShape.circle,
+                                    ),
                                   ),
-                                ),
-                          onTap: () {
-                            if (!notification['read']) {
-                              _markAsRead(notification['_id']);
-                            }
-                          },
+                            onTap: () {
+                              if (!notification['read']) {
+                                _markAsRead(notification['_id']);
+                              }
+                            },
+                          ),
                         ),
                       );
                     },
