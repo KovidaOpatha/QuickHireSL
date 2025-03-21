@@ -393,127 +393,139 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       )
-                    : ListView.builder(
-                        itemCount: _filteredJobs.length,
-                        itemBuilder: (context, index) {
-                          final job = _filteredJobs[index];
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      JobDetailsScreen(job: job),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(vertical: 8),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(15),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.grey.withOpacity(0.2),
-                                    spreadRadius: 1,
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                children: [
-                                  // Profile picture
-                                  Container(
-                                    width: 50,
-                                    height: 50,
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF98C9C5),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: job.postedBy != null &&
-                                            _jobOwnerData
-                                                .containsKey(job.postedBy) &&
-                                            _jobOwnerData[job.postedBy]![
-                                                    'profilePicture'] !=
-                                                null
-                                        ? ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                            child: Image.network(
-                                              _jobOwnerData[job.postedBy]![
-                                                  'profilePicture'],
-                                              fit: BoxFit.cover,
-                                              errorBuilder:
-                                                  (context, error, stackTrace) {
-                                                return Icon(
-                                                  Icons.business,
-                                                  color: Colors.white
-                                                      .withOpacity(0.7),
-                                                  size: 30,
-                                                );
-                                              },
-                                            ),
-                                          )
-                                        : Icon(
-                                            Icons.business,
-                                            color: Colors.white.withOpacity(0.7),
-                                            size: 30,
-                                          ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          job.title,
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        Text(
-                                          '${job.company} • ${job.location}',
-                                          style: const TextStyle(
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                        Text(
-                                          'LKR ${job.salary.value}',
-                                          style: const TextStyle(
-                                            color: Colors.green,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  GestureDetector(
-                                    onTap: () {
-                                      if (job.id != null) {
-                                        _toggleFavorite(job.id!);
-                                      }
-                                    },
-                                    child: Icon(
-                                      job.id != null &&
-                                              _favoriteStatus[job.id] == true
-                                          ? Icons.favorite
-                                          : Icons.favorite_border,
-                                      color: job.id != null &&
-                                              _favoriteStatus[job.id] == true
-                                          ? Colors.red
-                                          : null,
-                                      size: 20,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                    : RefreshIndicator(
+                        onRefresh: () async {
+                          // Show a snackbar to indicate refresh is happening
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Refreshing jobs...'),
+                              duration: Duration(seconds: 1),
                             ),
                           );
+                          await _loadJobs();
                         },
+                        child: ListView.builder(
+                          itemCount: _filteredJobs.length,
+                          itemBuilder: (context, index) {
+                            final job = _filteredJobs[index];
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        JobDetailsScreen(job: job),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.symmetric(vertical: 8),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(15),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.grey.withOpacity(0.2),
+                                      spreadRadius: 1,
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    // Profile picture
+                                    Container(
+                                      width: 50,
+                                      height: 50,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF98C9C5),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: job.postedBy != null &&
+                                              _jobOwnerData
+                                                  .containsKey(job.postedBy) &&
+                                              _jobOwnerData[job.postedBy]![
+                                                      'profilePicture'] !=
+                                                  null
+                                          ? ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              child: Image.network(
+                                                _jobOwnerData[job.postedBy]![
+                                                    'profilePicture'],
+                                                fit: BoxFit.cover,
+                                                errorBuilder:
+                                                    (context, error, stackTrace) {
+                                                  return Icon(
+                                                    Icons.business,
+                                                    color: Colors.white
+                                                        .withOpacity(0.7),
+                                                    size: 30,
+                                                  );
+                                                },
+                                              ),
+                                            )
+                                          : Icon(
+                                              Icons.business,
+                                              color: Colors.white.withOpacity(0.7),
+                                              size: 30,
+                                            ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            job.title,
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          Text(
+                                            '${job.company} • ${job.location}',
+                                            style: const TextStyle(
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                          Text(
+                                            'LKR ${job.salary.value}',
+                                            style: const TextStyle(
+                                              color: Colors.green,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () {
+                                        if (job.id != null) {
+                                          _toggleFavorite(job.id!);
+                                        }
+                                      },
+                                      child: Icon(
+                                        job.id != null &&
+                                                _favoriteStatus[job.id] == true
+                                            ? Icons.favorite
+                                            : Icons.favorite_border,
+                                        color: job.id != null &&
+                                                _favoriteStatus[job.id] == true
+                                            ? Colors.red
+                                            : null,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                       ),
           ),
         ],
