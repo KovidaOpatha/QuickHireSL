@@ -124,6 +124,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color(0xFF98C9C5),
       appBar: AppBar(
         leading: IconButton(
           icon: Icon(Icons.arrow_back),
