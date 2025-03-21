@@ -267,7 +267,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                                   Text(
                                     'LKR ${job.salary.value}',
                                     style: TextStyle(
-                                      color: Theme.of(context).primaryColor,
+                                      color: Colors.black,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
