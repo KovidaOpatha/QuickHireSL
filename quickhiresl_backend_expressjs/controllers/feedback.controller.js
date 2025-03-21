@@ -171,7 +171,30 @@ const feedbackController = {
         message: 'Server error while getting user feedback'
       });
     }
+  },
+
+// Get feedback for an application
+getApplicationFeedback: async (req, res) => {
+  try {
+    const { applicationId } = req.params;
+
+    const feedbacks = await Feedback.find({ applicationId })
+      .populate('fromUser', 'name email profileImage')
+      .populate('targetUser', 'name email profileImage')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: feedbacks
+    });
+  } catch (error) {
+    console.error('Error getting application feedback:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while getting application feedback'
+    });
   }
+}
 };
 
 module.exports = feedbackController;
