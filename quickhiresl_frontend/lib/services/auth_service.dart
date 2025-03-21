@@ -207,13 +207,22 @@ class AuthService {
       print('[UpdateRole] Role to set: $role');
       print('[UpdateRole] Details: $details');
 
+      // Create request body with role
+      final Map<String, dynamic> requestBody = {
+        'role': role,
+      };
+      
+      // Add details to request body without spreading
+      if (details != null) {
+        requestBody.addAll(details);
+      }
+      
+      print('[UpdateRole] Request body: ${jsonEncode(requestBody)}');
+
       final response = await http.patch(
         Uri.parse('$baseUrl/auth/role/$userId'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'role': role,
-          if (details != null) ...details,
-        }),
+        body: jsonEncode(requestBody),
       );
 
       print('[UpdateRole] Response status: ${response.statusCode}');

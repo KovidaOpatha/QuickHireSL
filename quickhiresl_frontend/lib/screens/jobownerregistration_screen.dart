@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'personalinformation_screen.dart';
+import 'home_screen.dart';
 import '../services/auth_service.dart';
 
 class JobOwnerRegistrationScreen extends StatefulWidget {
@@ -20,8 +20,12 @@ class JobOwnerRegistrationScreen extends StatefulWidget {
 class _JobOwnerRegistrationScreenState
     extends State<JobOwnerRegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
+  final TextEditingController fullNameController = TextEditingController();
+  final TextEditingController mobileNumberController = TextEditingController();
+  final TextEditingController nicNumberController = TextEditingController();
   final TextEditingController shopNameController = TextEditingController();
   final TextEditingController shopRegNoController = TextEditingController();
+  final TextEditingController jobPositionController = TextEditingController();
   final AuthService _authService = AuthService();
   bool _isLoading = false;
   String? _selectedLocation;
@@ -74,9 +78,13 @@ class _JobOwnerRegistrationScreenState
         }
 
         // Ensure all required fields are filled
-        if (shopNameController.text.isEmpty ||
+        if (fullNameController.text.isEmpty ||
+            mobileNumberController.text.isEmpty ||
+            nicNumberController.text.isEmpty ||
+            shopNameController.text.isEmpty ||
             _selectedLocation == null ||
-            shopRegNoController.text.isEmpty) {
+            shopRegNoController.text.isEmpty ||
+            jobPositionController.text.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('All fields are required')),
           );
@@ -88,9 +96,13 @@ class _JobOwnerRegistrationScreenState
 
         final jobOwnerDetails = {
           'jobOwnerDetails': {
+            'fullName': fullNameController.text,
+            'mobileNumber': mobileNumberController.text,
+            'nicNumber': nicNumberController.text,
             'shopName': shopNameController.text,
             'shopLocation': _selectedLocation,
             'shopRegisterNo': shopRegNoController.text,
+            'jobPosition': jobPositionController.text,
           }
         };
 
@@ -111,7 +123,7 @@ class _JobOwnerRegistrationScreenState
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const PersonalInformationScreen(),
+                  builder: (context) => const HomeScreen(),
                 ),
               );
             } else {
@@ -188,18 +200,46 @@ class _JobOwnerRegistrationScreenState
 
             /// Form Fields in the middle of the screen
             Expanded(
-              child: Padding(
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.all(20),
                 child: Form(
                   key: _formKey,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      // Personal Information Section
+                      const Text(
+                        'Personal Information',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+                      _buildTextField(fullNameController, "Full Name"),
+                      const SizedBox(height: 15),
+                      _buildTextField(mobileNumberController, "Mobile Number"),
+                      const SizedBox(height: 15),
+                      _buildTextField(nicNumberController, "NIC Number"),
+                      
+                      const SizedBox(height: 25),
+                      
+                      // Shop Information Section
+                      const Text(
+                        'Shop Information',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 15),
                       _buildTextField(shopNameController, "Shop Name"),
                       const SizedBox(height: 15),
                       _buildLocationField(),
                       const SizedBox(height: 15),
                       _buildTextField(shopRegNoController, "Shop Register No"),
+                      const SizedBox(height: 15),
+                      _buildTextField(jobPositionController, "Job Position"),
                       const SizedBox(height: 30),
 
                       /// Next Button

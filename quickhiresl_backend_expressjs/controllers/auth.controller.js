@@ -193,8 +193,13 @@ exports.updateRole = async (req, res) => {
             return res.status(400).json({ message: 'Invalid role selection' });
         }
 
-        // Initialize update data with role
-        const updateData = { role };
+        // Initialize update data with role and clear any existing role-specific details
+        const updateData = { 
+            role,
+            // Clear both types of details initially
+            studentDetails: null,
+            jobOwnerDetails: null
+        };
         
         // Handle student details
         if (role === 'student') {
@@ -227,16 +232,28 @@ exports.updateRole = async (req, res) => {
                 return res.status(400).json({ message: 'Job owner details are required' });
             }
             
-            const { shopName, shopLocation, shopRegisterNo } = req.body.jobOwnerDetails;
+            const { 
+                fullName, 
+                mobileNumber, 
+                nicNumber, 
+                shopName, 
+                shopLocation, 
+                shopRegisterNo,
+                jobPosition
+            } = req.body.jobOwnerDetails;
             
             // Validate required job owner fields
-            if (!shopName || !shopLocation || !shopRegisterNo) {
+            if (!fullName || !mobileNumber || !nicNumber || !shopName || !shopLocation || !shopRegisterNo || !jobPosition) {
                 return res.status(400).json({ 
                     message: 'All job owner details are required',
                     missingFields: [
+                        !fullName ? 'fullName' : null,
+                        !mobileNumber ? 'mobileNumber' : null,
+                        !nicNumber ? 'nicNumber' : null,
                         !shopName ? 'shopName' : null,
                         !shopLocation ? 'shopLocation' : null,
-                        !shopRegisterNo ? 'shopRegisterNo' : null
+                        !shopRegisterNo ? 'shopRegisterNo' : null,
+                        !jobPosition ? 'jobPosition' : null
                     ].filter(Boolean)
                 });
             }
@@ -365,10 +382,22 @@ exports.verifyUserData = async (req, res) => {
                 verified = false;
                 missingFields.push('jobOwnerDetails');
             } else {
-                const { shopName, shopLocation, shopRegisterNo } = user.jobOwnerDetails;
+                const { 
+                    fullName, 
+                    mobileNumber, 
+                    nicNumber, 
+                    shopName, 
+                    shopLocation, 
+                    shopRegisterNo,
+                    jobPosition
+                } = user.jobOwnerDetails;
+                if (!fullName) missingFields.push('jobOwnerDetails.fullName');
+                if (!mobileNumber) missingFields.push('jobOwnerDetails.mobileNumber');
+                if (!nicNumber) missingFields.push('jobOwnerDetails.nicNumber');
                 if (!shopName) missingFields.push('jobOwnerDetails.shopName');
                 if (!shopLocation) missingFields.push('jobOwnerDetails.shopLocation');
                 if (!shopRegisterNo) missingFields.push('jobOwnerDetails.shopRegisterNo');
+                if (!jobPosition) missingFields.push('jobOwnerDetails.jobPosition');
                 
                 if (missingFields.length > 0) verified = false;
             }
