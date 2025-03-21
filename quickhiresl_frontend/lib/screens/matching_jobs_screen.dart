@@ -138,7 +138,7 @@ class _MatchingJobsScreenState extends State<MatchingJobsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFF98C9C5),
       appBar: AppBar(
         backgroundColor: const Color(0xFF98C9C5),
         title: const Text(
