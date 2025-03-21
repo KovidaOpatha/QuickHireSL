@@ -729,7 +729,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                       label: const Text('View Feedback'),
                       style: ElevatedButton.styleFrom(
                         foregroundColor: Colors.white,
-                        backgroundColor: Colors.blue,
+                        backgroundColor: const Color(0xFF98C9C5),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
