@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/config.dart';
 
@@ -69,7 +71,7 @@ class UserService {
     }
   }
 
-  Future<Map<String, dynamic>> updateUserProfile(Map<String, dynamic> userData) async {
+  Future<Map<String, dynamic>> updateUserProfile(Map<String, dynamic> userData, {File? profileImage}) async {
     try {
       final token = await storage.read(key: 'jwt_token');
       final userId = await storage.read(key: 'user_id');
@@ -81,30 +83,77 @@ class UserService {
       print('[UserService] Updating profile for user: $userId');
       print('[UserService] Update data: $userData');
       
-      final response = await http.patch(
-        Uri.parse('$baseUrl/users/$userId'),
-        headers: {
-          'Content-Type': 'application/json',
+      if (profileImage != null) {
+        // Handle file upload with multipart request
+        var request = http.MultipartRequest(
+          'PUT',
+          Uri.parse('$baseUrl/users/$userId'),
+        );
+        
+        // Add headers
+        request.headers.addAll({
           'Authorization': 'Bearer $token',
-        },
-        body: json.encode(userData),
-      );
-
-      print('[UserService] Response status: ${response.statusCode}');
-      print('[UserService] Response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return {
-          'success': true,
-          'data': data,
-        };
+        });
+        
+        // Add file
+        var fileStream = http.ByteStream(profileImage.openRead());
+        var fileLength = await profileImage.length();
+        
+        var multipartFile = http.MultipartFile(
+          'profileImage', 
+          fileStream, 
+          fileLength,
+          filename: 'profile_image.jpg',
+          contentType: MediaType('image', 'jpeg'),
+        );
+        
+        request.files.add(multipartFile);
+        
+        // Add other fields
+        request.fields['userData'] = json.encode(userData);
+        
+        // Send the request
+        var streamedResponse = await request.send();
+        var response = await http.Response.fromStream(streamedResponse);
+        
+        if (response.statusCode == 200) {
+          print('[UserService] Profile updated successfully');
+          return {
+            'success': true,
+            'data': json.decode(response.body)
+          };
+        } else {
+          print('[UserService] Response status: ${response.statusCode}');
+          print('[UserService] Response body: ${response.body}');
+          throw Exception('Failed to update user profile: ${response.body}');
+        }
       } else {
-        print('[ERROR] Failed to update user profile: ${response.body}');
-        return {
-          'success': false,
-          'error': 'Failed to update user profile',
-        };
+        // Regular JSON request without file
+        final response = await http.put(
+          Uri.parse('$baseUrl/users/$userId'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: json.encode(userData),
+        );
+
+        print('[UserService] Response status: ${response.statusCode}');
+        print('[UserService] Response body: ${response.body}');
+
+        if (response.statusCode == 200) {
+          print('[UserService] Profile updated successfully');
+          final data = json.decode(response.body);
+          print('[UserService] Decoded data: $data');
+          return {
+            'success': true,
+            'data': data
+          };
+        } else {
+          print('[UserService] Response status: ${response.statusCode}');
+          print('[UserService] Response body: ${response.body}');
+          throw Exception('Failed to update user profile: ${response.body}');
+        }
       }
     } catch (e) {
       print('[ERROR] User profile update error: $e');

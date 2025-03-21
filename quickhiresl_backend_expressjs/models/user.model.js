@@ -5,6 +5,7 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true, trim: true },
     role: { type: String, enum: ['student', 'jobowner', 'employer'] },
     profileImage: { type: String, default: null },
+    bio: { type: String, default: '' },
     rating: { type: Number, default: 0, min: 0, max: 5 },
     completedJobs: { type: Number, default: 0 },
     registrationComplete: { type: Boolean, default: false },

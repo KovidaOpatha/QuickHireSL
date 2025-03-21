@@ -19,18 +19,21 @@ exports.getUserProfile = async (req, res) => {
             email: user.email,
             role: user.role,
             profileImage: user.profileImage,
+            bio: user.bio || '',
             rating: user.rating || 0,
             completedJobs: user.completedJobs || 0,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
             name: user.role === 'student' 
                 ? user.studentDetails?.fullName 
                 : user.jobOwnerDetails?.shopName
         };
 
         // Add role-specific details
-        if (user.role === 'student' && user.studentDetails) {
-            response.studentDetails = user.studentDetails;
-        } else if (user.role === 'jobowner' && user.jobOwnerDetails) {
-            response.jobOwnerDetails = user.jobOwnerDetails;
+        if (user.role === 'student') {
+            response.studentDetails = user.studentDetails || {};
+        } else if (user.role === 'jobowner') {
+            response.jobOwnerDetails = user.jobOwnerDetails || {};
         }
 
         console.log('[UserController] Profile data:', response);
@@ -68,25 +71,21 @@ exports.getUserByEmail = async (req, res) => {
             email: user.email,
             role: user.role,
             profileImage: user.profileImage,
+            bio: user.bio || '',
             rating: user.rating || 0,
             completedJobs: user.completedJobs || 0,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
             name: user.role === 'student' 
                 ? user.studentDetails?.fullName 
                 : user.jobOwnerDetails?.shopName
         };
 
         // Add role-specific details
-        if (user.role === 'student' && user.studentDetails) {
-            response.fullName = user.studentDetails.fullName;
-            response.address = user.studentDetails.leavingAddress;
-            response.id = user.studentDetails.dateOfBirth;
-            response.nic = user.studentDetails.nicNumber;
-            response.studentDetails = user.studentDetails;
-        } else if (user.role === 'jobowner' && user.jobOwnerDetails) {
-            response.shopName = user.jobOwnerDetails.shopName;
-            response.shopLocation = user.jobOwnerDetails.shopLocation;
-            response.shopRegisterNo = user.jobOwnerDetails.shopRegisterNo;
-            response.jobOwnerDetails = user.jobOwnerDetails;
+        if (user.role === 'student') {
+            response.studentDetails = user.studentDetails || {};
+        } else if (user.role === 'jobowner') {
+            response.jobOwnerDetails = user.jobOwnerDetails || {};
         }
 
         console.log('[UserController] User data by email/ID:', response);
@@ -103,6 +102,7 @@ exports.updateUserProfile = async (req, res) => {
         const userId = req.params.userId;
         const updates = req.body;
         console.log('[UserController] Updating profile for user:', userId);
+        console.log('[UserController] Update data:', updates);
 
         // Remove sensitive fields that shouldn't be updated directly
         delete updates.password;
@@ -120,18 +120,31 @@ exports.updateUserProfile = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        console.log('[UserController] Profile updated successfully');
-        res.json({
+        // Format the response based on user role
+        const response = {
             userId: user._id,
             email: user.email,
             role: user.role,
             profileImage: user.profileImage,
+            bio: user.bio || '',
             rating: user.rating || 0,
             completedJobs: user.completedJobs || 0,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
             name: user.role === 'student' 
                 ? user.studentDetails?.fullName 
                 : user.jobOwnerDetails?.shopName
-        });
+        };
+
+        // Add role-specific details
+        if (user.role === 'student') {
+            response.studentDetails = user.studentDetails || {};
+        } else if (user.role === 'jobowner') {
+            response.jobOwnerDetails = user.jobOwnerDetails || {};
+        }
+
+        console.log('[UserController] Profile updated successfully');
+        res.json(response);
     } catch (error) {
         console.error('[UserController] Update error:', error);
         res.status(500).json({ message: 'Error updating user profile' });
