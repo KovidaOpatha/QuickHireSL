@@ -3,7 +3,6 @@ import '../services/job_service.dart';
 import '../models/application.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../widgets/feedback_dialog.dart';
-import '../widgets/rating_display.dart';
 
 class ApplicationsScreen extends StatefulWidget {
   const ApplicationsScreen({Key? key}) : super(key: key);
@@ -444,15 +443,6 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                             ),
-                                            const SizedBox(height: 4),
-                                            RatingDisplay(
-                                              rating: _parseRating(
-                                                  application.jobOwner.rating),
-                                              size: 16,
-                                              showText: false,
-                                              showValue: true,
-                                              compact: true,
-                                            ),
                                           ],
                                         ),
                                       ),
@@ -489,15 +479,6 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                                               ),
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
-                                            ),
-                                            const SizedBox(height: 4),
-                                            RatingDisplay(
-                                              rating: _parseRating(
-                                                  application.applicant.rating),
-                                              size: 16,
-                                              showText: false,
-                                              showValue: true,
-                                              compact: true,
                                             ),
                                           ],
                                         ),
@@ -821,19 +802,6 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
         return Colors.blue;
       default:
         return Colors.grey;
-    }
-  }
-
-  // Helper method to safely parse rating values
-  double _parseRating(dynamic rating) {
-    if (rating == null) return 0.0;
-    if (rating is int) return rating.toDouble();
-    if (rating is double) return rating;
-    try {
-      return double.parse(rating.toString());
-    } catch (e) {
-      print('Error parsing rating: $e');
-      return 0.0;
     }
   }
 }
