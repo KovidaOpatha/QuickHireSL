@@ -327,12 +327,6 @@ class _FeedbackViewWidgetState extends State<_FeedbackViewWidget> {
             letterSpacing: 0.3,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.settings, color: Colors.black54),
-            onPressed: () {},
-          ),
-        ],
       ),
       body: _isLoading
           ? const Center(
