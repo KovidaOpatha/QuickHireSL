@@ -28,6 +28,14 @@ jobs:
           cd quickhiresl_backend_expressjs
           npm install --no-audit --no-optional
 
+      - name: Create .env file
+        run: |
+          cd quickhiresl_backend_expressjs
+          echo "PORT=3000" > .env
+          echo "MONGODB_URI=${{ secrets.MONGODB_URI }}" >> .env
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+          echo "NODE_ENV=production" >> .env
+
       - name: Zip backend for deployment
         run: |
           cd quickhiresl_backend_expressjs
