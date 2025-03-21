@@ -1,12 +1,12 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy Node.js app to Azure Web App - QuickHireSL
+name: Build and deploy Node.js app to Azure Web App - quickhiresl2
 
 on:
   push:
     branches:
-      - deployment
+      - deployment2
   workflow_dispatch:
 
 jobs:
@@ -21,10 +21,12 @@ jobs:
       - name: Set up Node.js version
         uses: actions/setup-node@v3
         with:
-          node-version: "20.x"
+          node-version: '20.x'
 
-      - name: npm install
-        run: npm install
+      - name: npm install in backend directory
+        run: |
+          cd quickhiresl_backend_expressjs
+          npm install
 
       - name: Create .env file
         run: |
@@ -49,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     environment:
-      name: "Production"
+      name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
       id-token: write #This is required for requesting the JWT
@@ -63,18 +65,18 @@ jobs:
 
       - name: Unzip artifact for deployment
         run: unzip release.zip
-
+          
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_A4C2FEBBEECB44038DBFCD8222C0A3D3 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_02C44E7FACCA42D5B769A77B11ACBB70 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_60054313E38C40F59835BAD3CA1EBEB8 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_4DBC7B9810DB430494CB08413D41319D }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_8146B9C7522347819E176C7F1A61B850 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_BFA4E7C1D101423D9A5A212AFECF1205 }}
 
-      - name: "Deploy to Azure Web App"
+      - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: "QuickHireSL"
-          slot-name: "Production"
+          app-name: 'quickhiresl2'
+          slot-name: 'Production'
           package: .
