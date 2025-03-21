@@ -137,23 +137,29 @@ class _MatchingJobsScreenState extends State<MatchingJobsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+  return Scaffold(
+    backgroundColor: const Color(0xFF98C9C5),
+    appBar: AppBar(
       backgroundColor: const Color(0xFF98C9C5),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF98C9C5),
-        title: const Text(
+      title: const Center(
+        child: Text(
           'Matching Jobs',
-          style: TextStyle(color: Colors.black),
-        ),
-        iconTheme: const IconThemeData(color: Colors.black),
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: _showFilterDialog,
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
           ),
-        ],
+        ),
       ),
+      centerTitle: true,  // This also helps center the title
+      iconTheme: const IconThemeData(color: Colors.black),
+      elevation: 0,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.filter_list),
+          onPressed: _showFilterDialog,
+        ),
+      ],
+    ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage.isNotEmpty
