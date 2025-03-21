@@ -135,9 +135,21 @@ class _CommunityScreenState extends State<CommunityScreen> {
             );
           },
         ),
-        title: Text('Community'),
+        centerTitle: true, // Center align title
+        title: Text(
+          'Community',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: Theme.of(context).primaryColor,
+        actions: [
+          // Add an empty SizedBox with the same width as the back button
+          // to balance the title in the center
+          SizedBox(width: 48), // Typical width of an IconButton
+        ],
       ),
+     
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : RefreshIndicator(
