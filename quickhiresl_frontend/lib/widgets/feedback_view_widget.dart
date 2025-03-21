@@ -74,14 +74,11 @@ class _FeedbackViewWidgetState extends State<FeedbackViewWidget> {
       final List<String> endpoints = [];
       
       if (widget.userId != null) {
-        // Use the correct endpoint based on the backend implementation
-        endpoints.add('${Config.apiUrl}/feedbacks/user/${widget.userId}');
-        endpoints.add('${Config.apiUrl}/feedbacks/user/${widget.userId}/all');
+        endpoints.add('${Config.apiUrl}/feedback/user/${widget.userId}');
       }
       
       if (widget.applicationId != null) {
-        // Use the correct endpoint based on the backend implementation
-        endpoints.add('${Config.apiUrl}/feedbacks/application/${widget.applicationId}');
+        endpoints.add('${Config.apiUrl}/feedback/application/${widget.applicationId}');
       }
       
       print("DEBUG: Trying ${endpoints.length} possible endpoints");
@@ -501,7 +498,7 @@ class _FeedbackViewWidgetState extends State<FeedbackViewWidget> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Anonymous User',
+                  _getUserNameForFeedback(feedback),
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey[600],

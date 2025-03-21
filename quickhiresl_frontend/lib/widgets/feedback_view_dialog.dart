@@ -61,11 +61,24 @@ class _FeedbackViewWidgetState extends State<_FeedbackViewWidget> {
   bool _isLoading = true;
   String? _error;
   double _averageRating = 0.0;
+  String? _currentUserId;
+  String? _currentUserEmail;
 
   @override
   void initState() {
     super.initState();
+    _getCurrentUserInfo();
     _loadFeedbacks();
+  }
+
+  Future<void> _getCurrentUserInfo() async {
+    try {
+      final storage = FlutterSecureStorage();
+      _currentUserId = await storage.read(key: 'user_id');
+      _currentUserEmail = await storage.read(key: 'email');
+    } catch (e) {
+      print("Error getting user info: $e");
+    }
   }
 
   Future<void> _loadFeedbacks() async {
@@ -98,15 +111,12 @@ class _FeedbackViewWidgetState extends State<_FeedbackViewWidget> {
       final List<String> endpoints = [];
 
       if (widget.userId != null) {
-        // Use the correct endpoint based on the backend implementation
-        endpoints.add('${Config.apiUrl}/feedbacks/user/${widget.userId}');
-        endpoints.add('${Config.apiUrl}/feedbacks/user/${widget.userId}/all');
+        endpoints.add('${Config.apiUrl}/feedback/user/${widget.userId}');
       }
 
       if (widget.applicationId != null) {
-        // Use the correct endpoint based on the backend implementation
         endpoints.add(
-            '${Config.apiUrl}/feedbacks/application/${widget.applicationId}');
+            '${Config.apiUrl}/feedback/application/${widget.applicationId}');
       }
 
       print("DEBUG: Trying ${endpoints.length} possible endpoints");
@@ -284,6 +294,16 @@ class _FeedbackViewWidgetState extends State<_FeedbackViewWidget> {
         _error = 'Error: $e';
       });
       print("DEBUG: Exception during feedback loading: $e");
+    }
+  }
+
+  String _getUserNameForFeedback(app_models.Feedback feedback) {
+    if (feedback.fromUser != null) {
+      return feedback.fromUser!.name ?? 'Anonymous User';
+    } else if (feedback.targetUser != null) {
+      return feedback.targetUser!.name ?? 'Anonymous User';
+    } else {
+      return 'Anonymous User';
     }
   }
 
@@ -665,7 +685,7 @@ class _FeedbackViewWidgetState extends State<_FeedbackViewWidget> {
                   ),
                   SizedBox(width: 8),
                   Text(
-                    'Anonymous User',
+                    _getUserNameForFeedback(feedback),
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey[600],
