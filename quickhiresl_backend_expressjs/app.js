@@ -137,6 +137,51 @@ app.get("/api/feedbacks", async (req, res) => {
     }
 });
 
+// Get feedback for a specific user
+app.get("/api/feedback/user/:userId", async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const feedbacks = await Feedback.find({ targetUserId: userId })
+            .populate('userId', 'name email profileImage firstName lastName')
+            .sort({ date: -1 });
+        
+        res.status(200).json({
+            success: true,
+            data: feedbacks
+        });
+    } catch (err) {
+        console.error("Error getting user feedback:", err);
+        res.status(500).json({ 
+            success: false,
+            message: "Server error while getting user feedback", 
+            error: err.message 
+        });
+    }
+});
+
+// Get feedback for a specific application
+app.get("/api/feedback/application/:applicationId", async (req, res) => {
+    try {
+        const { applicationId } = req.params;
+        const feedbacks = await Feedback.find({ applicationId })
+            .populate('userId', 'name email profileImage firstName lastName')
+            .populate('targetUserId', 'name email profileImage firstName lastName')
+            .sort({ date: -1 });
+        
+        res.status(200).json({
+            success: true,
+            data: feedbacks
+        });
+    } catch (err) {
+        console.error("Error getting application feedback:", err);
+        res.status(500).json({ 
+            success: false,
+            message: "Server error while getting application feedback", 
+            error: err.message 
+        });
+    }
+});
+
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => console.log('MongoDB Connected'))
