@@ -59,7 +59,6 @@ class _FeedbackViewWidget extends StatefulWidget {
 class _FeedbackViewWidgetState extends State<_FeedbackViewWidget> {
   List<app_models.Feedback> _feedbacks = [];
   bool _isLoading = true;
-  String? _error;
   double _averageRating = 0.0;
   String? _currentUserId;
   String? _currentUserEmail;
@@ -85,7 +84,6 @@ class _FeedbackViewWidgetState extends State<_FeedbackViewWidget> {
     try {
       setState(() {
         _isLoading = true;
-        _error = null;
         // Clear existing feedbacks to avoid duplication
         _feedbacks = [];
         _averageRating = 0.0;
@@ -97,7 +95,6 @@ class _FeedbackViewWidgetState extends State<_FeedbackViewWidget> {
 
       if (token == null) {
         setState(() {
-          _error = 'Please login to view feedbacks';
           _isLoading = false;
         });
         print("DEBUG: No JWT token found");
@@ -284,14 +281,12 @@ class _FeedbackViewWidgetState extends State<_FeedbackViewWidget> {
       if (!foundValidResponse) {
         setState(() {
           _isLoading = false;
-          _error = 'Could not find feedback data. Please try again later.';
         });
         print("DEBUG: No valid feedback found from any endpoint");
       }
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _error = 'Error: $e';
       });
       print("DEBUG: Exception during feedback loading: $e");
     }
@@ -310,21 +305,20 @@ class _FeedbackViewWidgetState extends State<_FeedbackViewWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Color(0xFF98C9C5),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           'Ratings & Reviews',
           style: TextStyle(
             color: Colors.black87,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.3,
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
           ),
         ),
       ),
@@ -334,290 +328,170 @@ class _FeedbackViewWidgetState extends State<_FeedbackViewWidget> {
                 valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF98C9C5)),
               ),
             )
-          : _error != null
-              ? _buildErrorDisplay()
-              : _feedbacks.isEmpty
-                  ? _buildNoFeedbackDisplay()
-                  : _buildFeedbackList(),
-    );
-  }
-
-  Widget _buildErrorDisplay() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, color: Colors.red, size: 48),
-          SizedBox(height: 16),
-          Text(
-            'Error Loading Feedback',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            _error ?? 'An unknown error occurred',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.red),
-          ),
-          SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _loadFeedbacks,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFF98C9C5),
-            ),
-            child: Text('Try Again', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNoFeedbackDisplay() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.feedback_outlined, color: Colors.grey, size: 48),
-            SizedBox(height: 16),
-            Text(
-              'No Feedback Yet',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'There are no ratings or reviews available.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFeedbackList() {
-    // Group feedbacks by rating
-    Map<int, List<app_models.Feedback>> groupedFeedbacks = {};
-    for (var feedback in _feedbacks) {
-      groupedFeedbacks.putIfAbsent(feedback.rating, () => []);
-      groupedFeedbacks[feedback.rating]!.add(feedback);
-    }
-
-    // Sort ratings in descending order
-    final sortedRatings = groupedFeedbacks.keys.toList()
-      ..sort((a, b) => b.compareTo(a));
-
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Colors.white, Color(0xFFF8F9FF)],
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with total reviews and average rating
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  offset: Offset(0, 2),
-                  blurRadius: 5,
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Ratings & Reviews (${_feedbacks.length})',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.black87,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                      SizedBox(height: 12),
-                      Row(
-                        children: [
-                          RatingDisplay(
-                            rating: _averageRating,
-                            size: 20,
-                            showText: false,
-                            showValue: false,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFF98C9C5),
-                        Color(0xFF98C9C5).withOpacity(0.8),
-                      ],
-                    ),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Color(0xFF98C9C5).withOpacity(0.2),
-                        offset: Offset(0, 3),
-                        blurRadius: 8,
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      _averageRating.toStringAsFixed(1),
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Rating distribution
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            color: Colors.white,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Rating Distribution',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black87,
-                    letterSpacing: 0.2,
-                  ),
-                ),
-                SizedBox(height: 12),
-                ...List.generate(5, (index) {
-                  final rating = 5 - index;
-                  final count = groupedFeedbacks[rating]?.length ?? 0;
-                  final percentage = _feedbacks.isEmpty
-                      ? 0.0
-                      : (count / _feedbacks.length * 100);
-
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      children: [
-                        Text(
-                          '$rating',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        Icon(Icons.star, size: 14, color: Color(0xFFFFB800)),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: percentage / 100,
-                              backgroundColor: Colors.grey[200],
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                  Color(0xFF98C9C5)),
-                              minHeight: 8,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          '${count.toString().padLeft(2, '0')}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-              ],
-            ),
-          ),
-          // Feedback sections
-          Expanded(
-            child: ListView.builder(
-              controller: widget.scrollController,
-              padding: EdgeInsets.symmetric(vertical: 8),
-              itemCount: sortedRatings.length,
-              itemBuilder: (context, index) {
-                final rating = sortedRatings[index];
-                final feedbacks = groupedFeedbacks[rating]!;
-                return Column(
+          : SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
-                      child: Row(
-                        children: [
-                          Text(
-                            '$rating Star Reviews',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black87,
-                              letterSpacing: 0.2,
-                            ),
+                    // Overall Rating Card
+                    Container(
+                      padding: EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.1),
+                            spreadRadius: 2,
+                            blurRadius: 10,
+                            offset: Offset(0, 3),
                           ),
-                          SizedBox(width: 8),
-                          Text(
-                            '(${feedbacks.length})',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w400,
-                            ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Overall Rating',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                  SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        _averageRating.toStringAsFixed(1),
+                                        style: TextStyle(
+                                          fontSize: 48,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF98C9C5),
+                                        ),
+                                      ),
+                                      SizedBox(width: 12),
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: List.generate(
+                                                5,
+                                                (index) => Icon(Icons.star,
+                                                    color: Color(0xFFFFD700),
+                                                    size: 24)),
+                                          ),
+                                          SizedBox(height: 4),
+                                          Text(
+                                            'Based on ${_feedbacks.length} reviews',
+                                            style: TextStyle(
+                                              color: Colors.black54,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 24),
+                          // Rating Distribution
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Rating Distribution',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              SizedBox(height: 16),
+                              ...List.generate(5, (index) {
+                                final rating = 5 - index;
+                                final count = _feedbacks
+                                    .where(
+                                        (feedback) => feedback.rating == rating)
+                                    .length;
+                                return Padding(
+                                  padding: EdgeInsets.only(bottom: 12),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        '$rating',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      SizedBox(width: 8),
+                                      Icon(Icons.star,
+                                          color: Color(0xFFFFD700), size: 18),
+                                      SizedBox(width: 12),
+                                      Expanded(
+                                        child: ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                          child: LinearProgressIndicator(
+                                            value: _feedbacks.isEmpty
+                                                ? 0
+                                                : count / _feedbacks.length,
+                                            backgroundColor: Colors.grey[200],
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                    Color(0xFF98C9C5)),
+                                            minHeight: 8,
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(width: 12),
+                                      Text(
+                                        count.toString().padLeft(2, '0'),
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.black54,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }),
+                            ],
                           ),
                         ],
                       ),
                     ),
-                    ...feedbacks.map((feedback) => _buildReviewCard(feedback)),
+                    SizedBox(height: 24),
+                    // Reviews Section
+                    Text(
+                      '${_averageRating.toStringAsFixed(1)} Star Reviews (${_feedbacks.where((feedback) => feedback.rating == _averageRating.round()).length})',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    ..._feedbacks
+                        .where((feedback) =>
+                            feedback.rating == _averageRating.round())
+                        .map((feedback) => _buildReviewCard(feedback)),
                   ],
-                );
-              },
+                ),
+              ),
             ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -630,9 +504,9 @@ class _FeedbackViewWidgetState extends State<_FeedbackViewWidget> {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
-            offset: Offset(0, 2),
+            spreadRadius: 2,
             blurRadius: 8,
-            spreadRadius: 0,
+            offset: Offset(0, 3),
           ),
         ],
       ),
