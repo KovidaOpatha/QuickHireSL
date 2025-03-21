@@ -1,0 +1,10 @@
+{
+  "name": "quickhiresl",
+  "version": "1.0.0",
+  "description": "QuickHireSL - Job matching platform",
+  "scripts": {
+    "install": "cd quickhiresl_backend_expressjs && npm install",
+    "start": "cd quickhiresl_backend_expressjs && npm start"
+  },
+  "private": true
+}

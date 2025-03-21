@@ -23,10 +23,8 @@ jobs:
         with:
           node-version: "20.x"
 
-      - name: npm install in backend directory
-        run: |
-          cd quickhiresl_backend_expressjs
-          npm install --no-audit --no-optional
+      - name: npm install
+        run: npm install
 
       - name: Create .env file
         run: |
