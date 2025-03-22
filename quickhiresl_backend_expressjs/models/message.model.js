@@ -23,6 +23,11 @@ const messageSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  messageType: {
+    type: String,
+    enum: ['direct', 'community'],
+    default: 'direct'
+  },
   timestamp: {
     type: Date,
     default: Date.now
@@ -34,6 +39,7 @@ const messageSchema = new mongoose.Schema({
 // Index for faster queries
 messageSchema.index({ senderId: 1, receiverId: 1 });
 messageSchema.index({ timestamp: -1 });
+messageSchema.index({ jobId: 1, messageType: 1 });
 
 const Message = mongoose.model('Message', messageSchema);
 
