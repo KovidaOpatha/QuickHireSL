@@ -10,6 +10,7 @@ import '../widgets/rating_display.dart';
 import '../widgets/feedback_view_dialog.dart';
 import 'job_application_screen.dart';
 import 'job_chat_screen.dart';
+import 'direct_message_screen.dart';
 
 class JobDetailsScreen extends StatefulWidget {
   final Job job;
@@ -729,7 +730,7 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                       label: const Text('View Feedback'),
                       style: ElevatedButton.styleFrom(
                         foregroundColor: Colors.white,
-                        backgroundColor: const Color(0xFF98C9C5),
+                        backgroundColor: Colors.blue,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -886,6 +887,33 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
                   ),
 
                   const SizedBox(height: 16),
+                  
+                  // Contact Owner button (only visible if not the job owner)
+                  if (!_isJobOwner && widget.job.postedBy != null && widget.job.postedBy!.isNotEmpty) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton.icon(
+                        onPressed: _navigateToChat,
+                        icon: const Icon(Icons.message, color: Colors.white),
+                        label: const Text(
+                          'Contact Owner',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
 
                   // Delete button (only visible for job owner)
                   if (_isJobOwner) ...[
@@ -984,23 +1012,25 @@ class _JobDetailsScreenState extends State<JobDetailsScreen> {
   }
 
   void _navigateToChat() {
-    // Convert Job object to Map for the chat screen
-    final Map<String, dynamic> jobMap = {
-      'id': widget.job.id,
-      'title': widget.job.title,
-      'company': widget.job.company,
-      'salary': 'LKR ${widget.job.salary.value}',
-      'location': widget.job.location,
-      'type': widget.job.employmentType,
-      'postedBy': widget.job.postedBy
-    };
-
+    if (widget.job.postedBy == null || widget.job.postedBy!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot contact owner: Owner information is missing'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ChatScreen(
-          [widget.job],
-          job: jobMap,
+        builder: (context) => DirectMessageScreen(
+          receiverId: widget.job.postedBy!,
+          receiverName: jobOwnerData['fullName'] ?? widget.job.company,
+          receiverAvatar: jobOwnerData['profilePicture'],
+          jobId: widget.job.id,
+          jobTitle: widget.job.title,
         ),
       ),
     );
