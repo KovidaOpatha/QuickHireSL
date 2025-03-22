@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/config.dart';
 import '../services/user_service.dart';
+import '../models/direct_message.dart';
+import '../services/direct_message_service.dart';
 
 class DirectMessageScreen extends StatefulWidget {
   final String receiverId;
@@ -32,6 +34,7 @@ class _DirectMessageScreenState extends State<DirectMessageScreen> {
   final ScrollController _scrollController = ScrollController();
   final _storage = FlutterSecureStorage();
   final UserService _userService = UserService();
+  final DirectMessageService _directMessageService = DirectMessageService();
   
   List<Map<String, dynamic>> messages = [];
   bool isLoading = true;
@@ -39,6 +42,8 @@ class _DirectMessageScreenState extends State<DirectMessageScreen> {
   String? userId;
   String? userName;
   String? userAvatar;
+  String? _successfulEndpoint; // Track which endpoint works
+  bool _usingServiceAPI = false; // Track if we're using the service
 
   @override
   void initState() {
@@ -76,27 +81,220 @@ class _DirectMessageScreenState extends State<DirectMessageScreen> {
 
   Future<void> _fetchMessages() async {
     try {
+      // First try using the DirectMessageService
+      try {
+        final token = await _storage.read(key: 'jwt_token');
+        if (token == null || userId == null) {
+          setState(() => isLoading = false);
+          return;
+        }
+        
+        List<DirectMessage> serviceMessages = await _directMessageService.getMessages(
+          widget.receiverId,
+          jobId: widget.jobId
+        );
+        
+        if (serviceMessages.isNotEmpty || _usingServiceAPI) {
+          _usingServiceAPI = true;
+          setState(() {
+            messages = serviceMessages.map((dm) => dm.toJson()).toList();
+            isLoading = false;
+          });
+          
+          if (messages.isNotEmpty) {
+            _scrollToBottom();
+          }
+          return;
+        }
+      } catch (serviceError) {
+        print('Error using DirectMessageService: $serviceError');
+        // Fall back to old implementation
+      }
+      
+      // If service failed or returned empty, continue with existing implementation
       final token = await _storage.read(key: 'jwt_token');
-      if (token == null) {
+      if (token == null || userId == null) {
         setState(() => isLoading = false);
         return;
       }
 
-      final response = await http.get(
-        Uri.parse('${Config.apiUrl}/messages/${widget.receiverId}'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
+      // If we have a jobId, use a job-specific direct message endpoint
+      if (widget.jobId != null) {
+        try {
+          final jobDirectMessageEndpoint = '${Config.apiUrl}/messages/job/${widget.jobId}/${widget.receiverId}';
+          final response = await http.get(
+            Uri.parse(jobDirectMessageEndpoint),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          );
+          
+          print('Trying job-specific direct message endpoint: $jobDirectMessageEndpoint, status: ${response.statusCode}');
+          
+          if (response.statusCode == 200) {
+            final data = jsonDecode(response.body);
+            if (mounted) {
+              List<Map<String, dynamic>> messagesList = [];
+              
+              // Handle different response formats
+              if (data is List) {
+                messagesList = List<Map<String, dynamic>>.from(data);
+              } else if (data is Map && data.containsKey('messages')) {
+                messagesList = List<Map<String, dynamic>>.from(data['messages'] ?? []);
+              } else if (data is Map && data.containsKey('result')) {
+                var result = data['result'];
+                if (result is List) {
+                  messagesList = List<Map<String, dynamic>>.from(result);
+                } else if (result is Map && result.containsKey('messages')) {
+                  messagesList = List<Map<String, dynamic>>.from(result['messages'] ?? []);
+                }
+              }
+              
+              setState(() {
+                messages = messagesList;
+                isLoading = false;
+              });
+              
+              _successfulEndpoint = jobDirectMessageEndpoint;
+              
+              // Scroll to bottom after messages are loaded
+              if (messages.isNotEmpty) {
+                _scrollToBottom();
+              }
+            }
+            return;
+          }
+        } catch (e) {
+          print('Error fetching job-specific direct messages: $e');
+          // Continue with regular user-based messages as fallback
+        }
+      }
 
-      print('Fetching messages for user ${widget.receiverId}, status: ${response.statusCode}');
+      // If we already know a successful endpoint, use only that one
+      if (_successfulEndpoint != null) {
+        try {
+          final response = await http.get(
+            Uri.parse(_successfulEndpoint!),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          );
+          
+          if (response.statusCode == 200) {
+            final data = jsonDecode(response.body);
+            if (mounted) {
+              List<Map<String, dynamic>> messagesList = [];
+              
+              // Handle different response formats
+              if (data is List) {
+                messagesList = List<Map<String, dynamic>>.from(data);
+              } else if (data is Map && data.containsKey('messages')) {
+                messagesList = List<Map<String, dynamic>>.from(data['messages'] ?? []);
+              } else if (data is Map && data.containsKey('result')) {
+                var result = data['result'];
+                if (result is List) {
+                  messagesList = List<Map<String, dynamic>>.from(result);
+                } else if (result is Map && result.containsKey('messages')) {
+                  messagesList = List<Map<String, dynamic>>.from(result['messages'] ?? []);
+                }
+              }
+              
+              // Filter messages by jobId if it's provided
+              if (widget.jobId != null) {
+                messagesList = messagesList.where((msg) => 
+                  msg['jobId'] == widget.jobId
+                ).toList();
+              }
+              
+              setState(() {
+                messages = messagesList;
+                isLoading = false;
+              });
+              
+              // Scroll to bottom after messages are loaded
+              if (messages.isNotEmpty) {
+                _scrollToBottom();
+              }
+            }
+            return;
+          }
+        } catch (e) {
+          print('Error with known endpoint $_successfulEndpoint: $e');
+          // If the known endpoint fails, reset it and try all endpoints
+          _successfulEndpoint = null;
+        }
+      }
+
+      // Try direct message endpoints
+      final List<String> possibleEndpoints = [
+        '${Config.apiUrl}/messages/${widget.receiverId}',
+        '${Config.apiUrl}/messages/direct/${widget.receiverId}',
+        '${Config.apiUrl}/messages/conversation/${widget.receiverId}'
+      ];
       
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+      http.Response? successfulResponse;
+      String usedEndpoint = '';
+      
+      // Try each endpoint until we get a success
+      for (String endpoint in possibleEndpoints) {
+        try {
+          final response = await http.get(
+            Uri.parse(endpoint),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+          );
+          
+          print('Trying endpoint: $endpoint, status: ${response.statusCode}');
+          
+          if (response.statusCode == 200) {
+            successfulResponse = response;
+            usedEndpoint = endpoint;
+            // Remember the successful endpoint for future use
+            _successfulEndpoint = endpoint;
+            break;
+          }
+        } catch (innerError) {
+          print('Error with endpoint $endpoint: $innerError');
+          // Continue to next endpoint
+        }
+      }
+      
+      if (successfulResponse != null) {
+        print('Successfully fetched messages using endpoint: $usedEndpoint');
+        final data = jsonDecode(successfulResponse.body);
         if (mounted) {
+          List<Map<String, dynamic>> messagesList = [];
+          
+          // Handle different response formats
+          if (data is List) {
+            // Direct list of messages
+            messagesList = List<Map<String, dynamic>>.from(data);
+          } else if (data is Map && data.containsKey('messages')) {
+            // Messages wrapped in an object
+            messagesList = List<Map<String, dynamic>>.from(data['messages'] ?? []);
+          } else if (data is Map && data.containsKey('result')) {
+            // Another possible format
+            var result = data['result'];
+            if (result is List) {
+              messagesList = List<Map<String, dynamic>>.from(result);
+            } else if (result is Map && result.containsKey('messages')) {
+              messagesList = List<Map<String, dynamic>>.from(result['messages'] ?? []);
+            }
+          }
+          
+          // Filter messages by jobId if it's provided
+          if (widget.jobId != null) {
+            messagesList = messagesList.where((msg) => 
+              msg['jobId'] == widget.jobId
+            ).toList();
+          }
+          
           setState(() {
-            messages = List<Map<String, dynamic>>.from(data);
+            messages = messagesList;
             isLoading = false;
           });
           
@@ -105,16 +303,14 @@ class _DirectMessageScreenState extends State<DirectMessageScreen> {
             _scrollToBottom();
           }
         }
-      } else if (response.statusCode == 404) {
-        // No messages yet, just show empty conversation
-        print('No existing messages found - starting new conversation');
-        if (mounted) {
-          setState(() => isLoading = false);
-        }
       } else {
-        print('Error fetching messages: ${response.statusCode} - ${response.body}');
+        // If all attempts failed, show empty conversation
+        print('No existing messages found after trying multiple endpoints - starting new conversation');
         if (mounted) {
-          setState(() => isLoading = false);
+          setState(() {
+            messages = [];
+            isLoading = false;
+          });
         }
       }
     } catch (e) {
@@ -136,69 +332,216 @@ class _DirectMessageScreenState extends State<DirectMessageScreen> {
   }
 
   Future<void> sendMessage(String content) async {
-    if (content.trim().isEmpty) return;
-
-    final String currentTime = DateFormat('yyyy-MM-ddTHH:mm:ss').format(DateTime.now());
+    if (content.trim().isEmpty || userId == null) return;
 
     try {
       // Create a temporary message to show immediately in the UI
+      final String currentTime = DateFormat('yyyy-MM-ddTHH:mm:ss').format(DateTime.now());
       final Map<String, dynamic> tempMessage = {
         "content": content,
-        "senderId": userId ?? "temp_user_id",
-        "receiverId": widget.receiverId,
+        "sender": {
+          "_id": userId!,
+          "name": userName ?? "You",
+          "avatar": userAvatar ?? "assets/avatar.png",
+        },
+        "receiver": {
+          "_id": widget.receiverId,
+          "name": widget.receiverName,
+          "avatar": widget.receiverAvatar ?? "assets/avatar.png",
+        },
+        "jobId": widget.jobId,
         "timestamp": currentTime,
         "isRead": false,
-        "jobId": widget.jobId,
+        "messageType": "direct"
       };
 
-      // Add temporary message to UI
+      // Add temporary message to UI and clear input field for immediate feedback
       setState(() {
         messages.add(tempMessage);
       });
-
-      // Clear input field immediately for better UX
       _messageController.clear();
-      
-      // Make sure to scroll to the new message
       _scrollToBottom();
 
+      // First try using the DirectMessageService if we're using it
+      if (_usingServiceAPI) {
+        try {
+          final message = await _directMessageService.sendMessage(
+            receiverId: widget.receiverId,
+            content: content,
+            jobId: widget.jobId,
+            jobTitle: widget.jobTitle,
+          );
+
+          setState(() {
+            if (messages.isNotEmpty) {
+              messages.removeLast(); // Remove temp message
+            }
+            messages.add(message.toJson());
+          });
+          
+          _fetchMessages(); // Refresh to ensure we have latest state
+          return; // Exit early - message was sent successfully
+        } catch (serviceError) {
+          print('Error sending message via service: $serviceError');
+          // Fall back to old implementation
+          setState(() {
+            if (messages.isNotEmpty) {
+              messages.removeLast(); // Remove the temporary message if it failed
+            }
+          });
+        }
+      }
+
+      // Proceed with existing implementation if service approach failed
       final token = await _storage.read(key: 'jwt_token');
       if (token == null) throw Exception('No token found');
 
-      final response = await http.post(
-        Uri.parse('${Config.apiUrl}/messages'),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'receiverId': widget.receiverId,
-          'content': content,
-          'jobId': widget.jobId,
-        }),
-      );
+      // Data format for sending message
+      final Map<String, dynamic> messageData = {
+        "content": content,
+        "receiverId": widget.receiverId,
+        "jobId": widget.jobId,
+        "jobTitle": widget.jobTitle,
+        "messageType": "direct"
+      };
 
-      if (response.statusCode == 201) {
-        final newMessage = jsonDecode(response.body);
-        // Replace the temporary message with the server response
+      // Track if any attempt was successful
+      bool sendSuccess = false;
+      String lastErrorMessage = "Failed to send message";
+      
+      // Determine the best endpoint to use
+      String endpointToUse = '${Config.apiUrl}/messages'; // Default endpoint
+      
+      // Use the known successful endpoint if available
+      if (_successfulEndpoint != null && _successfulEndpoint!.contains('/messages/')) {
+        // If we have a successful endpoint for fetching, extract the base path for sending
+        // Example: /messages/userId -> /messages
+        final endpointParts = _successfulEndpoint!.split('/');
+        if (endpointParts.length >= 3) {
+          endpointToUse = '${Config.apiUrl}/${endpointParts[1]}'; // Use the messages part
+        }
+      }
+      
+      // Send the message to the chosen endpoint
+      try {
+        final response = await http.post(
+          Uri.parse(endpointToUse),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode(messageData),
+        );
+        
+        print("Sending message to endpoint $endpointToUse: ${response.statusCode}");
+        
+        if (response.statusCode == 201 || response.statusCode == 200) {
+          final newMessage = jsonDecode(response.body);
+          setState(() {
+            if (messages.isNotEmpty) {
+              messages.removeLast(); // Remove temp message
+            }
+            messages.add(newMessage);
+          });
+          
+          sendSuccess = true;
+          print("Message sent successfully to $endpointToUse");
+        } else {
+          lastErrorMessage = "Error sending to $endpointToUse: ${response.statusCode}";
+          print(lastErrorMessage);
+          print("Response body: ${response.body}");
+          
+          // Only if the main endpoint fails, try one fallback endpoint
+          if (!sendSuccess) {
+            final fallbackEndpoint = '${Config.apiUrl}/messages/direct';
+            
+            try {
+              final fallbackResponse = await http.post(
+                Uri.parse(fallbackEndpoint),
+                headers: {
+                  'Authorization': 'Bearer $token',
+                  'Content-Type': 'application/json',
+                },
+                body: jsonEncode(messageData),
+              );
+              
+              print("Trying fallback endpoint $fallbackEndpoint: ${fallbackResponse.statusCode}");
+              
+              if (fallbackResponse.statusCode == 201 || fallbackResponse.statusCode == 200) {
+                final newMessage = jsonDecode(fallbackResponse.body);
+                setState(() {
+                  if (messages.isNotEmpty) {
+                    messages.removeLast(); // Remove temp message
+                  }
+                  messages.add(newMessage);
+                });
+                
+                sendSuccess = true;
+                print("Message sent successfully to fallback endpoint $fallbackEndpoint");
+              } else {
+                lastErrorMessage = "Error sending to fallback endpoint: ${fallbackResponse.statusCode}";
+                print(lastErrorMessage);
+              }
+            } catch (e) {
+              print("Error with fallback endpoint: $e");
+            }
+          }
+        }
+      } catch (e) {
+        print("Error with primary endpoint $endpointToUse: $e");
+        
+        // Try fallback if primary fails with exception
+        final fallbackEndpoint = '${Config.apiUrl}/messages/direct';
+        
+        try {
+          final fallbackResponse = await http.post(
+            Uri.parse(fallbackEndpoint),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode(messageData),
+          );
+          
+          print("Trying fallback after exception: $fallbackEndpoint: ${fallbackResponse.statusCode}");
+          
+          if (fallbackResponse.statusCode == 201 || fallbackResponse.statusCode == 200) {
+            final newMessage = jsonDecode(fallbackResponse.body);
+            setState(() {
+              if (messages.isNotEmpty) {
+                messages.removeLast();
+              }
+              messages.add(newMessage);
+            });
+            
+            sendSuccess = true;
+            print("Message sent successfully to fallback endpoint");
+          }
+        } catch (fallbackError) {
+          print("Error with fallback endpoint: $fallbackError");
+        }
+      }
+      
+      // Handle failure if no endpoint worked
+      if (!sendSuccess) {
         setState(() {
-          messages.removeLast();
-          messages.add(newMessage);
+          if (messages.isNotEmpty) {
+            messages.removeLast(); // Remove the temporary message
+          }
         });
-      } else {
-        // Remove the temporary message if there was an error
-        setState(() {
-          messages.removeLast();
-        });
-
-        print("Error posting message: ${response.statusCode}");
-        print("Response body: ${response.body}");
+        
+        // Force refresh messages to ensure we're showing the latest state
+        _fetchMessages();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to send message. Please try again.'),
+            content: Text(lastErrorMessage),
             backgroundColor: Colors.red,
           ),
         );
+      } else {
+        // Make sure we have the latest messages after successful send
+        _fetchMessages();
       }
     } catch (e) {
       // Remove the temporary message if there was an error
@@ -211,7 +554,7 @@ class _DirectMessageScreenState extends State<DirectMessageScreen> {
       print('Error sending message: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error sending message. Please try again.'),
+          content: Text('Error sending message: ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
       );
@@ -298,10 +641,40 @@ class _DirectMessageScreenState extends State<DirectMessageScreen> {
                         itemCount: messages.length,
                         itemBuilder: (context, index) {
                           final message = messages[index];
-                          final bool isMe = message['senderId'] == userId;
-                          final DateTime timestamp = DateTime.parse(message['timestamp']).toLocal();
+                          
+                          // Handle different message formats
+                          bool isMe = false;
+                          String messageContent = '';
+                          DateTime timestamp = DateTime.now();
+                          String avatarUrl = '';
+                          
+                          // Check if using sender object format
+                          if (message.containsKey('sender') && message['sender'] is Map) {
+                            final sender = message['sender'] as Map<String, dynamic>;
+                            isMe = sender['_id'] == userId;
+                            messageContent = message['content'] ?? '';
+                            avatarUrl = isMe ? (userAvatar ?? '') : (widget.receiverAvatar ?? '');
+                            if (isMe && userAvatar != null) {
+                              avatarUrl = _userService.getFullImageUrl(userAvatar!);
+                            }
+                            if (message.containsKey('timestamp')) {
+                              timestamp = DateTime.parse(message['timestamp']).toLocal();
+                            }
+                          } 
+                          // Check if using senderId format
+                          else if (message.containsKey('senderId')) {
+                            isMe = message['senderId'] == userId;
+                            messageContent = message['content'] ?? '';
+                            avatarUrl = isMe ? (userAvatar ?? '') : (widget.receiverAvatar ?? '');
+                            if (isMe && userAvatar != null) {
+                              avatarUrl = _userService.getFullImageUrl(userAvatar!);
+                            }
+                            if (message.containsKey('timestamp')) {
+                              timestamp = DateTime.parse(message['timestamp']).toLocal();
+                            }
+                          }
+                          
                           final String formattedTime = DateFormat('h:mm a').format(timestamp);
-                          final String avatarUrl = isMe ? (userAvatar ?? '') : (widget.receiverAvatar ?? '');
                           final bool hasAvatar = avatarUrl.isNotEmpty && !avatarUrl.startsWith('assets/');
 
                           return Padding(
@@ -347,7 +720,7 @@ class _DirectMessageScreenState extends State<DirectMessageScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        message['content'],
+                                        messageContent,
                                         style: TextStyle(
                                           color: isMe ? Colors.white : Colors.black,
                                         ),
@@ -369,8 +742,7 @@ class _DirectMessageScreenState extends State<DirectMessageScreen> {
                                   SizedBox(width: 8),
                                   hasAvatar
                                       ? CircleAvatar(
-                                          backgroundImage: NetworkImage(
-                                              userAvatar != null ? _userService.getFullImageUrl(userAvatar!) : ''),
+                                          backgroundImage: NetworkImage(avatarUrl),
                                           radius: 16,
                                           backgroundColor: Colors.grey[300],
                                           onBackgroundImageError: (_, __) {
