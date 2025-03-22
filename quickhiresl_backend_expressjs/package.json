@@ -7,7 +7,11 @@
     "dev": "nodemon app.js",
     "test": "jest --detectOpenHandles",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:perf": "node tests/performance/run-performance-tests.js",
+    "test:perf:api": "node tests/performance/run-performance-tests.js",
+    "test:perf:db": "node tests/performance/run-database-tests.js",
+    "test:perf:matching": "node tests/performance/job-matching-performance.js"
   },
   "keywords": [],
   "author": "",
@@ -25,6 +29,7 @@
     "multer": "^1.4.5-lts.1"
   },
   "devDependencies": {
+    "autocannon": "^7.15.0",
     "jest": "^29.7.0",
     "mongodb-memory-server": "^9.1.6",
     "sinon": "^17.0.1",
