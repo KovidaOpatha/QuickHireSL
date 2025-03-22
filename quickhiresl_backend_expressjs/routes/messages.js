@@ -39,6 +39,49 @@ router.get('/:userId', auth, async (req, res) => {
   }
 });
 
+// New endpoint: Get messages for a specific job between current user and another user
+router.get('/job/:jobId/:userId', auth, async (req, res) => {
+  try {
+    const { jobId, userId } = req.params;
+    
+    console.log(`Fetching job-specific messages between current user ${req.user._id} and user ${userId} for job ${jobId}`);
+    
+    // Validate job ID format
+    if (!mongoose.Types.ObjectId.isValid(jobId)) {
+      return res.status(400).json({ msg: 'Invalid job ID format' });
+    }
+    
+    // Find messages that match both the users and the specific job
+    const messages = await Message.find({
+      $or: [
+        { senderId: req.user._id, receiverId: userId },
+        { senderId: userId, receiverId: req.user._id }
+      ],
+      jobId: jobId
+    })
+    .sort({ timestamp: 1 })
+    .limit(100);
+
+    console.log(`Found ${messages.length} job-specific messages`);
+
+    // Mark messages as read
+    await Message.updateMany(
+      { 
+        receiverId: req.user._id,
+        senderId: userId,
+        jobId: jobId,
+        isRead: false
+      },
+      { isRead: true }
+    );
+
+    res.json(messages);
+  } catch (err) {
+    console.error(`Error fetching job-specific messages: ${err}`);
+    res.status(500).send('Server Error');
+  }
+});
+
 // Send a message
 router.post('/', auth, async (req, res) => {
   try {
