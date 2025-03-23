@@ -81,50 +81,59 @@ class _NotificationScreenState extends State<NotificationScreen> {
             ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _notifications.isEmpty
-              ? const Center(child: Text("No new notifications"))
-              : RefreshIndicator(
-                  onRefresh: _loadNotifications,
-                  child: ListView.builder(
-                    itemCount: _notifications.length,
-                    itemBuilder: (context, index) {
-                      final notification = _notifications[index];
-                      return Dismissible(
-                        key: Key(notification['_id']),
-                        onDismissed: (direction) =>
-                            _markAsRead(notification['_id']),
-                        background: Container(
-                          color: Colors.green,
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20.0),
-                          child: const Icon(Icons.check, color: Colors.white),
-                        ),
-                        child: ListTile(
-                          leading: const Icon(Icons.notifications),
-                          title: Text(notification['title']),
-                          subtitle: Text(notification['message']),
-                          trailing: notification['read']
-                              ? null
-                              : Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.blue,
-                                    shape: BoxShape.circle,
+      body: Container(
+        color: const Color.fromRGBO(152, 201, 197, 1), // Set background color
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _notifications.isEmpty
+                ? const Center(child: Text("No new notifications", style: TextStyle(color: Colors.black)))
+                : RefreshIndicator(
+                    onRefresh: _loadNotifications,
+                    child: ListView.builder(
+                      itemCount: _notifications.length,
+                      itemBuilder: (context, index) {
+                        final notification = _notifications[index];
+                        return Dismissible(
+                          key: Key(notification['_id']),
+                          onDismissed: (direction) => _markAsRead(notification['_id']),
+                          background: Container(
+                            color: Colors.green,
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: 20.0),
+                            child: const Icon(Icons.check, color: Colors.white),
+                          ),
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                            padding: const EdgeInsets.all(16.0),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12.0), // Curved box
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 4,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.notifications, color: Colors.blue), // Notification icon
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    notification['message'],
+                                    style: const TextStyle(color: Colors.black),
                                   ),
                                 ),
-                          onTap: () {
-                            if (!notification['read']) {
-                              _markAsRead(notification['_id']);
-                            }
-                          },
-                        ),
-                      );
-                    },
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
+      ),
     );
   }
 }
