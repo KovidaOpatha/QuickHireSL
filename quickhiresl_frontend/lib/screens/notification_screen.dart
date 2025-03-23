@@ -75,9 +75,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
         actions: [
           if (_notifications.isNotEmpty)
             TextButton(
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.black, // Set button background to black
+              ),
               onPressed: _markAllAsRead,
-              child: const Text("Mark All Read",
-                  style: TextStyle(color: Colors.white)),
+              child: const Text(
+                "Mark All Read",
+                style: TextStyle(color: Colors.white), // Set button text to white
+              ),
             ),
         ],
       ),
