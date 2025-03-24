@@ -717,6 +717,29 @@ class _HomeScreenState extends State<HomeScreen> {
       final role = await _authService.getUserRole();
       print('[DEBUG] User role retrieved: $role');
       
+      // If role is null, try to get it from user profile
+      if (role == null) {
+        final userId = await _authService.getUserId();
+        if (userId != null) {
+          final userProfile = await _userService.getUserProfile();
+          if (userProfile['success'] && userProfile['data'] != null && userProfile['data']['role'] != null) {
+            final profileRole = userProfile['data']['role'];
+            print('[DEBUG] Retrieved role from profile: $profileRole');
+            
+            // Save the role to secure storage
+            await _authService.saveUserRole(profileRole);
+            
+            if (mounted) {
+              setState(() {
+                _userRole = profileRole;
+                print('[DEBUG] User role set from profile: $_userRole');
+              });
+            }
+            return;
+          }
+        }
+      }
+      
       if (mounted) {
         setState(() {
           _userRole = role;

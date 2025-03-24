@@ -27,13 +27,18 @@ class ProfileImageUtil {
   }
 
   /// Creates an ImageProvider from a profile image URL
-  static ImageProvider? getProfileImageProvider(String? imageUrl) {
+  /// This method now returns a non-nullable ImageProvider
+  static ImageProvider getProfileImageProvider(String? imageUrl) {
     if (imageUrl == null || imageUrl.isEmpty) {
-      return null;
+      // Return a placeholder image provider
+      return const AssetImage('assets/placeholder.png');
     }
     
     // Format the URL properly
     final formattedUrl = getFullImageUrl(imageUrl);
+    
+    // Add cache-busting parameter to avoid Android caching issues
+    final cacheBustedUrl = "$formattedUrl?t=${DateTime.now().millisecondsSinceEpoch}";
     
     // Handle data URLs (base64 encoded images)
     if (formattedUrl.startsWith('data:image')) {
@@ -42,12 +47,12 @@ class ProfileImageUtil {
         return MemoryImage(base64Decode(base64String));
       } catch (e) {
         print('Error decoding base64 image: $e');
-        return null;
+        return const AssetImage('assets/placeholder.png');
       }
     }
     
     // Handle network images
-    return NetworkImage(formattedUrl);
+    return NetworkImage(cacheBustedUrl);
   }
   
   /// Widget for displaying profile image with proper error handling
@@ -70,6 +75,64 @@ class ProfileImageUtil {
               color: Colors.grey[600],
             )
           : null,
+    );
+  }
+
+  /// Widget for displaying circular profile image with proper error handling
+  static Widget circularProfileImage({
+    required String? imageUrl,
+    required double radius,
+    required String fallbackText,
+    Color? backgroundColor,
+    Color? textColor,
+  }) {
+    final double size = radius * 2;
+    
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return CircleAvatar(
+        backgroundColor: backgroundColor ?? Colors.blue,
+        radius: radius,
+        child: Text(
+          fallbackText.isNotEmpty ? fallbackText[0].toUpperCase() : '?',
+          style: TextStyle(
+            color: textColor ?? Colors.white,
+            fontSize: radius * 0.75,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      );
+    }
+    
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: backgroundColor?.withOpacity(0.2) ?? Colors.blue.withOpacity(0.2),
+      ),
+      child: ClipOval(
+        child: Image(
+          image: getProfileImageProvider(imageUrl),
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            print('Error loading profile image: $error');
+            return CircleAvatar(
+              backgroundColor: backgroundColor ?? Colors.blue,
+              radius: radius,
+              child: Text(
+                fallbackText.isNotEmpty ? fallbackText[0].toUpperCase() : '?',
+                style: TextStyle(
+                  color: textColor ?? Colors.white,
+                  fontSize: radius * 0.75,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 }

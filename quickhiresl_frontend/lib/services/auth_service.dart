@@ -174,6 +174,12 @@ class AuthService {
     return await _getFromStorage('user_role');
   }
 
+  // Save user role to storage
+  Future<void> saveUserRole(String role) async {
+    await _saveToStorage('user_role', role);
+    print('[Storage] Saved user_role: $role');
+  }
+
   // Get stored profile image
   Future<String?> getProfileImage() async {
     return await _getFromStorage('profile_image');

@@ -7,7 +7,9 @@ import '../models/job.dart';
 import './job_chat_screen.dart';
 import '../services/job_service.dart';
 import '../services/user_service.dart';
+import '../utils/profile_image_util.dart';
 import './home_screen.dart';
+import './notification_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
   final Function(int)? onNavigateToTab;
@@ -75,9 +77,14 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        
+        // Use ProfileImageUtil to properly format the profile image URL
         if (data['profileImage'] != null) {
-          data['profilePicture'] =
-              _userService.getFullImageUrl(data['profileImage']);
+          data['profilePicture'] = ProfileImageUtil.getFullImageUrl(data['profileImage']);
+          print('Profile image URL for $userId: ${data['profilePicture']}');
+        } else {
+          print('No profile image found for user $userId');
+          data['profilePicture'] = '';
         }
 
         if (mounted) {
@@ -124,108 +131,117 @@ class _CommunityScreenState extends State<CommunityScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF98C9C5),
+      backgroundColor: const Color(0xFF98C9C5), // Light teal background color
       appBar: AppBar(
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => HomeScreen()),
-            );
-          },
-        ),
-        centerTitle: true, // Center align title
-        title: Text(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true, // Center the title
+        title: const Text(
           'Community',
           style: TextStyle(
-            fontWeight: FontWeight.bold,
+            color: Colors.black,
+            fontWeight: FontWeight.bold, // Make title bold
           ),
         ),
-        backgroundColor: Theme.of(context).primaryColor,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () {
+            if (widget.onNavigateToTab != null) {
+              widget.onNavigateToTab!(0); // Navigate to home tab (index 0)
+            } else {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => HomeScreen()),
+              );
+            }
+          },
+        ),
         actions: [
-          // Add an empty SizedBox with the same width as the back button
-          // to balance the title in the center
-          SizedBox(width: 48), // Typical width of an IconButton
+          IconButton(
+            icon: const Icon(Icons.notifications, color: Colors.black),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => NotificationScreen()),
+              );
+            },
+          ),
         ],
       ),
-     
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: fetchJobs,
-              child: jobs.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.work_off, size: 64, color: Colors.grey),
-                          SizedBox(height: 16),
-                          Text(
-                            'No jobs available',
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Pull to refresh',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[400],
-                            ),
-                          ),
-                        ],
+      body: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(30),
+            topRight: Radius.circular(30),
+          ),
+        ),
+        child: RefreshIndicator(
+          onRefresh: () async {
+            await fetchJobs();
+          },
+          child: isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(),
+                )
+              : jobs.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No jobs available in the community.',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFF757575), // Grey 600
+                        ),
                       ),
                     )
                   : ListView.builder(
-                      padding: EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(8),
                       itemCount: jobs.length,
                       itemBuilder: (context, index) {
                         final job = jobs[index];
                         final hasProfileImage = job.postedBy != null &&
                             jobOwners[job.postedBy] != null &&
-                            jobOwners[job.postedBy]!['profilePicture'] !=
-                                null &&
+                            jobOwners[job.postedBy]!['profilePicture'] != null &&
                             jobOwners[job.postedBy]!['profilePicture']
                                 .toString()
                                 .isNotEmpty;
 
                         return Card(
                           elevation: 2,
-                          margin: EdgeInsets.symmetric(vertical: 8),
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           child: InkWell(
                             onTap: () => navigateToJobChat(job),
                             child: Padding(
-                              padding: EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(16),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
                                     children: [
+                                      // Profile image with improved error handling
                                       hasProfileImage
-                                          ? CircleAvatar(
-                                              backgroundImage: NetworkImage(
-                                                jobOwners[job.postedBy]![
-                                                    'profilePicture'],
-                                              ),
-                                              backgroundColor: Theme.of(context)
-                                                  .primaryColor,
-                                              onBackgroundImageError: (_, __) {
-                                                // Fallback if image fails to load
-                                              },
+                                          ? ProfileImageUtil.circularProfileImage(
+                                              imageUrl: jobOwners[job.postedBy]!['profilePicture'],
+                                              radius: 24,
+                                              fallbackText: job.company,
+                                              backgroundColor: Theme.of(context).primaryColor,
+                                              textColor: Colors.white,
                                             )
                                           : CircleAvatar(
-                                              backgroundColor: Theme.of(context)
-                                                  .primaryColor,
+                                              backgroundColor: Theme.of(context).primaryColor,
+                                              radius: 24,
                                               child: Text(
-                                                job.company[0].toUpperCase(),
-                                                style: TextStyle(
-                                                    color: Colors.white),
+                                                job.company.isNotEmpty ? job.company[0].toUpperCase() : '?',
+                                                style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 18,
+                                                    fontWeight: FontWeight.bold),
                                               ),
                                             ),
-                                      SizedBox(width: 12),
+                                      const SizedBox(width: 12),
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment:
@@ -233,55 +249,90 @@ class _CommunityScreenState extends State<CommunityScreen> {
                                           children: [
                                             Text(
                                               job.title,
-                                              style: TextStyle(
+                                              style: const TextStyle(
                                                 fontSize: 18,
                                                 fontWeight: FontWeight.bold,
                                               ),
                                             ),
+                                            const SizedBox(height: 4),
                                             Text(
                                               job.company,
                                               style: TextStyle(
-                                                color: Colors.grey[600],
+                                                fontSize: 16,
+                                                color: Colors.grey[700],
                                               ),
                                             ),
                                           ],
                                         ),
                                       ),
                                       IconButton(
-                                        icon: Icon(Icons.chat_bubble_outline),
+                                        icon: const Icon(Icons.message_outlined, size: 20),
                                         onPressed: () => navigateToJobChat(job),
                                       ),
                                     ],
                                   ),
-                                  SizedBox(height: 12),
+                                  const SizedBox(height: 12),
                                   Row(
                                     children: [
                                       Icon(Icons.location_on,
                                           size: 16, color: Colors.grey[600]),
-                                      SizedBox(width: 4),
+                                      const SizedBox(width: 4),
                                       Text(
                                         job.location,
-                                        style:
-                                            TextStyle(color: Colors.grey[600]),
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                        ),
                                       ),
-                                      SizedBox(width: 16),
+                                      const SizedBox(width: 16),
                                       Icon(Icons.work,
                                           size: 16, color: Colors.grey[600]),
-                                      SizedBox(width: 4),
+                                      const SizedBox(width: 4),
                                       Text(
                                         job.employmentType,
-                                        style:
-                                            TextStyle(color: Colors.grey[600]),
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                        ),
                                       ),
                                     ],
                                   ),
-                                  SizedBox(height: 12),
+                                  const SizedBox(height: 8),
                                   Text(
                                     'LKR ${job.salary.value}',
                                     style: TextStyle(
-                                      color: Colors.black,
+                                      fontSize: 16,
                                       fontWeight: FontWeight.bold,
+                                      color: Theme.of(context).primaryColor,
                                     ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    job.description,
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Posted ${_formatDate(job.createdAt)}',
+                                        style: TextStyle(
+                                          color: Colors.grey[500],
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      const Text(
+                                        'Tap to chat',
+                                        style: TextStyle(
+                                          color: Colors.blue,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
@@ -290,8 +341,26 @@ class _CommunityScreenState extends State<CommunityScreen> {
                         );
                       },
                     ),
-            ),
-      // Removed floating action button
+        ),
+      ),
     );
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'Unknown';
+    
+    final now = DateTime.now();
+    final difference = now.difference(date);
+    
+    if (difference.inDays == 0) {
+      if (difference.inHours == 0) {
+        return '${difference.inMinutes} minutes ago';
+      }
+      return '${difference.inHours} hours ago';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} days ago';
+    } else {
+      return DateFormat('MMM d, yyyy').format(date);
+    }
   }
 }

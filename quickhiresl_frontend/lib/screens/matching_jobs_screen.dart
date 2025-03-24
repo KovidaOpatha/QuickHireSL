@@ -141,18 +141,21 @@ class _MatchingJobsScreenState extends State<MatchingJobsScreen> {
     backgroundColor: const Color(0xFF98C9C5),
     appBar: AppBar(
       backgroundColor: const Color(0xFF98C9C5),
-      title: const Center(
-        child: Text(
-          'Matching Jobs',
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-          ),
+      elevation: 0,
+      centerTitle: true,
+      title: const Text(
+        'Matching Jobs',
+        style: TextStyle(
+          color: Colors.black,
+          fontWeight: FontWeight.bold,
         ),
       ),
-      centerTitle: true,  // This also helps center the title
-      iconTheme: const IconThemeData(color: Colors.black),
-      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.black),
+        onPressed: () {
+          Navigator.of(context).pop();
+        },
+      ),
       actions: [
         IconButton(
           icon: const Icon(Icons.filter_list),

@@ -9,6 +9,7 @@ import '../services/favorites_service.dart';
 import '../utils/profile_image_util.dart';
 import 'job_details_screen.dart';
 import 'home_screen.dart';
+import 'notification_screen.dart'; // Add this line
 
 class JobsScreen extends StatefulWidget {
   const JobsScreen({Key? key}) : super(key: key);
@@ -253,10 +254,26 @@ class _JobsScreenState extends State<JobsScreen> {
               );
             },
           ),
-          title: const Text(
-            'Available Jobs',
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          title: const Center(
+            child: Text(
+              'Available Jobs',
+              style: TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.notifications, color: Colors.black),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => NotificationScreen()),
+                );
+              },
+            ),
+          ],
           centerTitle: true,
         ),
         body: RefreshIndicator(
